@@ -1,10 +1,10 @@
 #!/bin/bash
-# Rebuild ~/Music/WaynesMusic/catalog.json from the MP3s in that folder.
+# Rebuild music/catalog.json from the MP3s in that folder.
 # Copies the three starter recordings once, if they are not already there.
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-DEST="${HOME}/Music/WaynesMusic"
+DEST="$ROOT/music"
 mkdir -p "$DEST"
 
 for file in PreludeInCMajor.mp3 Badinerie.mp3 Contrapunctus1.mp3; do

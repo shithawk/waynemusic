@@ -7,17 +7,18 @@
 # Tailscale Serve sends the tailnet hostname, so this site accepts that Host
 # while the socket stays on 127.0.0.1.
 #   tailscale serve --bg 8090
+# Start this from the project folder so the music/ folder is the song library.
 :8090 {
 	bind 127.0.0.1
 	handle /music/* {
 		uri strip_prefix /music
-		root * "{env.HOME}/Music/WaynesMusic"
+		root * music
 		header Cache-Control "no-cache"
 		file_server
 	}
 
 	handle /catalog.json {
-		root * "{env.HOME}/Music/WaynesMusic"
+		root * music
 		header Cache-Control "no-store"
 		file_server
 	}

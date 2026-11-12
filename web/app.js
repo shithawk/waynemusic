@@ -46,9 +46,9 @@ async function init() {
 
 function bindEvents() {
   document.getElementById("add-music").addEventListener("click", openAdd);
-  document.getElementById("close-add").addEventListener("click", () => document.getElementById("add-sheet").close());
+  document.getElementById("close-add").addEventListener("click", () => hideSheet("add-sheet"));
   document.getElementById("manage-songs").addEventListener("click", openManage);
-  document.getElementById("close-manage").addEventListener("click", () => document.getElementById("manage-sheet").close());
+  document.getElementById("close-manage").addEventListener("click", () => hideSheet("manage-sheet"));
   document.getElementById("download-all").addEventListener("click", downloadAll);
   document.getElementById("from-ipad").addEventListener("click", () => document.getElementById("file-input").click());
   document.getElementById("file-input").addEventListener("change", (event) => importFiles(event.target.files));
@@ -186,9 +186,9 @@ function closePlayer() {
 function setPlaying(playing) {
   state.playing = playing;
   document.getElementById("play-label").textContent = playing ? "Pause" : "Play";
-  document.getElementById("play-button").setAttribute("aria-label", playing ? "Pause" : "Play");
-  document.getElementById("icon-play").hidden = playing;
-  document.getElementById("icon-pause").hidden = !playing;
+  const playButton = document.getElementById("play-button");
+  playButton.setAttribute("aria-label", playing ? "Pause" : "Play");
+  playButton.classList.toggle("is-playing", playing);
   if ("mediaSession" in navigator) {
     navigator.mediaSession.playbackState = playing ? "playing" : "paused";
   }
@@ -202,6 +202,18 @@ function setNotice(text) {
   if (text) noticeTimer = setTimeout(() => { el.hidden = true; }, 4000);
 }
 
+function showSheet(id) {
+  document.getElementById(id).hidden = false;
+}
+
+function hideSheet(id) {
+  document.getElementById(id).hidden = true;
+}
+
+function playerIsOpen() {
+  return document.getElementById("player").classList.contains("open");
+}
+
 function setAddError(text) {
   const el = document.getElementById("add-error");
   el.textContent = text;
@@ -210,7 +222,7 @@ function setAddError(text) {
 
 async function openAdd() {
   setAddError("");
-  document.getElementById("add-sheet").showModal();
+  showSheet("add-sheet");
   await loadCatalog();
   renderCatalog();
 }
@@ -399,7 +411,7 @@ async function importFiles(fileList) {
   state.tracks = sortTracks(state.tracks);
   state.working = false;
   render();
-  document.getElementById("add-sheet").close();
+  hideSheet("add-sheet");
   if (titles.length === 1 && failures === 0) setNotice("Added " + titles[0]);
   else if (titles.length > 1 && failures === 0) setNotice("Added " + titles.length + " songs");
   else if (titles.length === 0) setNotice("That song could not be added.");
@@ -439,7 +451,7 @@ async function addLinkText(text) {
   try {
     const title = await addLink(text);
     document.getElementById("link-input").value = "";
-    document.getElementById("add-sheet").close();
+    hideSheet("add-sheet");
     render();
     setNotice("Added " + title);
   } catch (error) {
@@ -492,7 +504,7 @@ async function fetchOEmbed(parsed) {
 function openManage() {
   hideConfirm();
   renderManage();
-  document.getElementById("manage-sheet").showModal();
+  showSheet("manage-sheet");
 }
 
 function renderManage() {
@@ -542,16 +554,17 @@ async function confirmRemove() {
   renderManage();
 }
 
-async function playTrack(track) {
+async function playTrack(track, options) {
+  const open = !options || options.open !== false;
   if (state.currentId === track.id) {
     if (!state.playing) await toggle();
-    openPlayer();
+    if (open) openPlayer();
     render();
     return;
   }
   state.currentId = track.id;
   state.playing = false;
-  openPlayer();
+  if (open) openPlayer();
   publishSession(track);
   render();
   try {
@@ -663,7 +676,10 @@ function loadSoundCloudAPI() {
 
 async function toggle() {
   const track = currentTrack();
-  if (!track) return;
+  if (!track) {
+    if (state.tracks[0]) await playTrack(state.tracks[0], { open: playerIsOpen() });
+    return;
+  }
   if (track.source === "local") {
     if (audio().paused) await audio().play();
     else audio().pause();
@@ -681,7 +697,12 @@ async function toggle() {
 }
 
 function step(direction) {
-  if (!state.tracks.length || !state.currentId) return;
+  if (!state.tracks.length) return;
+  if (!state.currentId) {
+    const track = direction < 0 ? state.tracks[state.tracks.length - 1] : state.tracks[0];
+    playTrack(track, { open: playerIsOpen() });
+    return;
+  }
   const index = state.tracks.findIndex((track) => track.id === state.currentId);
   const start = index < 0 ? 0 : index;
   const nextIndex = (start + direction + state.tracks.length) % state.tracks.length;
@@ -690,7 +711,7 @@ function step(direction) {
     restart();
     return;
   }
-  playTrack(nextTrack);
+  playTrack(nextTrack, { open: playerIsOpen() });
 }
 
 function restart() {

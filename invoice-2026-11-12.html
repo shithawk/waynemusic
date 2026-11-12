@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Invoice WM-2026-001 — Wayne's Music</title>
+  <style>
+    @page { size: letter; margin: 0.7in; }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      color: #1a1a1a;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      font-size: 15px;
+      line-height: 1.4;
+    }
+    main { max-width: 760px; margin: 0 auto; padding: 32px 28px 48px; }
+    header { display: flex; justify-content: space-between; gap: 24px; align-items: center; }
+    .logo { width: 280px; height: auto; }
+    h1 { margin: 0 0 8px; font-size: 32px; letter-spacing: 0.04em; }
+    .meta { text-align: right; }
+    .meta p { margin: 0 0 4px; }
+    .label { color: #555; }
+    .parties { display: flex; gap: 48px; margin: 36px 0 28px; }
+    .parties h2 { margin: 0 0 6px; font-size: 13px; letter-spacing: 0.06em; text-transform: uppercase; color: #555; }
+    .parties p { margin: 0; }
+    table { width: 100%; border-collapse: collapse; }
+    th { text-align: left; font-size: 13px; letter-spacing: 0.04em; text-transform: uppercase; color: #555; border-bottom: 2px solid #1a1a1a; padding: 8px 10px; }
+    td { padding: 12px 10px; border-bottom: 1px solid #ddd; vertical-align: top; }
+    .num { text-align: right; white-space: nowrap; }
+    .desc small { display: block; color: #444; margin-top: 3px; }
+    tfoot td { border-bottom: 0; padding-top: 8px; padding-bottom: 4px; }
+    tfoot .total td { border-top: 2px solid #1a1a1a; font-size: 18px; font-weight: 700; padding-top: 12px; }
+    .note { margin-top: 28px; color: #333; }
+    .status { margin-top: 18px; font-size: 18px; font-weight: 700; }
+  </style>
+</head>
+<body>
+  <main>
+    <header>
+      <img class="logo" src="shoreline_logo_h4.png" alt="Shoreline">
+      <div class="meta">
+        <h1>INVOICE</h1>
+        <p><span class="label">Invoice</span> WM-2026-001</p>
+        <p><span class="label">Date</span> November 12, 2026</p>
+        <p><span class="label">Project</span> Wayne's Music</p>
+      </div>
+    </header>
+
+    <section class="parties">
+      <div>
+        <h2>From</h2>
+        <p>Shoreline</p>
+        <p>Jacob Ward</p>
+      </div>
+      <div>
+        <h2>For</h2>
+        <p>Wayne's Music</p>
+        <p>iPad music player</p>
+      </div>
+    </section>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Description</th>
+          <th class="num">Hours</th>
+          <th class="num">Rate</th>
+          <th class="num">Amount</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="desc">Developer time<small>iPad app and Safari home-screen player</small></td>
+          <td class="num">6</td>
+          <td class="num">$60.00</td>
+          <td class="num">$360.00</td>
+        </tr>
+        <tr>
+          <td class="desc">Music encoding<small>Prepare the recordings for playback on the iPad</small></td>
+          <td class="num">10</td>
+          <td class="num">$30.00</td>
+          <td class="num">$300.00</td>
+        </tr>
+        <tr>
+          <td class="desc">AI credits<small>Model usage for this project</small></td>
+          <td class="num">—</td>
+          <td class="num">—</td>
+          <td class="num">$10.00</td>
+        </tr>
+      </tbody>
+      <tfoot>
+        <tr>
+          <td colspan="3" class="num">Subtotal</td>
+          <td class="num">$670.00</td>
+        </tr>
+        <tr>
+          <td colspan="3" class="num">Prepaid credit applied</td>
+          <td class="num">−$670.00</td>
+        </tr>
+        <tr class="total">
+          <td colspan="3" class="num">Net payable</td>
+          <td class="num">$0.00</td>
+        </tr>
+      </tfoot>
+    </table>
+
+    <p class="note">No other charges. The Apple Developer Program fee was not used.</p>
+    <p class="status">Paid in full. Amount due: $0.00</p>
+  </main>
+</body>
+</html>
