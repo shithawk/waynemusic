@@ -7,11 +7,14 @@ const state = {
   query: "",
   linkOpen: false,
   working: false,
-  removeId: null
+  removeId: null,
+  readyId: null
 };
 
 let dbPromise = null;
-let objectURL = "";
+const fileBlobs = new Map();
+const fileURLs = new Map();
+const SILENT_WAV = "data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQAAAAA=";
 let ytPlayer = null;
 let ytReady = false;
 let pendingVideo = "";
@@ -66,7 +69,9 @@ function bindEvents() {
     const button = event.target.closest("[data-play]");
     if (!button) return;
     const track = state.tracks.find((item) => item.id === button.dataset.play);
-    if (track) playTrack(track);
+    if (!track) return;
+    if (track.id === state.currentId && state.playing) return;
+    userPlay(track, false);
   });
   document.getElementById("catalog-list").addEventListener("click", (event) => {
     const button = event.target.closest("[data-download]");
@@ -86,17 +91,24 @@ function bindEvents() {
   document.getElementById("confirm-remove").addEventListener("click", confirmRemove);
   document.getElementById("now-bar").addEventListener("click", () => openPlayer());
   document.getElementById("back-songs").addEventListener("click", closePlayer);
-  document.getElementById("previous").addEventListener("click", () => step(-1));
-  document.getElementById("next").addEventListener("click", () => step(1));
-  document.getElementById("play-button").addEventListener("click", toggle);
+  document.getElementById("previous").addEventListener("click", () => skip(-1));
+  document.getElementById("next").addEventListener("click", () => skip(1));
+  document.getElementById("play-button").addEventListener("click", () => {
+    if (isAudiblyPlaying()) userPause();
+    else userPlay(currentTrack() || songToStart(), playerIsOpen());
+  });
 }
 
 function bindMediaSession() {
   if (!("mediaSession" in navigator)) return;
-  navigator.mediaSession.setActionHandler("play", toggle);
-  navigator.mediaSession.setActionHandler("pause", toggle);
-  navigator.mediaSession.setActionHandler("previoustrack", () => step(-1));
-  navigator.mediaSession.setActionHandler("nexttrack", () => step(1));
+  navigator.mediaSession.setActionHandler("play", () => {
+    if (!isAudiblyPlaying()) userPlay(currentTrack() || songToStart(), playerIsOpen());
+  });
+  navigator.mediaSession.setActionHandler("pause", () => {
+    if (isAudiblyPlaying()) userPause();
+  });
+  navigator.mediaSession.setActionHandler("previoustrack", () => skip(-1));
+  navigator.mediaSession.setActionHandler("nexttrack", () => skip(1));
 }
 
 function standalone() {
@@ -136,7 +148,7 @@ function renderSongs() {
     title.textContent = track.title;
     const sub = document.createElement("span");
     sub.className = "song-sub";
-    sub.textContent = (track.id === state.currentId ? "Playing · " : "") + subtitle(track);
+    sub.textContent = (track.id === state.currentId && state.playing ? "Playing · " : "") + subtitle(track);
     button.append(title, sub);
     list.append(button);
   }
@@ -144,6 +156,8 @@ function renderSongs() {
   const bar = document.getElementById("now-bar");
   bar.hidden = !current;
   document.getElementById("now-bar-title").textContent = current ? current.title : "";
+  const kicker = document.querySelector(".now-kicker");
+  if (kicker) kicker.textContent = state.playing ? "Now playing" : "Paused";
 }
 
 function renderPlayer() {
@@ -157,9 +171,9 @@ function renderPlayer() {
 }
 
 function subtitle(track) {
-  const label = track.source === "local" ? "My Music" : track.source === "youtube" ? "YouTube" : "SoundCloud";
-  const artist = (track.artist || "").trim();
-  return artist ? artist + " · " + label : label;
+  if (track.source === "youtube") return track.artist ? track.artist + " · YouTube" : "YouTube";
+  if (track.source === "soundcloud") return track.artist ? track.artist + " · SoundCloud" : "SoundCloud";
+  return (track.artist || "").trim();
 }
 
 function currentTrack() {
@@ -174,12 +188,14 @@ function isSource(source) {
 function openPlayer() {
   const player = document.getElementById("player");
   player.classList.add("open");
+  player.inert = false;
   player.setAttribute("aria-hidden", "false");
 }
 
 function closePlayer() {
   const player = document.getElementById("player");
   player.classList.remove("open");
+  player.inert = true;
   player.setAttribute("aria-hidden", "true");
 }
 
@@ -192,6 +208,7 @@ function setPlaying(playing) {
   if ("mediaSession" in navigator) {
     navigator.mediaSession.playbackState = playing ? "playing" : "paused";
   }
+  renderSongs();
 }
 
 function setNotice(text) {
@@ -236,7 +253,7 @@ async function loadCatalog() {
     state.macError = "";
   } catch {
     state.catalog = [];
-    state.macError = "The Mac is not reachable. Songs already on this iPad still play.";
+    state.macError = "The computer is off or asleep. Songs already on this iPad still play.";
   }
 }
 
@@ -247,9 +264,9 @@ function renderCatalog() {
   if (state.macError) {
     status.textContent = state.macError;
   } else if (state.catalog.length === 0) {
-    status.textContent = "No songs on the Mac yet.";
+    status.textContent = "No songs on the computer yet.";
   } else {
-    status.textContent = "Songs on the Mac. Download the ones you want on this iPad.";
+    status.textContent = "Tap Download to put a song on this iPad.";
   }
   for (const entry of state.catalog) {
     const row = document.createElement("div");
@@ -265,11 +282,11 @@ function renderCatalog() {
     text.append(title, sub);
     const button = document.createElement("button");
     button.type = "button";
-    button.className = "download";
     button.dataset.download = entry.file;
     const already = savedOnIpad(entry);
+    button.className = "download" + (already ? " saved" : "");
     button.disabled = already || downloading.has(entry.file);
-    button.textContent = already ? "Saved on this iPad" : "Download";
+    button.textContent = already ? "On this iPad" : "Download";
     row.append(text, button);
     list.append(row);
   }
@@ -301,7 +318,7 @@ async function downloadAll() {
   }
   render();
   renderCatalog();
-  if (count > 0) setNotice(count === 1 ? "Saved 1 song on this iPad" : "Saved " + count + " songs on this iPad");
+  if (count > 0) setNotice(count === 1 ? "1 song is on this iPad. Tap Done, then tap the song." : count + " songs are on this iPad. Tap Done, then tap a song.");
 }
 
 async function downloadEntry(entry, announce) {
@@ -326,6 +343,7 @@ async function downloadEntry(entry, announce) {
     const blob = await readBody(response, type, total, (ratio) => {
       if (button) button.textContent = "Downloading… " + Math.round(ratio * 100) + "%";
     });
+    if (!blob.size || (total > 0 && blob.size < total)) throw new Error("download");
     const track = {
       id: "mac:" + entry.file,
       title: entry.title || entry.file,
@@ -336,6 +354,7 @@ async function downloadEntry(entry, announce) {
       createdAt: Date.now()
     };
     await saveLocal(track, blob);
+    state.readyId = track.id;
     state.tracks = sortTracks(state.tracks.filter((item) => item.id !== track.id).concat(track));
     saved = true;
     savedTitle = track.title;
@@ -349,7 +368,7 @@ async function downloadEntry(entry, announce) {
     render();
     renderCatalog();
   }
-  if (saved && announce) setNotice("Saved " + savedTitle + " on this iPad");
+  if (saved && announce) setNotice(savedTitle + " is on this iPad. Tap Done, then tap the song.");
   return saved;
 }
 
@@ -402,6 +421,7 @@ async function importFiles(fileList) {
         createdAt: Date.now()
       };
       await saveLocal(track, file);
+      state.readyId = track.id;
       titles.push(track.title);
       state.tracks.push(track);
     } catch {
@@ -435,7 +455,7 @@ async function pasteLink() {
 function toggleLinkBox() {
   state.linkOpen = !state.linkOpen;
   document.getElementById("link-box").hidden = !state.linkOpen;
-  document.getElementById("type-link").textContent = state.linkOpen ? "Hide the link box" : "Type a link";
+  document.getElementById("type-link").textContent = state.linkOpen ? "Hide the link" : "Type a link";
 }
 
 function addTypedLink() {
@@ -557,13 +577,18 @@ async function confirmRemove() {
 async function playTrack(track, options) {
   const open = !options || options.open !== false;
   if (state.currentId === track.id) {
-    if (!state.playing) await toggle();
+    if (!state.playing) {
+      if (track.source === "local" && realSource(audio()) && !audio().paused) setPlaying(true);
+      else await toggle();
+    }
     if (open) openPlayer();
     render();
     return;
   }
   state.currentId = track.id;
-  state.playing = false;
+  const player = audio();
+  const started = track.source === "local" && player.src === fileURLs.get(track.id) && !player.paused && !player.error;
+  state.playing = Boolean(started);
   if (open) openPlayer();
   publishSession(track);
   render();
@@ -576,19 +601,132 @@ async function playTrack(track, options) {
   }
 }
 
+function isAudiblyPlaying() {
+  const track = currentTrack();
+  if (!track) return false;
+  if (track.source === "local") return realSource(audio()) && !audio().paused;
+  return state.playing;
+}
+
+function userPause() {
+  const track = currentTrack();
+  if (!track) return;
+  if (track.source === "local") {
+    audio().pause();
+    return;
+  }
+  if (track.source === "youtube" && ytPlayer && ytPlayer.pauseVideo) {
+    ytPlayer.pauseVideo();
+    return;
+  }
+  if (scWidget && scWidget.pause) scWidget.pause();
+}
+
+function userPlay(track, open) {
+  if (!track) return;
+  const player = audio();
+  if (track.source === "local") {
+    const url = fileURLs.get(track.id);
+    if (url) {
+      if (player.src !== url) player.src = url;
+      const pending = player.play();
+      if (pending && pending.catch) pending.catch(() => {});
+    } else if (!realSource(player)) {
+      player.src = SILENT_WAV;
+      const pending = player.play();
+      if (pending && pending.catch) pending.catch(() => {});
+    }
+  }
+  if (track.source === "local" && state.currentId === track.id && realSource(player) && !player.paused) {
+    setPlaying(true);
+    if (open) openPlayer();
+    return;
+  }
+  playTrack(track, { open: open });
+}
+
+function skip(direction) {
+  const track = trackForStep(direction);
+  if (!track) return;
+  if (track.id === state.currentId) {
+    restart();
+    return;
+  }
+  userPlay(track, playerIsOpen());
+}
+
+function realSource(player) {
+  const src = player.currentSrc || player.src || "";
+  return Boolean(src) && !src.startsWith("data:");
+}
+
+function prepareURL(id, blob) {
+  const existing = fileURLs.get(id);
+  if (existing) URL.revokeObjectURL(existing);
+  const url = URL.createObjectURL(blob);
+  fileURLs.set(id, url);
+  return url;
+}
+
+function songToStart() {
+  return state.tracks.find((track) => track.id === state.readyId) || state.tracks[0] || null;
+}
+
+function trackForStep(direction) {
+  if (!state.tracks.length) return null;
+  if (!state.currentId) return songToStart();
+  const index = state.tracks.findIndex((track) => track.id === state.currentId);
+  const start = index < 0 ? 0 : index;
+  const nextIndex = (start + direction + state.tracks.length) % state.tracks.length;
+  return state.tracks[nextIndex];
+}
+
 async function playLocal(track) {
   pauseYouTube();
   pauseSoundCloud();
-  const blob = await getBlob(track.id);
-  if (!blob) {
-    setNotice("That song is not on this iPad.");
+  let url = fileURLs.get(track.id);
+  if (!url) {
+    const blob = await playableBlob(track);
+    if (!blob) {
+      setNotice("That song is not on this iPad.");
+      return;
+    }
+    url = prepareURL(track.id, blob);
+  }
+  const player = audio();
+  if (player.src !== url) {
+    player.src = url;
+    player.load();
+  }
+  if (!player.paused && !player.error) {
+    setPlaying(true);
     return;
   }
-  if (objectURL) URL.revokeObjectURL(objectURL);
-  objectURL = URL.createObjectURL(blob);
-  const player = audio();
-  player.src = objectURL;
-  await player.play();
+  try {
+    await player.play();
+  } catch {
+    await new Promise((resolve) => setTimeout(resolve, 350));
+    if (player.src !== url) player.src = url;
+    await player.play();
+  }
+}
+
+async function playableBlob(track) {
+  let blob = fileBlobs.get(track.id);
+  if (!blob || !blob.size) blob = await getBlob(track.id);
+  if (!blob || !blob.size) return null;
+  const type = blob.type && blob.type.startsWith("audio/") ? blob.type : mimeFor(track.mediaRef || "", "");
+  let data = await blob.arrayBuffer();
+  if (!data.byteLength) {
+    fileBlobs.delete(track.id);
+    blob = await getBlob(track.id);
+    if (!blob || !blob.size) return null;
+    data = await blob.arrayBuffer();
+  }
+  if (!data.byteLength) return null;
+  const playable = new Blob([data], { type });
+  fileBlobs.set(track.id, playable);
+  return playable;
 }
 
 function playYouTube(track) {
@@ -677,12 +815,26 @@ function loadSoundCloudAPI() {
 async function toggle() {
   const track = currentTrack();
   if (!track) {
-    if (state.tracks[0]) await playTrack(state.tracks[0], { open: playerIsOpen() });
+    const start = songToStart();
+    if (start) await playTrack(start, { open: playerIsOpen() });
     return;
   }
   if (track.source === "local") {
-    if (audio().paused) await audio().play();
-    else audio().pause();
+    const player = audio();
+    if (realSource(player) && !player.paused) {
+      player.pause();
+      return;
+    }
+    if (realSource(player) && !player.error) {
+      try {
+        await player.play();
+        return;
+      } catch {
+        await playLocal(track);
+        return;
+      }
+    }
+    await playLocal(track);
     return;
   }
   if (track.source === "youtube" && ytPlayer) {
@@ -699,8 +851,8 @@ async function toggle() {
 function step(direction) {
   if (!state.tracks.length) return;
   if (!state.currentId) {
-    const track = direction < 0 ? state.tracks[state.tracks.length - 1] : state.tracks[0];
-    playTrack(track, { open: playerIsOpen() });
+    const track = songToStart();
+    if (track) playTrack(track, { open: playerIsOpen() });
     return;
   }
   const index = state.tracks.findIndex((track) => track.id === state.currentId);
@@ -738,10 +890,6 @@ function stopPlayback() {
   player.pause();
   player.removeAttribute("src");
   player.load();
-  if (objectURL) {
-    URL.revokeObjectURL(objectURL);
-    objectURL = "";
-  }
   pauseYouTube();
   pauseSoundCloud();
 }
@@ -768,7 +916,7 @@ function publishSession(track) {
 
 function sortTracks(tracks) {
   return tracks.slice().sort((a, b) => {
-    const order = a.title.localeCompare(b.title, undefined, { sensitivity: "base", numeric: true });
+    const order = (a.title || "").localeCompare(b.title || "", undefined, { sensitivity: "base", numeric: true });
     if (order !== 0) return order;
     return a.createdAt - b.createdAt;
   });
@@ -837,10 +985,10 @@ async function readID3(file) {
       const version = head[3];
       let offset = 10;
       const tagSize = syncsafe(head, 6);
-      if (head[5] & 0x40) {
-        const extended = version === 4 ? syncsafe(head, offset) : be32(head, offset);
-        offset += extended;
-      }
+    if (head[5] & 0x40) {
+      const extended = version === 4 ? syncsafe(head, offset) : be32(head, offset);
+      offset += version === 4 ? extended : extended + 4;
+    }
       const end = Math.min(head.length, 10 + tagSize);
       while (offset + 10 < end) {
         const id = String.fromCharCode(head[offset], head[offset + 1], head[offset + 2], head[offset + 3]);
@@ -945,10 +1093,14 @@ async function putTrack(track) {
 }
 
 async function saveLocal(track, blob) {
+  const type = blob.type && blob.type.startsWith("audio/") ? blob.type : mimeFor(track.mediaRef || "", "");
+  const stored = blob.type === type ? blob : new Blob([await blob.arrayBuffer()], { type });
+  fileBlobs.set(track.id, stored);
+  prepareURL(track.id, stored);
   const db = await openDB();
   const tx = db.transaction(["tracks", "files"], "readwrite");
   tx.objectStore("tracks").put(track);
-  tx.objectStore("files").put({ id: track.id, blob });
+  tx.objectStore("files").put({ id: track.id, blob: stored });
   await transactionDone(tx);
 }
 
@@ -963,6 +1115,13 @@ async function getBlob(id) {
 }
 
 async function deleteTrack(id) {
+  fileBlobs.delete(id);
+  const url = fileURLs.get(id);
+  if (url) {
+    URL.revokeObjectURL(url);
+    fileURLs.delete(id);
+  }
+  if (state.readyId === id) state.readyId = null;
   const db = await openDB();
   const tx = db.transaction(["tracks", "files"], "readwrite");
   tx.objectStore("tracks").delete(id);

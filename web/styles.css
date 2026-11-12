@@ -55,7 +55,7 @@ h1, h2, p { margin: 0; }
 
 .banner {
   position: relative;
-  height: 320px;
+  height: 180px;
   overflow: hidden;
   background: #000;
 }
@@ -120,6 +120,8 @@ h1, h2, p { margin: 0; }
   text-align: center;
 }
 
+.actions .big { min-height: 64px; }
+
 .big:active:not(:disabled) { opacity: 0.65; }
 
 .big.prominent {
@@ -174,6 +176,8 @@ input {
   color: #fff;
   font-size: 1.35rem;
 }
+
+input::placeholder { color: rgba(255, 255, 255, 0.72); }
 
 .song {
   position: relative;
@@ -358,6 +362,14 @@ input {
 }
 
 .remove { background: var(--red); color: #fff; }
+
+.download.saved,
+.download.saved:disabled {
+  opacity: 1;
+  background: transparent;
+  color: var(--yellow);
+  box-shadow: inset 0 0 0 3px var(--yellow);
+}
 
 .error {
   color: var(--yellow);

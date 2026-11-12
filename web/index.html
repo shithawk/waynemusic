@@ -22,19 +22,19 @@
     <div class="stripe" aria-hidden="true"><span class="yellow"></span><span class="red"></span></div>
 
     <section id="install-hint" class="hint-card" hidden>
-      <p>To keep your songs on this iPad, tap the Share button, then tap Add to Home Screen.</p>
+      <p>To install this app, tap Share, then Add to Home Screen.</p>
     </section>
 
     <div class="actions">
-      <button id="add-music" class="big prominent" type="button">Add music</button>
+      <button id="add-music" class="big white" type="button">Add music</button>
       <button id="manage-songs" class="big white" type="button" hidden>Manage songs</button>
     </div>
 
-    <p id="empty" class="empty">Your songs will show up here.</p>
+    <p id="empty" class="empty">Tap Add music to put songs on this iPad.</p>
 
     <div id="finder" class="finder" hidden>
-      <label for="find-song">Find a song</label>
-      <input id="find-song" type="search" placeholder="Song or artist" autocomplete="off" aria-label="Find a song">
+      <label for="find-song">Tap a song to play it</label>
+      <input id="find-song" type="search" placeholder="Or type a song or artist" autocomplete="off" aria-label="Find a song">
       <div id="song-list"></div>
     </div>
 
@@ -44,7 +44,7 @@
     </button>
   </div>
 
-  <div id="player" class="screen" aria-hidden="true">
+  <div id="player" class="screen" aria-hidden="true" inert>
     <div class="player-scroll">
       <button id="back-songs" class="big plain songs-back" type="button">Songs</button>
       <h1 id="player-title"></h1>
@@ -66,13 +66,14 @@
     <div class="sheet">
       <div class="sheet-body stack">
         <h1>Add music</h1>
-        <h2>From the Mac</h2>
+        <h2>On the computer</h2>
         <p id="mac-status" class="lede"></p>
         <div id="catalog-list"></div>
         <button id="download-all" class="big prominent" type="button">Download all</button>
-        <button id="from-ipad" class="big plain" type="button">From this iPad</button>
+        <button id="from-ipad" class="big plain" type="button">Choose a song saved on this iPad</button>
         <input id="file-input" type="file" accept="audio/*,.mp3,.m4a,.aac,.wav" multiple hidden>
-        <button id="paste-link" class="big prominent" type="button">Paste the copied link</button>
+        <h2>YouTube or SoundCloud</h2>
+        <button id="paste-link" class="big plain" type="button">Paste a link</button>
         <button id="type-link" class="big plain" type="button">Type a link</button>
         <div id="link-box" class="stack" hidden>
           <label for="link-input">YouTube or SoundCloud link</label>
@@ -81,7 +82,7 @@
         </div>
         <p id="add-error" class="error" hidden></p>
       </div>
-      <button id="close-add" class="big plain" type="button">Close</button>
+      <button id="close-add" class="big prominent" type="button">Done</button>
     </div>
   </div>
 
@@ -89,19 +90,19 @@
     <div class="sheet">
       <div class="sheet-body">
         <h1>Manage songs</h1>
-        <p class="lede">Tap Remove, then confirm.</p>
+        <p class="lede">This takes a song off this iPad.</p>
         <p id="manage-empty" class="empty" hidden>No songs to remove.</p>
         <div id="manage-list"></div>
         <div id="confirm" class="confirm" hidden>
           <div class="confirm-card" role="alertdialog" aria-labelledby="confirm-title">
             <h2 id="confirm-title">Remove this song?</h2>
             <p id="confirm-name"></p>
-            <button id="confirm-remove" class="big plain" type="button">Remove</button>
             <button id="confirm-keep" class="big prominent" type="button">Keep</button>
+            <button id="confirm-remove" class="big plain" type="button">Remove</button>
           </div>
         </div>
       </div>
-      <button id="close-manage" class="big prominent" type="button">Close</button>
+      <button id="close-manage" class="big prominent" type="button">Done</button>
     </div>
   </div>
 
