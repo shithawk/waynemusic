@@ -1,0 +1,642 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		03241824E1F77882D8B1E029 /* SpeakersButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0CC664B3E8733F04B77B733E /* SpeakersButton.swift */; };
+		0832AFDF3C60A5E185CF8534 /* NowPlayingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 88B310AD9AE50DCDBDEAF8AF /* NowPlayingView.swift */; };
+		087B5FEC282C6ACAB82846E2 /* LibraryStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = C9870DC9E02155A1C7615A3A /* LibraryStore.swift */; };
+		0F9C0EBD9391458A368614D1 /* LibraryTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00FB780508DEC0C45D8448A1 /* LibraryTests.swift */; };
+		246C32EB4E195BAFB430C49F /* AppGroup.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5D2980D60581107A75B0F930 /* AppGroup.swift */; };
+		2E7678750AA19FE2E1B12052 /* SoundCloudPlayerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C306F9A1B93786F86A2791EE /* SoundCloudPlayerView.swift */; };
+		36364D8AA714CC22B93F112B /* YouTubePlayerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 552E7CCEE7379C2C341232CF /* YouTubePlayerView.swift */; };
+		44CE30A16819FB6D87FE109D /* ShareViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = EF139210B7FB8940BB283059 /* ShareViewController.swift */; };
+		469E4E254E1F53D6FF2C8C5D /* WebPlayerFactory.swift in Sources */ = {isa = PBXBuildFile; fileRef = E94BD0BC2B32CB48E8C85F8F /* WebPlayerFactory.swift */; };
+		55E2187B188D4B81780ED5FC /* LinkParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = 371B583AEF9C8D7F1227BF18 /* LinkParser.swift */; };
+		58121FC3F68EB4B072891AA7 /* Theme.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2E686DE54DF848F62B03438 /* Theme.swift */; };
+		5CFF9D95ADF236B52977044D /* ShareExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = D07A8926C50F6C9F5ED06ACF /* ShareExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		65298B058CE6B9EA98C53800 /* PlaybackController.swift in Sources */ = {isa = PBXBuildFile; fileRef = B081A545D423598E6682A683 /* PlaybackController.swift */; };
+		83B6C2C303A3CE2854A805B2 /* WayneMusicApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = AC446558EEBC1FF6BEA18C6F /* WayneMusicApp.swift */; };
+		96AC0415A2B1368D105F770E /* AddTrackSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3EBE199A8FF0F7FB1078E7A6 /* AddTrackSheet.swift */; };
+		9A8FD6E0662580E277B501B3 /* Track.swift in Sources */ = {isa = PBXBuildFile; fileRef = C630A820E352D4C1CCD1505E /* Track.swift */; };
+		D18363BFA5749FDB0BB0F626 /* RootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0C2A729F9F4EBF647EF0BFF7 /* RootView.swift */; };
+		D435D1074E7682731C67D29A /* LinkParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = 371B583AEF9C8D7F1227BF18 /* LinkParser.swift */; };
+		D7EA35B2E1848C2513B3D143 /* LibraryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D0B340074ADFE4A05CA45E8 /* LibraryView.swift */; };
+		E4FFB3CFD8892BED093C6E6A /* Playlist.swift in Sources */ = {isa = PBXBuildFile; fileRef = E6F5EDE85EB3E9D17B935A13 /* Playlist.swift */; };
+		E75044CF45067BBF533ABBE5 /* AppGroup.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5D2980D60581107A75B0F930 /* AppGroup.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		A280AE37420932EC7EB07040 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 05DE00213C238BEAB7B2EF5F /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 3691C5A08FED25AFE0D4CA89;
+			remoteInfo = ShareExtension;
+		};
+		D0BF04A7C6FBECD7D5C3B785 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 05DE00213C238BEAB7B2EF5F /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = C254C953E914A5A25F828902;
+			remoteInfo = WayneMusic;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		8C336E8EFBC41B306DA59216 /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				5CFF9D95ADF236B52977044D /* ShareExtension.appex in Embed Foundation Extensions */,
+			);
+			name = "Embed Foundation Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
+/* Begin PBXFileReference section */
+		00FB780508DEC0C45D8448A1 /* LibraryTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LibraryTests.swift; sourceTree = "<group>"; };
+		0C2A729F9F4EBF647EF0BFF7 /* RootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootView.swift; sourceTree = "<group>"; };
+		0CC664B3E8733F04B77B733E /* SpeakersButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpeakersButton.swift; sourceTree = "<group>"; };
+		1BBA9B5915DA3FB6392B6ABD /* WayneMusic.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = WayneMusic.entitlements; sourceTree = "<group>"; };
+		2A3A1773BB8B5156DFA1FD00 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		371B583AEF9C8D7F1227BF18 /* LinkParser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LinkParser.swift; sourceTree = "<group>"; };
+		3EBE199A8FF0F7FB1078E7A6 /* AddTrackSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AddTrackSheet.swift; sourceTree = "<group>"; };
+		552E7CCEE7379C2C341232CF /* YouTubePlayerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = YouTubePlayerView.swift; sourceTree = "<group>"; };
+		5D2980D60581107A75B0F930 /* AppGroup.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppGroup.swift; sourceTree = "<group>"; };
+		67412C9C0F76A2F9D5C65CD1 /* WayneMusicTests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = WayneMusicTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		7B6071B341F3ED628B34E875 /* ShareExtension.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = ShareExtension.entitlements; sourceTree = "<group>"; };
+		7D0B340074ADFE4A05CA45E8 /* LibraryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LibraryView.swift; sourceTree = "<group>"; };
+		88B310AD9AE50DCDBDEAF8AF /* NowPlayingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NowPlayingView.swift; sourceTree = "<group>"; };
+		A2E686DE54DF848F62B03438 /* Theme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Theme.swift; sourceTree = "<group>"; };
+		AC446558EEBC1FF6BEA18C6F /* WayneMusicApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WayneMusicApp.swift; sourceTree = "<group>"; };
+		B081A545D423598E6682A683 /* PlaybackController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlaybackController.swift; sourceTree = "<group>"; };
+		C306F9A1B93786F86A2791EE /* SoundCloudPlayerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SoundCloudPlayerView.swift; sourceTree = "<group>"; };
+		C35F2EB7141BB50E5545E1A6 /* WayneMusic.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = WayneMusic.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		C630A820E352D4C1CCD1505E /* Track.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Track.swift; sourceTree = "<group>"; };
+		C9870DC9E02155A1C7615A3A /* LibraryStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LibraryStore.swift; sourceTree = "<group>"; };
+		D07A8926C50F6C9F5ED06ACF /* ShareExtension.appex */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = "wrapper.app-extension"; path = ShareExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		E6F5EDE85EB3E9D17B935A13 /* Playlist.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Playlist.swift; sourceTree = "<group>"; };
+		E94BD0BC2B32CB48E8C85F8F /* WebPlayerFactory.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WebPlayerFactory.swift; sourceTree = "<group>"; };
+		EF139210B7FB8940BB283059 /* ShareViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShareViewController.swift; sourceTree = "<group>"; };
+		F9692FCDDFC94AD11D25E656 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXGroup section */
+		07665EECCC563B03245D36CD /* WayneMusicTests */ = {
+			isa = PBXGroup;
+			children = (
+				00FB780508DEC0C45D8448A1 /* LibraryTests.swift */,
+			);
+			path = WayneMusicTests;
+			sourceTree = "<group>";
+		};
+		3952A36D07C7C9745C5C26D7 /* ShareExtension */ = {
+			isa = PBXGroup;
+			children = (
+				2A3A1773BB8B5156DFA1FD00 /* Info.plist */,
+				7B6071B341F3ED628B34E875 /* ShareExtension.entitlements */,
+				EF139210B7FB8940BB283059 /* ShareViewController.swift */,
+			);
+			path = ShareExtension;
+			sourceTree = "<group>";
+		};
+		41BC879D17A09C36C3926925 /* WayneMusic */ = {
+			isa = PBXGroup;
+			children = (
+				F9692FCDDFC94AD11D25E656 /* Info.plist */,
+				1BBA9B5915DA3FB6392B6ABD /* WayneMusic.entitlements */,
+				931AFB91B1E0B07AB66DFDDC /* App */,
+				D8D10A8052D6E37D653806BE /* Library */,
+				DA0388224FDE88D31C7CB598 /* Models */,
+				B6F2DCEB9786ABF0B3CA64A3 /* Player */,
+				B4073FBE06DEA9FDF97396EC /* Views */,
+			);
+			path = WayneMusic;
+			sourceTree = "<group>";
+		};
+		931AFB91B1E0B07AB66DFDDC /* App */ = {
+			isa = PBXGroup;
+			children = (
+				AC446558EEBC1FF6BEA18C6F /* WayneMusicApp.swift */,
+			);
+			path = App;
+			sourceTree = "<group>";
+		};
+		A1287279F08E1FD76E071876 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				D07A8926C50F6C9F5ED06ACF /* ShareExtension.appex */,
+				C35F2EB7141BB50E5545E1A6 /* WayneMusic.app */,
+				67412C9C0F76A2F9D5C65CD1 /* WayneMusicTests.xctest */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		B4073FBE06DEA9FDF97396EC /* Views */ = {
+			isa = PBXGroup;
+			children = (
+				3EBE199A8FF0F7FB1078E7A6 /* AddTrackSheet.swift */,
+				7D0B340074ADFE4A05CA45E8 /* LibraryView.swift */,
+				88B310AD9AE50DCDBDEAF8AF /* NowPlayingView.swift */,
+				0C2A729F9F4EBF647EF0BFF7 /* RootView.swift */,
+				0CC664B3E8733F04B77B733E /* SpeakersButton.swift */,
+				A2E686DE54DF848F62B03438 /* Theme.swift */,
+			);
+			path = Views;
+			sourceTree = "<group>";
+		};
+		B6F2DCEB9786ABF0B3CA64A3 /* Player */ = {
+			isa = PBXGroup;
+			children = (
+				B081A545D423598E6682A683 /* PlaybackController.swift */,
+				E6F5EDE85EB3E9D17B935A13 /* Playlist.swift */,
+				C306F9A1B93786F86A2791EE /* SoundCloudPlayerView.swift */,
+				E94BD0BC2B32CB48E8C85F8F /* WebPlayerFactory.swift */,
+				552E7CCEE7379C2C341232CF /* YouTubePlayerView.swift */,
+			);
+			path = Player;
+			sourceTree = "<group>";
+		};
+		D8D10A8052D6E37D653806BE /* Library */ = {
+			isa = PBXGroup;
+			children = (
+				C9870DC9E02155A1C7615A3A /* LibraryStore.swift */,
+			);
+			path = Library;
+			sourceTree = "<group>";
+		};
+		DA0388224FDE88D31C7CB598 /* Models */ = {
+			isa = PBXGroup;
+			children = (
+				C630A820E352D4C1CCD1505E /* Track.swift */,
+			);
+			path = Models;
+			sourceTree = "<group>";
+		};
+		DBDFB217AB8C9BDE01DF1BFA = {
+			isa = PBXGroup;
+			children = (
+				EC742B24B9DC40231E3C0966 /* Shared */,
+				3952A36D07C7C9745C5C26D7 /* ShareExtension */,
+				41BC879D17A09C36C3926925 /* WayneMusic */,
+				07665EECCC563B03245D36CD /* WayneMusicTests */,
+				A1287279F08E1FD76E071876 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		EC742B24B9DC40231E3C0966 /* Shared */ = {
+			isa = PBXGroup;
+			children = (
+				5D2980D60581107A75B0F930 /* AppGroup.swift */,
+				371B583AEF9C8D7F1227BF18 /* LinkParser.swift */,
+			);
+			path = Shared;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		3691C5A08FED25AFE0D4CA89 /* ShareExtension */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 8F8078523F4C3058204B830E /* Build configuration list for PBXNativeTarget "ShareExtension" */;
+			buildPhases = (
+				378801649371345CE4AFC3F0 /* Sources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = ShareExtension;
+			packageProductDependencies = (
+			);
+			productName = ShareExtension;
+			productReference = D07A8926C50F6C9F5ED06ACF /* ShareExtension.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
+		6E5200D03C349EC95A37F642 /* WayneMusicTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 7860244D8FDA19AD0A5424B8 /* Build configuration list for PBXNativeTarget "WayneMusicTests" */;
+			buildPhases = (
+				D393F33208B0F6CADE3AEB03 /* Sources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				0531A007D40BAE627AC3C0E4 /* PBXTargetDependency */,
+			);
+			name = WayneMusicTests;
+			packageProductDependencies = (
+			);
+			productName = WayneMusicTests;
+			productReference = 67412C9C0F76A2F9D5C65CD1 /* WayneMusicTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
+		C254C953E914A5A25F828902 /* WayneMusic */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 44169354F8F34250564C41DC /* Build configuration list for PBXNativeTarget "WayneMusic" */;
+			buildPhases = (
+				08A53825B0421361BCDE3BF2 /* Sources */,
+				8C336E8EFBC41B306DA59216 /* Embed Foundation Extensions */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				C05492DC59F306EA4AB1B2E8 /* PBXTargetDependency */,
+			);
+			name = WayneMusic;
+			packageProductDependencies = (
+			);
+			productName = WayneMusic;
+			productReference = C35F2EB7141BB50E5545E1A6 /* WayneMusic.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		05DE00213C238BEAB7B2EF5F /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = YES;
+				LastUpgradeCheck = 1430;
+				TargetAttributes = {
+					3691C5A08FED25AFE0D4CA89 = {
+						ProvisioningStyle = Automatic;
+					};
+					C254C953E914A5A25F828902 = {
+						ProvisioningStyle = Automatic;
+					};
+				};
+			};
+			buildConfigurationList = 105097CC7B2102734B60AB23 /* Build configuration list for PBXProject "WayneMusic" */;
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				Base,
+				en,
+			);
+			mainGroup = DBDFB217AB8C9BDE01DF1BFA;
+			minimizedProjectReferenceProxies = 1;
+			preferredProjectObjectVersion = 77;
+			productRefGroup = A1287279F08E1FD76E071876 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				C254C953E914A5A25F828902 /* WayneMusic */,
+				3691C5A08FED25AFE0D4CA89 /* ShareExtension */,
+				6E5200D03C349EC95A37F642 /* WayneMusicTests */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXSourcesBuildPhase section */
+		08A53825B0421361BCDE3BF2 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				96AC0415A2B1368D105F770E /* AddTrackSheet.swift in Sources */,
+				246C32EB4E195BAFB430C49F /* AppGroup.swift in Sources */,
+				087B5FEC282C6ACAB82846E2 /* LibraryStore.swift in Sources */,
+				D7EA35B2E1848C2513B3D143 /* LibraryView.swift in Sources */,
+				55E2187B188D4B81780ED5FC /* LinkParser.swift in Sources */,
+				0832AFDF3C60A5E185CF8534 /* NowPlayingView.swift in Sources */,
+				65298B058CE6B9EA98C53800 /* PlaybackController.swift in Sources */,
+				E4FFB3CFD8892BED093C6E6A /* Playlist.swift in Sources */,
+				D18363BFA5749FDB0BB0F626 /* RootView.swift in Sources */,
+				2E7678750AA19FE2E1B12052 /* SoundCloudPlayerView.swift in Sources */,
+				03241824E1F77882D8B1E029 /* SpeakersButton.swift in Sources */,
+				58121FC3F68EB4B072891AA7 /* Theme.swift in Sources */,
+				9A8FD6E0662580E277B501B3 /* Track.swift in Sources */,
+				83B6C2C303A3CE2854A805B2 /* WayneMusicApp.swift in Sources */,
+				469E4E254E1F53D6FF2C8C5D /* WebPlayerFactory.swift in Sources */,
+				36364D8AA714CC22B93F112B /* YouTubePlayerView.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		378801649371345CE4AFC3F0 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				E75044CF45067BBF533ABBE5 /* AppGroup.swift in Sources */,
+				D435D1074E7682731C67D29A /* LinkParser.swift in Sources */,
+				44CE30A16819FB6D87FE109D /* ShareViewController.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		D393F33208B0F6CADE3AEB03 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				0F9C0EBD9391458A368614D1 /* LibraryTests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		0531A007D40BAE627AC3C0E4 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = C254C953E914A5A25F828902 /* WayneMusic */;
+			targetProxy = D0BF04A7C6FBECD7D5C3B785 /* PBXContainerItemProxy */;
+		};
+		C05492DC59F306EA4AB1B2E8 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 3691C5A08FED25AFE0D4CA89 /* ShareExtension */;
+			targetProxy = A280AE37420932EC7EB07040 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin XCBuildConfiguration section */
+		2D07E74642384DDFCC3C996E /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				GENERATE_INFOPLIST_FILE = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.shithawk.waynemusic.tests;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/WayneMusic.app/WayneMusic";
+			};
+			name = Debug;
+		};
+		2EBB5FDBFB28E9B80FE12D73 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					"DEBUG=1",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 2;
+			};
+			name = Debug;
+		};
+		3D9C79E0A0DD3C374F496B02 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = ShareExtension/ShareExtension.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = ShareExtension/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.shithawk.waynemusic.share;
+				PRODUCT_NAME = ShareExtension;
+				SDKROOT = iphoneos;
+				SKIP_INSTALL = YES;
+				TARGETED_DEVICE_FAMILY = 2;
+			};
+			name = Release;
+		};
+		4483D2E9183E511C5A2098BA /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = WayneMusic/WayneMusic.entitlements;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = WayneMusic/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.shithawk.waynemusic;
+				PRODUCT_NAME = WayneMusic;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = 2;
+			};
+			name = Release;
+		};
+		46049C0F311D2C9BD41334F8 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				GENERATE_INFOPLIST_FILE = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.shithawk.waynemusic.tests;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/WayneMusic.app/WayneMusic";
+			};
+			name = Release;
+		};
+		64D7557C46F17FF3F8F5EA5F /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 2;
+			};
+			name = Release;
+		};
+		6DD91E8602D01800ECF82932 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = WayneMusic/WayneMusic.entitlements;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = WayneMusic/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.shithawk.waynemusic;
+				PRODUCT_NAME = WayneMusic;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = 2;
+			};
+			name = Debug;
+		};
+		91CDD9E575D5B90890B9178C /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = ShareExtension/ShareExtension.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = ShareExtension/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.shithawk.waynemusic.share;
+				PRODUCT_NAME = ShareExtension;
+				SDKROOT = iphoneos;
+				SKIP_INSTALL = YES;
+				TARGETED_DEVICE_FAMILY = 2;
+			};
+			name = Debug;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		105097CC7B2102734B60AB23 /* Build configuration list for PBXProject "WayneMusic" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				2EBB5FDBFB28E9B80FE12D73 /* Debug */,
+				64D7557C46F17FF3F8F5EA5F /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		44169354F8F34250564C41DC /* Build configuration list for PBXNativeTarget "WayneMusic" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				6DD91E8602D01800ECF82932 /* Debug */,
+				4483D2E9183E511C5A2098BA /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		7860244D8FDA19AD0A5424B8 /* Build configuration list for PBXNativeTarget "WayneMusicTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				2D07E74642384DDFCC3C996E /* Debug */,
+				46049C0F311D2C9BD41334F8 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		8F8078523F4C3058204B830E /* Build configuration list for PBXNativeTarget "ShareExtension" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				91CDD9E575D5B90890B9178C /* Debug */,
+				3D9C79E0A0DD3C374F496B02 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = 05DE00213C238BEAB7B2EF5F /* Project object */;
+}

@@ -1,0 +1,72 @@
+name: WayneMusic
+options:
+  bundleIdPrefix: com.shithawk
+  deploymentTarget:
+    iOS: "16.0"
+  createIntermediateGroups: true
+settings:
+  SWIFT_VERSION: "5.0"
+  TARGETED_DEVICE_FAMILY: "2"
+  IPHONEOS_DEPLOYMENT_TARGET: "16.0"
+targets:
+  WayneMusic:
+    type: application
+    platform: iOS
+    sources:
+      - path: WayneMusic
+      - path: Shared
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.shithawk.waynemusic
+        PRODUCT_NAME: WayneMusic
+        TARGETED_DEVICE_FAMILY: "2"
+        MARKETING_VERSION: "1.0"
+        CURRENT_PROJECT_VERSION: "1"
+        CODE_SIGN_STYLE: Automatic
+        GENERATE_INFOPLIST_FILE: NO
+        INFOPLIST_FILE: WayneMusic/Info.plist
+        CODE_SIGN_ENTITLEMENTS: WayneMusic/WayneMusic.entitlements
+    dependencies:
+      - target: ShareExtension
+        embed: true
+  ShareExtension:
+    type: app-extension
+    platform: iOS
+    sources:
+      - path: ShareExtension
+      - path: Shared
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.shithawk.waynemusic.share
+        PRODUCT_NAME: ShareExtension
+        TARGETED_DEVICE_FAMILY: "2"
+        MARKETING_VERSION: "1.0"
+        CURRENT_PROJECT_VERSION: "1"
+        CODE_SIGN_STYLE: Automatic
+        GENERATE_INFOPLIST_FILE: NO
+        INFOPLIST_FILE: ShareExtension/Info.plist
+        CODE_SIGN_ENTITLEMENTS: ShareExtension/ShareExtension.entitlements
+        SKIP_INSTALL: YES
+  WayneMusicTests:
+    type: bundle.unit-test
+    platform: iOS
+    sources:
+      - path: WayneMusicTests
+    dependencies:
+      - target: WayneMusic
+    settings:
+      base:
+        GENERATE_INFOPLIST_FILE: YES
+        PRODUCT_BUNDLE_IDENTIFIER: com.shithawk.waynemusic.tests
+        TEST_HOST: "$(BUILT_PRODUCTS_DIR)/WayneMusic.app/WayneMusic"
+        BUNDLE_LOADER: "$(TEST_HOST)"
+schemes:
+  WayneMusic:
+    build:
+      targets:
+        WayneMusic: all
+        ShareExtension: all
+        WayneMusicTests: [test]
+    test:
+      targets:
+        - WayneMusicTests
