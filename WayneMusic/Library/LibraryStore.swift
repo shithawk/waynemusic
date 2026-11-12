@@ -43,6 +43,28 @@ final class LibraryStore: ObservableObject {
         reload()
     }
 
+    /// Public-domain recordings shipped in the app. Each piece is CC0.
+    /// Sources: Musopen via Wikimedia Commons, and Kimiko Ishizaka's Open Goldberg / Art of Fugue recording.
+    func seedBundledSongsIfNeeded(defaults: UserDefaults = .standard) {
+        let seededKey = "seededBundledSongs"
+        var seeded = Set(defaults.stringArray(forKey: seededKey) ?? [])
+        var didAdd = false
+        for song in BundledSong.catalog where !seeded.contains(song.id) {
+            guard let url = Bundle.main.url(forResource: song.resource, withExtension: "mp3") else { continue }
+            do {
+                try copySong(from: url, title: song.title, artist: song.artist)
+                seeded.insert(song.id)
+                didAdd = true
+            } catch {
+                continue
+            }
+        }
+        guard didAdd else { return }
+        sortTracks()
+        try? save()
+        defaults.set(seeded.sorted(), forKey: seededKey)
+    }
+
     func reload() {
         let url = libraryFileURL
         guard let data = try? Data(contentsOf: url),
@@ -158,6 +180,22 @@ final class LibraryStore: ObservableObject {
         baseDirectory.appendingPathComponent("library.json")
     }
 
+    private func copySong(from url: URL, title: String, artist: String) throws {
+        let ext = url.pathExtension.isEmpty ? "mp3" : url.pathExtension.lowercased()
+        let filename = "\(UUID().uuidString).\(ext)"
+        let destination = fileURL(named: filename)
+        try FileManager.default.copyItem(at: url, to: destination)
+        tracks.append(Track(
+            id: UUID(),
+            title: title,
+            artist: artist,
+            source: .local,
+            mediaRef: filename,
+            artworkRef: nil,
+            createdAt: Date()
+        ))
+    }
+
     private func importFile(_ url: URL) async throws -> String {
         let ext = url.pathExtension.isEmpty ? "mp3" : url.pathExtension.lowercased()
         let filename = "\(UUID().uuidString).\(ext)"
@@ -263,6 +301,19 @@ final class LibraryStore: ObservableObject {
         let trimmed = value?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
         return trimmed.isEmpty ? nil : trimmed
     }
+}
+
+private struct BundledSong {
+    let id: String
+    let resource: String
+    let title: String
+    let artist: String
+
+    static let catalog = [
+        BundledSong(id: "prelude-in-c", resource: "PreludeInCMajor", title: "Prelude in C Major", artist: "Johann Sebastian Bach"),
+        BundledSong(id: "badinerie", resource: "Badinerie", title: "Badinerie", artist: "Johann Sebastian Bach"),
+        BundledSong(id: "contrapunctus-1", resource: "Contrapunctus1", title: "Contrapunctus 1", artist: "Johann Sebastian Bach")
+    ]
 }
 
 private struct OEmbedPayload: Decodable {

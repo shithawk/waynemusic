@@ -8,6 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		03241824E1F77882D8B1E029 /* SpeakersButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0CC664B3E8733F04B77B733E /* SpeakersButton.swift */; };
+		056B56FFC3770FB785676D83 /* Contrapunctus1.mp3 in Resources */ = {isa = PBXBuildFile; fileRef = 882DC3ED03071EFB4611E7F2 /* Contrapunctus1.mp3 */; };
 		0832AFDF3C60A5E185CF8534 /* NowPlayingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 88B310AD9AE50DCDBDEAF8AF /* NowPlayingView.swift */; };
 		087B5FEC282C6ACAB82846E2 /* LibraryStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = C9870DC9E02155A1C7615A3A /* LibraryStore.swift */; };
 		0F9C0EBD9391458A368614D1 /* LibraryTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00FB780508DEC0C45D8448A1 /* LibraryTests.swift */; };
@@ -16,9 +17,11 @@
 		36364D8AA714CC22B93F112B /* YouTubePlayerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 552E7CCEE7379C2C341232CF /* YouTubePlayerView.swift */; };
 		44CE30A16819FB6D87FE109D /* ShareViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = EF139210B7FB8940BB283059 /* ShareViewController.swift */; };
 		469E4E254E1F53D6FF2C8C5D /* WebPlayerFactory.swift in Sources */ = {isa = PBXBuildFile; fileRef = E94BD0BC2B32CB48E8C85F8F /* WebPlayerFactory.swift */; };
+		51AD15DBD400F2B18070711C /* PreludeInCMajor.mp3 in Resources */ = {isa = PBXBuildFile; fileRef = A340EC6FFE981F7B41A1F0E9 /* PreludeInCMajor.mp3 */; };
 		55E2187B188D4B81780ED5FC /* LinkParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = 371B583AEF9C8D7F1227BF18 /* LinkParser.swift */; };
 		58121FC3F68EB4B072891AA7 /* Theme.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2E686DE54DF848F62B03438 /* Theme.swift */; };
 		5CFF9D95ADF236B52977044D /* ShareExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = D07A8926C50F6C9F5ED06ACF /* ShareExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		603DE17D2F89FDA2C07B7BC5 /* Badinerie.mp3 in Resources */ = {isa = PBXBuildFile; fileRef = 6EF95C8B05F8728321D782D1 /* Badinerie.mp3 */; };
 		65298B058CE6B9EA98C53800 /* PlaybackController.swift in Sources */ = {isa = PBXBuildFile; fileRef = B081A545D423598E6682A683 /* PlaybackController.swift */; };
 		83B6C2C303A3CE2854A805B2 /* WayneMusicApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = AC446558EEBC1FF6BEA18C6F /* WayneMusicApp.swift */; };
 		96AC0415A2B1368D105F770E /* AddTrackSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3EBE199A8FF0F7FB1078E7A6 /* AddTrackSheet.swift */; };
@@ -72,10 +75,13 @@
 		552E7CCEE7379C2C341232CF /* YouTubePlayerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = YouTubePlayerView.swift; sourceTree = "<group>"; };
 		5D2980D60581107A75B0F930 /* AppGroup.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppGroup.swift; sourceTree = "<group>"; };
 		67412C9C0F76A2F9D5C65CD1 /* WayneMusicTests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = WayneMusicTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		6EF95C8B05F8728321D782D1 /* Badinerie.mp3 */ = {isa = PBXFileReference; lastKnownFileType = audio.mp3; path = Badinerie.mp3; sourceTree = "<group>"; };
 		7B6071B341F3ED628B34E875 /* ShareExtension.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = ShareExtension.entitlements; sourceTree = "<group>"; };
 		7D0B340074ADFE4A05CA45E8 /* LibraryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LibraryView.swift; sourceTree = "<group>"; };
+		882DC3ED03071EFB4611E7F2 /* Contrapunctus1.mp3 */ = {isa = PBXFileReference; lastKnownFileType = audio.mp3; path = Contrapunctus1.mp3; sourceTree = "<group>"; };
 		88B310AD9AE50DCDBDEAF8AF /* NowPlayingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NowPlayingView.swift; sourceTree = "<group>"; };
 		A2E686DE54DF848F62B03438 /* Theme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Theme.swift; sourceTree = "<group>"; };
+		A340EC6FFE981F7B41A1F0E9 /* PreludeInCMajor.mp3 */ = {isa = PBXFileReference; lastKnownFileType = audio.mp3; path = PreludeInCMajor.mp3; sourceTree = "<group>"; };
 		AC446558EEBC1FF6BEA18C6F /* WayneMusicApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WayneMusicApp.swift; sourceTree = "<group>"; };
 		B081A545D423598E6682A683 /* PlaybackController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlaybackController.swift; sourceTree = "<group>"; };
 		C306F9A1B93786F86A2791EE /* SoundCloudPlayerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SoundCloudPlayerView.swift; sourceTree = "<group>"; };
@@ -114,12 +120,23 @@
 				F9692FCDDFC94AD11D25E656 /* Info.plist */,
 				1BBA9B5915DA3FB6392B6ABD /* WayneMusic.entitlements */,
 				931AFB91B1E0B07AB66DFDDC /* App */,
+				6417107EC9C6321B5A282DBD /* BundledMusic */,
 				D8D10A8052D6E37D653806BE /* Library */,
 				DA0388224FDE88D31C7CB598 /* Models */,
 				B6F2DCEB9786ABF0B3CA64A3 /* Player */,
 				B4073FBE06DEA9FDF97396EC /* Views */,
 			);
 			path = WayneMusic;
+			sourceTree = "<group>";
+		};
+		6417107EC9C6321B5A282DBD /* BundledMusic */ = {
+			isa = PBXGroup;
+			children = (
+				6EF95C8B05F8728321D782D1 /* Badinerie.mp3 */,
+				882DC3ED03071EFB4611E7F2 /* Contrapunctus1.mp3 */,
+				A340EC6FFE981F7B41A1F0E9 /* PreludeInCMajor.mp3 */,
+			);
+			path = BundledMusic;
 			sourceTree = "<group>";
 		};
 		931AFB91B1E0B07AB66DFDDC /* App */ = {
@@ -244,6 +261,7 @@
 			buildConfigurationList = 44169354F8F34250564C41DC /* Build configuration list for PBXNativeTarget "WayneMusic" */;
 			buildPhases = (
 				08A53825B0421361BCDE3BF2 /* Sources */,
+				C607ABA3E52D32307C509800 /* Resources */,
 				8C336E8EFBC41B306DA59216 /* Embed Foundation Extensions */,
 			);
 			buildRules = (
@@ -295,6 +313,19 @@
 			);
 		};
 /* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		C607ABA3E52D32307C509800 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				603DE17D2F89FDA2C07B7BC5 /* Badinerie.mp3 in Resources */,
+				056B56FFC3770FB785676D83 /* Contrapunctus1.mp3 in Resources */,
+				51AD15DBD400F2B18070711C /* PreludeInCMajor.mp3 in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
 		08A53825B0421361BCDE3BF2 /* Sources */ = {

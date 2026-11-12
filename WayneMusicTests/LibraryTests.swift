@@ -78,6 +78,18 @@ final class LibraryStoreTests: XCTestCase {
         try? FileManager.default.removeItem(at: directory)
     }
 
+    func testBundledSongsAreAddedOnce() {
+        let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
+        let defaults = UserDefaults(suiteName: "seed-test-\(UUID().uuidString)")!
+        let store = LibraryStore(baseDirectory: directory)
+        store.seedBundledSongsIfNeeded(defaults: defaults)
+        let titles = store.tracks.map(\.title)
+        XCTAssertEqual(titles, ["Badinerie", "Contrapunctus 1", "Prelude in C Major"])
+        store.seedBundledSongsIfNeeded(defaults: defaults)
+        XCTAssertEqual(store.tracks.map(\.title), titles)
+        try? FileManager.default.removeItem(at: directory)
+    }
+
     func testRemoveDeletesTheSongFromTheList() {
         let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
         let store = LibraryStore(baseDirectory: directory)

@@ -67,6 +67,11 @@ schemes:
         WayneMusic: all
         ShareExtension: all
         WayneMusicTests: [test]
+    run:
+      config: Debug
+      executable: WayneMusic
     test:
+      config: Debug
       targets:
-        - WayneMusicTests
+        - name: WayneMusicTests
+          parallelizable: false

@@ -1,7 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Scheme
    LastUpgradeVersion = "1430"
-   wasCreatedForAppExtension = "YES"
    version = "1.7">
    <BuildAction
       parallelizeBuildables = "YES"
@@ -61,9 +60,9 @@
       <MacroExpansion>
          <BuildableReference
             BuildableIdentifier = "primary"
-            BlueprintIdentifier = "3691C5A08FED25AFE0D4CA89"
-            BuildableName = "ShareExtension.appex"
-            BlueprintName = "ShareExtension"
+            BlueprintIdentifier = "C254C953E914A5A25F828902"
+            BuildableName = "WayneMusic.app"
+            BlueprintName = "WayneMusic"
             ReferencedContainer = "container:WayneMusic.xcodeproj">
          </BuildableReference>
       </MacroExpansion>
@@ -85,25 +84,26 @@
    </TestAction>
    <LaunchAction
       buildConfiguration = "Debug"
-      selectedDebuggerIdentifier = ""
-      selectedLauncherIdentifier = "Xcode.IDEFoundation.Launcher.PosixSpawn"
+      selectedDebuggerIdentifier = "Xcode.DebuggerFoundation.Debugger.LLDB"
+      selectedLauncherIdentifier = "Xcode.DebuggerFoundation.Launcher.LLDB"
       launchStyle = "0"
       useCustomWorkingDirectory = "NO"
       ignoresPersistentStateOnLaunch = "NO"
       debugDocumentVersioning = "YES"
       debugServiceExtension = "internal"
-      allowLocationSimulation = "YES"
-      launchAutomaticallySubstyle = "2">
+      allowLocationSimulation = "YES">
       <BuildableProductRunnable
          runnableDebuggingMode = "0">
          <BuildableReference
             BuildableIdentifier = "primary"
-            BlueprintIdentifier = "3691C5A08FED25AFE0D4CA89"
-            BuildableName = "ShareExtension.appex"
-            BlueprintName = "ShareExtension"
+            BlueprintIdentifier = "C254C953E914A5A25F828902"
+            BuildableName = "WayneMusic.app"
+            BlueprintName = "WayneMusic"
             ReferencedContainer = "container:WayneMusic.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
+      <CommandLineArguments>
+      </CommandLineArguments>
    </LaunchAction>
    <ProfileAction
       buildConfiguration = "Release"
@@ -115,9 +115,9 @@
          runnableDebuggingMode = "0">
          <BuildableReference
             BuildableIdentifier = "primary"
-            BlueprintIdentifier = "3691C5A08FED25AFE0D4CA89"
-            BuildableName = "ShareExtension.appex"
-            BlueprintName = "ShareExtension"
+            BlueprintIdentifier = "C254C953E914A5A25F828902"
+            BuildableName = "WayneMusic.app"
+            BlueprintName = "WayneMusic"
             ReferencedContainer = "container:WayneMusic.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>

@@ -25,6 +25,7 @@ struct RootView: View {
             Task { await importShare() }
         }
         .task {
+            library.seedBundledSongsIfNeeded()
             await importShare()
         }
         .onReceive(playback.$current) { current in
