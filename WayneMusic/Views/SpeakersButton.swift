@@ -12,16 +12,16 @@ struct SpeakersButton: View {
                     .font(.title2.weight(.bold))
                 Spacer()
             }
-            .foregroundColor(.white)
+            .foregroundColor(.black)
             .padding(.horizontal, 24)
             .allowsHitTesting(false)
         }
         .frame(minHeight: 80)
-        .background(Color.white.opacity(0.14))
+        .background(Theme.yellow)
         .cornerRadius(18)
         .overlay(
             RoundedRectangle(cornerRadius: 18)
-                .stroke(Color.white, lineWidth: 2)
+                .stroke(Color.black, lineWidth: 3)
         )
         .accessibilityLabel("Speakers")
         .accessibilityHint("Choose where the sound plays")

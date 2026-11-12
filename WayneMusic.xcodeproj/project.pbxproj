@@ -17,6 +17,7 @@
 		36364D8AA714CC22B93F112B /* YouTubePlayerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 552E7CCEE7379C2C341232CF /* YouTubePlayerView.swift */; };
 		44CE30A16819FB6D87FE109D /* ShareViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = EF139210B7FB8940BB283059 /* ShareViewController.swift */; };
 		469E4E254E1F53D6FF2C8C5D /* WebPlayerFactory.swift in Sources */ = {isa = PBXBuildFile; fileRef = E94BD0BC2B32CB48E8C85F8F /* WebPlayerFactory.swift */; };
+		4B835EEFB80827A754C04DD1 /* Gemini_Generated_Image_68y12568y12568y1.jpeg in Resources */ = {isa = PBXBuildFile; fileRef = 7839FCE6A6E966DDBAE7FCCA /* Gemini_Generated_Image_68y12568y12568y1.jpeg */; };
 		51AD15DBD400F2B18070711C /* PreludeInCMajor.mp3 in Resources */ = {isa = PBXBuildFile; fileRef = A340EC6FFE981F7B41A1F0E9 /* PreludeInCMajor.mp3 */; };
 		55E2187B188D4B81780ED5FC /* LinkParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = 371B583AEF9C8D7F1227BF18 /* LinkParser.swift */; };
 		58121FC3F68EB4B072891AA7 /* Theme.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2E686DE54DF848F62B03438 /* Theme.swift */; };
@@ -26,6 +27,7 @@
 		83B6C2C303A3CE2854A805B2 /* WayneMusicApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = AC446558EEBC1FF6BEA18C6F /* WayneMusicApp.swift */; };
 		96AC0415A2B1368D105F770E /* AddTrackSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3EBE199A8FF0F7FB1078E7A6 /* AddTrackSheet.swift */; };
 		9A8FD6E0662580E277B501B3 /* Track.swift in Sources */ = {isa = PBXBuildFile; fileRef = C630A820E352D4C1CCD1505E /* Track.swift */; };
+		A7328E1AE0769EAD7F67E78F /* Busch-Clash-Joey-Logano-22.jpg in Resources */ = {isa = PBXBuildFile; fileRef = 6C5D50C39461BB49807504FA /* Busch-Clash-Joey-Logano-22.jpg */; };
 		D18363BFA5749FDB0BB0F626 /* RootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0C2A729F9F4EBF647EF0BFF7 /* RootView.swift */; };
 		D435D1074E7682731C67D29A /* LinkParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = 371B583AEF9C8D7F1227BF18 /* LinkParser.swift */; };
 		D7EA35B2E1848C2513B3D143 /* LibraryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D0B340074ADFE4A05CA45E8 /* LibraryView.swift */; };
@@ -75,7 +77,9 @@
 		552E7CCEE7379C2C341232CF /* YouTubePlayerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = YouTubePlayerView.swift; sourceTree = "<group>"; };
 		5D2980D60581107A75B0F930 /* AppGroup.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppGroup.swift; sourceTree = "<group>"; };
 		67412C9C0F76A2F9D5C65CD1 /* WayneMusicTests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = WayneMusicTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		6C5D50C39461BB49807504FA /* Busch-Clash-Joey-Logano-22.jpg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; path = "Busch-Clash-Joey-Logano-22.jpg"; sourceTree = "<group>"; };
 		6EF95C8B05F8728321D782D1 /* Badinerie.mp3 */ = {isa = PBXFileReference; lastKnownFileType = audio.mp3; path = Badinerie.mp3; sourceTree = "<group>"; };
+		7839FCE6A6E966DDBAE7FCCA /* Gemini_Generated_Image_68y12568y12568y1.jpeg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; path = Gemini_Generated_Image_68y12568y12568y1.jpeg; sourceTree = "<group>"; };
 		7B6071B341F3ED628B34E875 /* ShareExtension.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = ShareExtension.entitlements; sourceTree = "<group>"; };
 		7D0B340074ADFE4A05CA45E8 /* LibraryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LibraryView.swift; sourceTree = "<group>"; };
 		882DC3ED03071EFB4611E7F2 /* Contrapunctus1.mp3 */ = {isa = PBXFileReference; lastKnownFileType = audio.mp3; path = Contrapunctus1.mp3; sourceTree = "<group>"; };
@@ -102,6 +106,15 @@
 				00FB780508DEC0C45D8448A1 /* LibraryTests.swift */,
 			);
 			path = WayneMusicTests;
+			sourceTree = "<group>";
+		};
+		29046D179B533E22F9990FEC /* images */ = {
+			isa = PBXGroup;
+			children = (
+				6C5D50C39461BB49807504FA /* Busch-Clash-Joey-Logano-22.jpg */,
+				7839FCE6A6E966DDBAE7FCCA /* Gemini_Generated_Image_68y12568y12568y1.jpeg */,
+			);
+			path = images;
 			sourceTree = "<group>";
 		};
 		3952A36D07C7C9745C5C26D7 /* ShareExtension */ = {
@@ -201,6 +214,7 @@
 		DBDFB217AB8C9BDE01DF1BFA = {
 			isa = PBXGroup;
 			children = (
+				29046D179B533E22F9990FEC /* images */,
 				EC742B24B9DC40231E3C0966 /* Shared */,
 				3952A36D07C7C9745C5C26D7 /* ShareExtension */,
 				41BC879D17A09C36C3926925 /* WayneMusic */,
@@ -320,7 +334,9 @@
 			buildActionMask = 2147483647;
 			files = (
 				603DE17D2F89FDA2C07B7BC5 /* Badinerie.mp3 in Resources */,
+				A7328E1AE0769EAD7F67E78F /* Busch-Clash-Joey-Logano-22.jpg in Resources */,
 				056B56FFC3770FB785676D83 /* Contrapunctus1.mp3 in Resources */,
+				4B835EEFB80827A754C04DD1 /* Gemini_Generated_Image_68y12568y12568y1.jpeg in Resources */,
 				51AD15DBD400F2B18070711C /* PreludeInCMajor.mp3 in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

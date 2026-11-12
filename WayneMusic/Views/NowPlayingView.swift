@@ -5,24 +5,11 @@ struct NowPlayingView: View {
     @EnvironmentObject private var playback: PlaybackController
     @Binding var showingPlayer: Bool
 
-    @State private var confirmRemove = false
-
     var body: some View {
         Group {
             if let track = playback.current {
                 player(track)
             }
-        }
-        .alert("Remove this song?", isPresented: $confirmRemove) {
-            Button("Remove", role: .destructive) {
-                if let track = playback.current {
-                    library.remove(track)
-                }
-                showingPlayer = false
-            }
-            Button("Keep", role: .cancel) {}
-        } message: {
-            Text(playback.current?.title ?? "This song")
         }
     }
 
@@ -57,28 +44,42 @@ struct NowPlayingView: View {
                         .fixedSize(horizontal: false, vertical: true)
 
                     SpeakersButton()
-
-                    Button("Remove this song") {
-                        confirmRemove = true
-                    }
-                    .buttonStyle(BigButtonStyle())
                 }
                 .padding(24)
             }
 
             HStack(spacing: 12) {
-                Button("Previous") { playback.previous() }
-                    .buttonStyle(BigButtonStyle())
-                Button(playback.isPlaying ? "Pause" : "Play") { playback.toggle() }
-                    .buttonStyle(BigButtonStyle(prominent: true))
-                Button("Next") { playback.next() }
-                    .buttonStyle(BigButtonStyle())
+                transportButton(title: "Previous", systemImage: "backward.end.fill", prominent: false) {
+                    playback.previous()
+                }
+                transportButton(
+                    title: playback.isPlaying ? "Pause" : "Play",
+                    systemImage: playback.isPlaying ? "pause.fill" : "play.fill",
+                    prominent: true
+                ) {
+                    playback.toggle()
+                }
+                transportButton(title: "Next", systemImage: "forward.end.fill", prominent: false) {
+                    playback.next()
+                }
             }
             .padding(.horizontal, 24)
             .padding(.bottom, 16)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(Theme.background.ignoresSafeArea())
+    }
+
+    private func transportButton(title: String, systemImage: String, prominent: Bool, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            VStack(spacing: 6) {
+                Image(systemName: systemImage)
+                    .font(.system(size: 36, weight: .bold))
+                    .accessibilityHidden(true)
+                Text(title)
+            }
+        }
+        .buttonStyle(BigButtonStyle(prominent: prominent))
     }
 
     @ViewBuilder
@@ -101,12 +102,9 @@ struct NowPlayingView: View {
                 .resizable()
                 .scaledToFit()
         } else {
-            Text(track.title)
-                .font(.largeTitle.weight(.bold))
-                .foregroundColor(.white)
-                .multilineTextAlignment(.center)
-                .padding(24)
+            CarPhoto()
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .clipped()
         }
     }
 }
