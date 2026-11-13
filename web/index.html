@@ -11,13 +11,16 @@
   <title>Wayne's Music</title>
   <link rel="manifest" href="/manifest.webmanifest">
   <link rel="apple-touch-icon" href="/icon-180.png">
-  <link rel="stylesheet" href="/styles.css?v=17">
+  <link rel="stylesheet" href="/styles.css?v=20">
 </head>
 <body>
-  <button id="home" class="home" type="button">
-    <svg viewBox="0 0 36 36" width="28" height="28" aria-hidden="true"><path fill="currentColor" d="M18 4 L33 17 H28 V32 H21 V22 H15 V32 H8 V17 H3 Z"></path></svg>
-    <span>Home</span>
-  </button>
+  <div class="top-nav">
+    <button id="home" class="home" type="button">
+      <svg viewBox="0 0 36 36" width="28" height="28" aria-hidden="true"><path fill="currentColor" d="M18 4 L33 17 H28 V32 H21 V22 H15 V32 H8 V17 H3 Z"></path></svg>
+      <span>Home</span>
+    </button>
+    <button id="artists" class="home" type="button">Artists</button>
+  </div>
   <div id="songs" class="screen">
     <header class="banner">
       <img src="/car.jpeg" alt="">
@@ -51,9 +54,17 @@
     </div>
   </div>
 
-  <button id="now-bar" class="big prominent now-bar" type="button" hidden>
-    <strong id="now-bar-title"></strong>
-  </button>
+  <div id="now-stack" class="now-stack" hidden>
+    <button id="now-bar" class="big prominent now-bar" type="button">
+      <strong id="now-bar-title"></strong>
+    </button>
+    <div id="seek" class="seek dock-seek" role="slider" tabindex="0" aria-label="Skip in this song" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+      <div class="seek-fill"></div>
+      <span class="seek-thumb" id="seek-thumb"></span>
+      <span class="seek-time start seek-elapsed" id="seek-elapsed">0:00</span>
+      <span class="seek-time end seek-total" id="seek-total">0:00</span>
+    </div>
+  </div>
 
   <div id="player" class="screen" aria-hidden="true" inert>
     <div class="player-scroll">
@@ -116,6 +127,16 @@
     </div>
   </div>
 
+  <div id="artists-sheet" class="sheet-screen" hidden>
+    <div class="sheet">
+      <div class="sheet-body">
+        <h1>Artists</h1>
+        <p id="artists-empty" class="empty" hidden>No songs on this iPad yet.</p>
+        <div id="artist-list"></div>
+      </div>
+    </div>
+  </div>
+
   <div class="transport">
     <button id="previous" class="big plain" type="button">
       <svg viewBox="0 0 36 36" width="36" height="36" aria-hidden="true"><rect x="4" y="6" width="5" height="24" rx="1"></rect><path d="M31 6 L13 18 L31 30 Z"></path></svg>
@@ -143,6 +164,6 @@
 
   <div id="notice" class="notice" hidden role="status"></div>
   <audio id="audio" playsinline preload="none"></audio>
-  <script src="/app.js?v=17" defer></script>
+  <script src="/app.js?v=20" defer></script>
 </body>
 </html>

@@ -13,7 +13,8 @@ const state = {
   shuffleOrder: [],
   shuffleIndex: -1,
   shuffleHistory: [],
-  shuffleRewind: false
+  shuffleRewind: false,
+  openArtists: new Set()
 };
 
 let dbPromise = null;
@@ -26,6 +27,10 @@ let pendingVideo = "";
 let scWidget = null;
 let noticeTimer = 0;
 let ignoreAdvance = false;
+let seekHold = false;
+let seekBar = null;
+let pendingSeek = null;
+let lastSeekAt = 0;
 const downloading = new Set();
 
 const audio = () => document.getElementById("audio");
@@ -38,7 +43,13 @@ async function init() {
   bindEvents();
   bindMediaSession();
   audio().addEventListener("play", () => { if (isSource("local")) setPlaying(true); });
-  audio().addEventListener("playing", () => { if (isSource("local")) finishTrackChange(); });
+  audio().addEventListener("playing", () => {
+    if (!isSource("local")) return;
+    finishTrackChange();
+    applyPendingSeek();
+  });
+  audio().addEventListener("loadedmetadata", () => { if (isSource("local")) applyPendingSeek(); });
+  audio().addEventListener("timeupdate", () => { if (!seekHold && isSource("local")) refreshSeek(); });
   audio().addEventListener("pause", () => {
     if (isSource("local") && !audio().ended) setPlaying(false);
   });
@@ -60,10 +71,36 @@ async function init() {
   if ("serviceWorker" in navigator) {
     navigator.serviceWorker.register("/sw.js").catch(() => {});
   }
+  setInterval(() => {
+    if (!state.currentId || seekHold) return;
+    if (pendingSeek) applyPendingSeek();
+    refreshSeek();
+  }, 400);
 }
 
 function bindEvents() {
   document.getElementById("home").addEventListener("click", goHome);
+  document.getElementById("artists").addEventListener("click", openArtists);
+  document.getElementById("artist-list").addEventListener("click", (event) => {
+    const button = event.target.closest("[data-play]");
+    if (button) {
+      playListed(button.dataset.play);
+      return;
+    }
+    const row = event.target.closest("[data-artist]");
+    if (!row) return;
+    const name = row.dataset.artist;
+    if (state.openArtists.has(name)) state.openArtists.delete(name);
+    else state.openArtists.add(name);
+    renderArtists();
+  });
+  bindSeekBar(document.getElementById("seek"));
+  document.addEventListener("pointermove", (event) => {
+    if (!seekHold || !seekBar) return;
+    scrub(seekBar, event, false);
+  });
+  document.addEventListener("pointerup", finishSeek);
+  document.addEventListener("pointercancel", finishSeek);
   document.getElementById("add-music").addEventListener("click", openAdd);
   document.getElementById("close-add").addEventListener("click", () => hideSheet("add-sheet"));
   document.getElementById("manage-songs").addEventListener("click", openManage);
@@ -91,13 +128,7 @@ function bindEvents() {
   document.getElementById("song-list").addEventListener("click", (event) => {
     const button = event.target.closest("[data-play]");
     if (!button) return;
-    const track = state.tracks.find((item) => item.id === button.dataset.play);
-    if (!track) return;
-    if (track.id === state.currentId && state.playing) {
-      if (track.source !== "local") openPlayer();
-      return;
-    }
-    userPlay(track, track.source !== "local");
+    playListed(button.dataset.play);
   });
   document.getElementById("catalog-list").addEventListener("click", (event) => {
     const saved = event.target.closest("[data-play-saved]");
@@ -158,6 +189,7 @@ function render() {
   renderPlayer();
   updateShuffleButton();
   renderCatalog();
+  renderArtists();
 }
 
 function renderSongs() {
@@ -180,26 +212,28 @@ function renderSongs() {
     list.append(empty);
   }
   for (const track of visible) {
+    const currentSong = track.id === state.currentId;
     const button = document.createElement("button");
     button.type = "button";
-    button.className = "song" + (track.id === state.currentId ? " current" : "");
+    button.className = "song" + (currentSong ? " current" : "");
     button.dataset.play = track.id;
     const title = document.createElement("span");
     title.className = "song-title";
     title.textContent = track.title;
     const sub = document.createElement("span");
     sub.className = "song-sub";
-    sub.textContent = (track.id === state.currentId && state.playing ? "Playing · " : "") + subtitle(track);
+    sub.textContent = (currentSong && state.playing ? "Playing · " : "") + subtitle(track);
     button.append(title, sub);
     list.append(button);
   }
   const current = currentTrack();
-  const bar = document.getElementById("now-bar");
-  bar.hidden = !current;
+  document.getElementById("now-stack").hidden = !current;
   document.body.classList.toggle("has-now", Boolean(current));
   const label = current ? nowLabel(current) : "";
-  document.getElementById("now-bar-title").textContent = label;
+  document.getElementById("now-bar-title").textContent = label ? "Now Playing: " + label : "";
+  const bar = document.getElementById("now-bar");
   bar.setAttribute("aria-label", label ? (state.playing ? "Now playing: " : "Paused: ") + label : "Now playing");
+  if (current) refreshSeek();
 }
 
 function renderPlayer() {
@@ -210,6 +244,256 @@ function renderPlayer() {
   document.getElementById("stage-yt").hidden = !track || track.source !== "youtube";
   document.getElementById("stage-sc").hidden = !track || track.source !== "soundcloud";
   setPlaying(state.playing);
+}
+
+function bindSeekBar(bar) {
+  if (!bar) return;
+  bar.addEventListener("pointerdown", (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    seekHold = true;
+    seekBar = bar;
+    try { bar.setPointerCapture(event.pointerId); } catch { /* The bar can be rebuilt while a finger is down. */ }
+    scrub(bar, event, false);
+  });
+  bar.addEventListener("keydown", (event) => {
+    if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") return;
+    const id = bar.dataset.seek || state.currentId;
+    const track = state.tracks.find((item) => item.id === id);
+    if (!track) return;
+    event.preventDefault();
+    const now = Number(bar.getAttribute("aria-valuenow")) || 0;
+    const next = Math.min(100, Math.max(0, now + (event.key === "ArrowRight" ? 5 : -5)));
+    commitSeek(track, next / 100, true);
+  });
+}
+
+function finishSeek(event) {
+  if (!seekHold || !seekBar) return;
+  scrub(seekBar, event, true);
+  seekHold = false;
+  seekBar = null;
+}
+
+function scrub(bar, event, force) {
+  const id = bar.dataset.seek || state.currentId;
+  const track = state.tracks.find((item) => item.id === id);
+  if (!track) return;
+  const ratio = ratioFrom(bar, event);
+  if (track.id !== state.currentId) {
+    if (!force) return;
+    pendingSeek = { id: track.id, ratio };
+    userPlay(track, track.source !== "local");
+    return;
+  }
+  commitSeek(track, ratio, force || track.source === "local");
+}
+
+function ratioFrom(bar, event) {
+  const rect = bar.getBoundingClientRect();
+  const pad = 22;
+  const span = Math.max(1, rect.width - pad * 2);
+  return Math.min(1, Math.max(0, (event.clientX - rect.left - pad) / span));
+}
+
+function commitSeek(track, ratio, force) {
+  ratio = Math.min(1, Math.max(0, ratio));
+  if (track.source === "local") {
+    const player = audio();
+    const duration = player.duration;
+    if (!duration || !Number.isFinite(duration)) {
+      pendingSeek = { id: track.id, ratio };
+      return;
+    }
+    player.currentTime = ratio * duration;
+    pendingSeek = null;
+    paintSeek(player.currentTime, duration);
+    return;
+  }
+  if (track.source === "youtube" && ytPlayer && ytPlayer.seekTo && ytPlayer.getDuration) {
+    let duration = 0;
+    try { duration = Number(ytPlayer.getDuration()) || 0; } catch { duration = 0; }
+    if (!duration) {
+      pendingSeek = { id: track.id, ratio };
+      return;
+    }
+    paintSeek(ratio * duration, duration);
+    const now = Date.now();
+    if (!force && now - lastSeekAt < 200) {
+      pendingSeek = { id: track.id, ratio };
+      return;
+    }
+    lastSeekAt = now;
+    try { ytPlayer.seekTo(ratio * duration, true); } catch { /* The video is not ready yet. */ }
+    pendingSeek = null;
+    return;
+  }
+  if (track.source === "soundcloud" && scWidget && scWidget.getDuration) {
+    scWidget.getDuration((ms) => {
+      const current = currentTrack();
+      if (!current || current.id !== track.id || !isSource("soundcloud")) return;
+      const duration = (Number(ms) || 0) / 1000;
+      if (!duration) {
+        pendingSeek = { id: track.id, ratio };
+        return;
+      }
+      paintSeek(ratio * duration, duration);
+      const now = Date.now();
+      if (!force && now - lastSeekAt < 200) {
+        pendingSeek = { id: track.id, ratio };
+        return;
+      }
+      lastSeekAt = now;
+      try { scWidget.seekTo(Math.round(ratio * duration * 1000)); } catch { /* The widget is not ready yet. */ }
+      pendingSeek = null;
+    });
+    return;
+  }
+  pendingSeek = { id: track.id, ratio };
+}
+
+function applyPendingSeek() {
+  const pending = pendingSeek;
+  const track = currentTrack();
+  if (!pending || !track || pending.id !== track.id || seekHold) return;
+  commitSeek(track, pending.ratio, true);
+}
+
+function refreshSeek() {
+  if (seekHold) return;
+  const track = currentTrack();
+  if (!track) return;
+  if (track.source === "local") {
+    const player = audio();
+    paintSeek(player.currentTime || 0, Number.isFinite(player.duration) ? player.duration : 0);
+    return;
+  }
+  if (track.source === "youtube" && ytPlayer && ytPlayer.getCurrentTime) {
+    try {
+      paintSeek(Number(ytPlayer.getCurrentTime()) || 0, Number(ytPlayer.getDuration()) || 0);
+    } catch { /* The video is not ready yet. */ }
+    return;
+  }
+  if (track.source === "soundcloud" && scWidget && scWidget.getPosition) {
+    scWidget.getPosition((ms) => {
+      if (seekHold || !isSource("soundcloud")) return;
+      scWidget.getDuration((dur) => {
+        if (seekHold || !isSource("soundcloud")) return;
+        paintSeek((Number(ms) || 0) / 1000, (Number(dur) || 0) / 1000);
+      });
+    });
+  }
+}
+
+function paintSeek(elapsed, duration) {
+  const safeDuration = Number.isFinite(duration) && duration > 0 ? duration : 0;
+  const safeElapsed = Number.isFinite(elapsed) && elapsed > 0 ? elapsed : 0;
+  const ratio = safeDuration ? Math.min(1, Math.max(0, safeElapsed / safeDuration)) : 0;
+  const place = "calc(22px + (100% - 44px) * " + ratio + ")";
+  for (const fill of document.querySelectorAll(".seek-fill")) fill.style.width = place;
+  for (const thumb of document.querySelectorAll(".seek-thumb")) thumb.style.left = place;
+  const elapsedText = clock(safeDuration ? ratio * safeDuration : safeElapsed);
+  const totalText = safeDuration ? clock(safeDuration) : "0:00";
+  for (const el of document.querySelectorAll(".seek-elapsed")) el.textContent = elapsedText;
+  for (const el of document.querySelectorAll(".seek-total")) el.textContent = totalText;
+  const value = String(Math.round(ratio * 100));
+  const text = elapsedText + " of " + totalText;
+  for (const bar of document.querySelectorAll(".seek")) {
+    bar.setAttribute("aria-valuenow", value);
+    bar.setAttribute("aria-valuetext", text);
+  }
+}
+
+function clock(seconds) {
+  const whole = Math.max(0, Math.floor(seconds || 0));
+  const hours = Math.floor(whole / 3600);
+  const minutes = Math.floor((whole % 3600) / 60);
+  const remain = whole % 60;
+  const paddedMinutes = hours ? String(minutes).padStart(2, "0") : String(minutes);
+  const paddedSeconds = String(remain).padStart(2, "0");
+  return hours ? hours + ":" + paddedMinutes + ":" + paddedSeconds : paddedMinutes + ":" + paddedSeconds;
+}
+
+function playListed(id) {
+  const track = state.tracks.find((item) => item.id === id);
+  if (!track) return;
+  if (track.source !== "local") hideSheet("artists-sheet");
+  if (track.id === state.currentId && state.playing) {
+    if (track.source !== "local") openPlayer();
+    return;
+  }
+  userPlay(track, track.source !== "local");
+}
+
+function openArtists() {
+  hideSheet("add-sheet");
+  hideSheet("manage-sheet");
+  hideConfirm();
+  closePlayer();
+  showSheet("artists-sheet");
+  renderArtists();
+}
+
+function artistNames(track) {
+  const parts = (track.artist || "").split(",").map((name) => name.trim()).filter(Boolean);
+  return parts.length ? parts : ["Unknown"];
+}
+
+function renderArtists() {
+  const sheet = document.getElementById("artists-sheet");
+  if (!sheet || sheet.hidden) return;
+  const list = document.getElementById("artist-list");
+  const scroller = list.closest(".sheet-body");
+  const scrollTop = scroller ? scroller.scrollTop : 0;
+  const groups = new Map();
+  for (const track of state.tracks) {
+    for (const name of artistNames(track)) {
+      const key = name.toLocaleLowerCase();
+      if (!groups.has(key)) groups.set(key, { name, tracks: [] });
+      const group = groups.get(key);
+      if (!group.tracks.some((item) => item.id === track.id)) group.tracks.push(track);
+    }
+  }
+  const artists = [...groups.values()].sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: "base" }));
+  list.replaceChildren();
+  document.getElementById("artists-empty").hidden = artists.length > 0;
+  for (const group of artists) {
+    group.tracks.sort((a, b) => (a.title || "").localeCompare(b.title || "", undefined, { sensitivity: "base", numeric: true }));
+    const open = state.openArtists.has(group.name);
+    const row = document.createElement("button");
+    row.type = "button";
+    row.className = "artist-row" + (open ? " open" : "");
+    row.dataset.artist = group.name;
+    row.setAttribute("aria-expanded", open ? "true" : "false");
+    const title = document.createElement("span");
+    title.className = "song-title";
+    title.textContent = group.name;
+    const sub = document.createElement("span");
+    sub.className = "song-sub";
+    const count = group.tracks.length === 1 ? "1 song" : group.tracks.length + " songs";
+    sub.textContent = count + (open ? " · Tap to hide" : " · Tap to show");
+    row.append(title, sub);
+    list.append(row);
+    if (!open) continue;
+    const songs = document.createElement("div");
+    songs.className = "artist-songs";
+    for (const track of group.tracks) {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = "song" + (track.id === state.currentId ? " current" : "");
+      button.dataset.play = track.id;
+      const songTitle = document.createElement("span");
+      songTitle.className = "song-title";
+      songTitle.textContent = track.title;
+      const songSub = document.createElement("span");
+      songSub.className = "song-sub";
+      songSub.textContent = (track.id === state.currentId && state.playing ? "Playing · " : "") + subtitle(track);
+      button.append(songTitle, songSub);
+      songs.append(button);
+    }
+    list.append(songs);
+  }
+  if (scroller) scroller.scrollTop = scrollTop;
 }
 
 function nowLabel(track) {
@@ -273,6 +557,7 @@ function setPlaying(playing) {
   }
   renderSongs();
   if (!document.getElementById("add-sheet").hidden) renderCatalog();
+  if (!document.getElementById("artists-sheet").hidden) renderArtists();
 }
 
 function setNotice(text) {
@@ -286,6 +571,7 @@ function setNotice(text) {
 function goHome() {
   hideSheet("add-sheet");
   hideSheet("manage-sheet");
+  hideSheet("artists-sheet");
   hideConfirm();
   closePlayer();
   const input = document.getElementById("find-song");
@@ -1076,6 +1362,7 @@ async function playSoundCloud(track) {
     if (!isSource("soundcloud")) return;
     finishTrackChange();
     setPlaying(true);
+    applyPendingSeek();
   });
   scWidget.bind(window.SC.Widget.Events.PAUSE, () => { if (isSource("soundcloud")) setPlaying(false); });
   scWidget.bind(window.SC.Widget.Events.FINISH, () => {
@@ -1111,6 +1398,7 @@ window.onYouTubeIframeAPIReady = function onYouTubeIframeAPIReady() {
         if (event.data === YT.PlayerState.PLAYING) {
           finishTrackChange();
           setPlaying(true);
+          applyPendingSeek();
         }
         if (event.data === YT.PlayerState.PAUSED) setPlaying(false);
         if (event.data === YT.PlayerState.ENDED && youtubeActuallyEnded(event)) step(1);
