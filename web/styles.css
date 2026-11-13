@@ -186,6 +186,11 @@ body.has-now #songs { bottom: calc(var(--transport-bar) + var(--now-bar-space));
   min-height: 64px;
 }
 
+#add-music {
+  background: #ff7a00;
+  color: #000;
+}
+
 .big svg { fill: currentColor; }
 #play-button .icon-pause { display: none; }
 #play-button.is-playing .icon-play { display: none; }
@@ -312,6 +317,11 @@ body.songs-page .finder {
 .search-empty {
   padding-top: 4px;
   font-size: 1.5rem;
+  font-weight: 700;
+}
+
+#link-box label {
+  font-size: 1.7rem;
   font-weight: 700;
 }
 

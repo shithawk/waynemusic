@@ -12,7 +12,7 @@
   <link rel="icon" href="/favicon.ico">
   <link rel="manifest" href="/manifest.webmanifest">
   <link rel="apple-touch-icon" href="/icon-180.png">
-  <link rel="stylesheet" href="/styles.css?v=36">
+  <link rel="stylesheet" href="/styles.css?v=38">
 </head>
 <body>
   <div class="top-nav">
@@ -96,8 +96,7 @@
         <button id="from-ipad" class="big plain" type="button">Choose a song saved on this iPad</button>
         <input id="file-input" type="file" accept="audio/*,.mp3,.m4a,.aac,.wav" multiple hidden>
         <button id="paste-link" class="big plain" type="button">Paste a link</button>
-        <button id="type-link" class="big plain" type="button">Type a link</button>
-        <div id="link-box" class="stack" hidden>
+        <div id="link-box" class="stack">
           <label for="link-input">YouTube or SoundCloud link</label>
           <input id="link-input" type="url" inputmode="url" placeholder="https://" autocapitalize="none" autocorrect="off" spellcheck="false" autocomplete="off">
           <button id="add-link" class="big prominent" type="button" disabled>Add this link</button>
@@ -130,8 +129,8 @@
           <div class="confirm-card" role="alertdialog" aria-labelledby="confirm-title">
             <h2 id="confirm-title">Remove this song?</h2>
             <p id="confirm-name"></p>
-            <button id="confirm-keep" class="big prominent" type="button">Keep</button>
             <button id="confirm-remove" class="big plain" type="button">Remove</button>
+            <button id="confirm-keep" class="big prominent" type="button">Keep</button>
           </div>
         </div>
       </div>
@@ -209,6 +208,6 @@
 
   <div id="notice" class="notice" hidden role="status"></div>
   <audio id="audio" playsinline preload="none"></audio>
-  <script src="/app.js?v=31" defer></script>
+  <script src="/app.js?v=32" defer></script>
 </body>
 </html>

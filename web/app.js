@@ -6,7 +6,6 @@ const state = {
   playing: false,
   query: "",
   artistQuery: "",
-  linkOpen: false,
   working: false,
   removeId: null,
   readyId: null,
@@ -137,7 +136,6 @@ function bindEvents() {
   document.getElementById("paste-link").addEventListener("click", pasteLink);
   document.getElementById("link-confirm-done").addEventListener("click", hideLinkConfirm);
   document.getElementById("link-confirm-play").addEventListener("click", playConfirmedLink);
-  document.getElementById("type-link").addEventListener("click", toggleLinkBox);
   document.getElementById("add-link").addEventListener("click", () => addTypedLink());
   document.getElementById("link-input").addEventListener("input", () => {
     document.getElementById("add-link").disabled = !document.getElementById("link-input").value.trim();
@@ -1163,12 +1161,6 @@ function playConfirmedLink() {
   hideLinkConfirm();
   hideSheet("add-sheet");
   if (id) playListed(id);
-}
-
-function toggleLinkBox() {
-  state.linkOpen = !state.linkOpen;
-  document.getElementById("link-box").hidden = !state.linkOpen;
-  document.getElementById("type-link").textContent = state.linkOpen ? "Hide the link" : "Type a link";
 }
 
 function addTypedLink() {
