@@ -5,7 +5,7 @@
   --yellow: #ffd100;
   --red: #db141a;
   --text: #fff;
-  --transport-bar: calc(128px + env(safe-area-inset-bottom));
+  --transport-bar: calc(114px + env(safe-area-inset-bottom));
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 }
 
@@ -26,7 +26,7 @@ body {
 }
 
 body.has-now {
-  --now-bar-space: 230px;
+  --now-bar-space: 188px;
   --transport-space: calc(var(--transport-bar) + var(--now-bar-space));
 }
 
@@ -86,9 +86,11 @@ h1, h2, p { margin: 0; }
   right: 0;
   left: 0;
   bottom: var(--transport-bar);
-  z-index: 1;
+  z-index: 6;
   min-height: 0;
-  overflow: auto;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-y;
 }
 
 body.has-now #songs { bottom: calc(var(--transport-bar) + var(--now-bar-space)); }
@@ -202,6 +204,21 @@ body.has-now #songs { bottom: calc(var(--transport-bar) + var(--now-bar-space));
   padding: 16px 24px 12px;
 }
 
+body.songs-page .home-only { display: none !important; }
+
+.songs-title { display: none; }
+
+body.songs-page .songs-title {
+  display: block;
+  margin: calc(88px + env(safe-area-inset-top)) 24px 0;
+  font-size: 2.1rem;
+  font-weight: 700;
+}
+
+body.songs-page .finder {
+  padding-top: 16px;
+}
+
 .search-label {
   font-size: 1.7rem;
   font-weight: 700;
@@ -252,7 +269,9 @@ body.has-now #songs { bottom: calc(var(--transport-bar) + var(--now-bar-space));
   display: none;
 }
 
-#clear-search {
+#clear-search,
+#clear-artist-search,
+#youtube-search-go {
   flex: none;
   min-height: 56px;
   padding: 8px 16px;
@@ -262,6 +281,28 @@ body.has-now #songs { bottom: calc(var(--transport-bar) + var(--now-bar-space));
   font-size: 1.2rem;
   font-weight: 700;
 }
+
+.sheet-search {
+  top: 0;
+  margin-top: 16px;
+}
+
+#artist-finder {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+#artist-finder .search-label {
+  font-size: 1.7rem;
+  font-weight: 700;
+}
+
+#artist-finder .sheet-search { margin-top: 0; }
+
+#youtube-results { margin-top: 8px; }
+#youtube-search-status { margin-top: 12px; }
 
 .finder-hint {
   font-size: 1.35rem;
@@ -295,6 +336,7 @@ input::placeholder { color: rgba(255, 255, 255, 0.72); }
 
 .song {
   position: relative;
+  touch-action: pan-y;
   display: flex;
   flex-direction: column;
   align-items: flex-start;
@@ -329,6 +371,7 @@ input::placeholder { color: rgba(255, 255, 255, 0.72); }
 .song.current::before { background: var(--red); }
 
 .artist-row {
+  touch-action: pan-y;
   display: flex;
   flex-direction: column;
   align-items: flex-start;
@@ -357,7 +400,7 @@ input::placeholder { color: rgba(255, 255, 255, 0.72); }
   position: fixed;
   left: 16px;
   right: 16px;
-  bottom: calc(var(--transport-bar) + 12px);
+  bottom: calc(var(--transport-bar) + 6px);
   z-index: 31;
   display: flex;
   flex-direction: column;
@@ -444,7 +487,7 @@ input::placeholder { color: rgba(255, 255, 255, 0.72); }
 #player {
   position: fixed;
   inset: 0;
-  z-index: 5;
+  z-index: 4;
   display: flex;
   flex-direction: column;
   min-height: 0;
@@ -453,12 +496,19 @@ input::placeholder { color: rgba(255, 255, 255, 0.72); }
   overflow: hidden;
   background: var(--bg);
   opacity: 0;
+  visibility: hidden;
   pointer-events: none;
 }
 
 #player.open {
+  z-index: 20;
   opacity: 1;
+  visibility: visible;
   pointer-events: auto;
+}
+
+#player:not(.open) iframe {
+  pointer-events: none;
 }
 
 .player-scroll {
@@ -514,7 +564,7 @@ input::placeholder { color: rgba(255, 255, 255, 0.72); }
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   gap: 8px;
-  padding: 12px 16px calc(12px + env(safe-area-inset-bottom));
+  padding: 6px 16px calc(12px + env(safe-area-inset-bottom));
   background: var(--bg);
 }
 
@@ -549,13 +599,15 @@ body.has-now .sheet-screen { bottom: calc(var(--transport-bar) + var(--now-bar-s
   display: flex;
   flex-direction: column;
   height: 100%;
-  padding: calc(88px + env(safe-area-inset-top)) 24px calc(16px + env(safe-area-inset-bottom));
+  padding: calc(88px + env(safe-area-inset-top)) 24px 8px;
 }
 
 .sheet-body {
   flex: 1;
-  overflow: auto;
-  padding-bottom: 16px;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-y;
+  padding-bottom: 8px;
 }
 
 .stack { display: flex; flex-direction: column; gap: 20px; }

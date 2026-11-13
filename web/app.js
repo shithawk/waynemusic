@@ -5,6 +5,7 @@ const state = {
   currentId: null,
   playing: false,
   query: "",
+  artistQuery: "",
   linkOpen: false,
   working: false,
   removeId: null,
@@ -31,6 +32,7 @@ let seekHold = false;
 let seekBar = null;
 let pendingSeek = null;
 let lastSeekAt = 0;
+let youtubeSearchToken = 0;
 const downloading = new Set();
 
 const audio = () => document.getElementById("audio");
@@ -61,6 +63,7 @@ async function init() {
   });
   try {
     state.tracks = sortTracks(await allTracks());
+    await fixSavedYouTubeArtists();
   } catch {
     setNotice("This iPad could not open saved songs. Leave private browsing, then add Wayne's Music to the Home Screen.");
   }
@@ -87,6 +90,23 @@ function bindEvents() {
     const button = event.target.closest("[data-play]");
     if (button) playListed(button.dataset.play);
   });
+  document.getElementById("youtube-search-go").addEventListener("click", searchYouTube);
+  document.getElementById("youtube-search").addEventListener("keydown", (event) => {
+    if (event.key === "Enter") {
+      event.preventDefault();
+      searchYouTube();
+    }
+  });
+  document.getElementById("youtube-results").addEventListener("click", (event) => {
+    const play = event.target.closest("[data-play]");
+    if (play) {
+      playListed(play.dataset.play);
+      return;
+    }
+    const button = event.target.closest("[data-add-video]");
+    if (!button || button.disabled) return;
+    addYouTubeVideo(button.dataset.addVideo, button);
+  });
   document.getElementById("artist-list").addEventListener("click", (event) => {
     const button = event.target.closest("[data-play]");
     if (button) {
@@ -108,7 +128,6 @@ function bindEvents() {
   document.addEventListener("pointerup", finishSeek);
   document.addEventListener("pointercancel", finishSeek);
   document.getElementById("add-music").addEventListener("click", openAdd);
-  document.getElementById("close-add").addEventListener("click", () => hideSheet("add-sheet"));
   document.getElementById("manage-songs").addEventListener("click", openManage);
   document.getElementById("close-manage").addEventListener("click", () => hideSheet("manage-sheet"));
   document.getElementById("download-all").addEventListener("click", downloadAll);
@@ -129,6 +148,17 @@ function bindEvents() {
     input.value = "";
     state.query = "";
     renderSongs();
+    input.focus();
+  });
+  document.getElementById("find-artist").addEventListener("input", (event) => {
+    state.artistQuery = event.target.value;
+    renderArtists();
+  });
+  document.getElementById("clear-artist-search").addEventListener("click", () => {
+    const input = document.getElementById("find-artist");
+    input.value = "";
+    state.artistQuery = "";
+    renderArtists();
     input.focus();
   });
   document.getElementById("song-list").addEventListener("click", (event) => {
@@ -482,6 +512,151 @@ function renderVideos() {
   if (scroller) scroller.scrollTop = scrollTop;
 }
 
+function setVideoSearchStatus(text) {
+  const status = document.getElementById("youtube-search-status");
+  status.hidden = !text;
+  status.textContent = text || "";
+}
+
+async function searchYouTube() {
+  const query = document.getElementById("youtube-search").value.trim();
+  const token = ++youtubeSearchToken;
+  if (!query) {
+    setVideoSearchStatus("Type a song or artist.");
+    return;
+  }
+  setVideoSearchStatus("Searching…");
+  document.getElementById("youtube-results").replaceChildren();
+  try {
+    const response = await fetch("https://yt.chocolatemoo53.com/api/v1/search?type=video&q=" + encodeURIComponent(query));
+    if (!response.ok) throw new Error("search failed");
+    const payload = await response.json();
+    if (token !== youtubeSearchToken) return;
+    const results = youtubeSearchResults(payload);
+    if (!results.length) {
+      setVideoSearchStatus("No videos found. Try another word.");
+      return;
+    }
+    setVideoSearchStatus("");
+    renderYouTubeResults(results);
+  } catch {
+    if (token !== youtubeSearchToken) return;
+    setVideoSearchStatus("YouTube search did not work. Try again.");
+  }
+}
+
+function renderYouTubeResults(results) {
+  const list = document.getElementById("youtube-results");
+  list.replaceChildren();
+  for (const video of results) {
+    const saved = youtubeTrack(video.id);
+    const row = document.createElement("div");
+    row.className = "catalog-row" + (saved ? " saved" : "");
+    const text = document.createElement(saved ? "button" : "div");
+    text.className = saved ? "catalog-play" : "text";
+    if (saved) {
+      text.type = "button";
+      text.dataset.play = saved.id;
+    }
+    const title = document.createElement("span");
+    title.className = "song-title";
+    title.textContent = video.title;
+    const sub = document.createElement("span");
+    sub.className = "song-sub";
+    sub.textContent = video.artist ? video.artist + " · YouTube" : "YouTube";
+    text.append(title, sub);
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "download";
+    if (saved) markYouTubePlay(button, saved);
+    else {
+      button.dataset.addVideo = video.id;
+      button.dataset.videoTitle = video.title;
+      button.dataset.videoArtist = video.artist;
+      button.textContent = "Add";
+    }
+    row.append(text, button);
+    list.append(row);
+  }
+}
+
+function youtubeTrack(id) {
+  return state.tracks.find((track) => track.source === "youtube" && track.mediaRef === id) || null;
+}
+
+function markYouTubePlay(button, track) {
+  button.className = "download";
+  button.disabled = false;
+  delete button.dataset.addVideo;
+  button.dataset.play = track.id;
+  button.textContent = track.id === state.currentId && state.playing ? "Playing" : "Play";
+  const row = button.closest(".catalog-row");
+  if (row) row.classList.add("saved");
+}
+
+async function addYouTubeVideo(id, button) {
+  const title = (button.dataset.videoTitle || "YouTube video").trim();
+  const artist = (button.dataset.videoArtist || "").trim();
+  button.disabled = true;
+  button.textContent = "Adding…";
+  try {
+    if (state.tracks.some((track) => track.source === "youtube" && track.mediaRef === id)) {
+      throw new Error("That video is already in the list.");
+    }
+    const track = {
+      id: "youtube:" + id,
+      title: title,
+      artist: artist,
+      source: "youtube",
+      mediaRef: id,
+      bytes: 0,
+      createdAt: Date.now()
+    };
+    await putTrack(track);
+    state.tracks = sortTracks(state.tracks.concat(track));
+    const row = button.closest(".catalog-row");
+    const text = row && row.querySelector(".text");
+    if (text) {
+      const playTitle = document.createElement("button");
+      playTitle.type = "button";
+      playTitle.className = "catalog-play";
+      playTitle.dataset.play = track.id;
+      while (text.firstChild) playTitle.append(text.firstChild);
+      text.replaceWith(playTitle);
+    }
+    markYouTubePlay(button, track);
+    renderVideos();
+    setNotice("Added " + title);
+  } catch (error) {
+    const already = youtubeTrack(id);
+    if (already) {
+      markYouTubePlay(button, already);
+      return;
+    }
+    button.disabled = false;
+    button.textContent = "Add";
+    setVideoSearchStatus(error.message || "That video could not be added.");
+  }
+}
+
+function youtubeSearchResults(payload) {
+  if (!Array.isArray(payload)) return [];
+  const found = [];
+  const seen = new Set();
+  for (const item of payload) {
+    if (!item || item.type !== "video" || !sanitizeYouTubeID(item.videoId) || seen.has(item.videoId)) continue;
+    seen.add(item.videoId);
+    const named = youtubeNames(item.title, item.author);
+    found.push({
+      id: item.videoId,
+      title: named.title,
+      artist: named.artist
+    });
+    if (found.length >= 10) break;
+  }
+  return found;
+}
+
 function artistNames(track) {
   const parts = (track.artist || "").split(",").map((name) => name.trim()).filter(Boolean);
   return parts.length ? parts : ["Unknown"];
@@ -502,9 +677,20 @@ function renderArtists() {
       if (!group.tracks.some((item) => item.id === track.id)) group.tracks.push(track);
     }
   }
-  const artists = [...groups.values()].sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: "base" }));
+  const query = state.artistQuery.trim().toLowerCase();
+  const artists = [...groups.values()]
+    .filter((group) => !query || group.name.toLowerCase().includes(query))
+    .sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: "base" }));
   list.replaceChildren();
-  document.getElementById("artists-empty").hidden = artists.length > 0;
+  document.getElementById("artist-finder").hidden = groups.size === 0;
+  document.getElementById("artists-empty").hidden = groups.size > 0;
+  document.getElementById("clear-artist-search").hidden = query.length === 0;
+  if (groups.size > 0 && artists.length === 0) {
+    const empty = document.createElement("p");
+    empty.className = "search-empty";
+    empty.textContent = "No artist matches that. Try another word.";
+    list.append(empty);
+  }
   for (const group of artists) {
     group.tracks.sort((a, b) => (a.title || "").localeCompare(b.title || "", undefined, { sensitivity: "base", numeric: true }));
     const open = state.openArtists.has(group.name);
@@ -624,6 +810,8 @@ function showSongs() {
   hideSheet("videos-sheet");
   hideConfirm();
   closePlayer();
+  document.body.classList.add("songs-page");
+  document.getElementById("songs").scrollTop = 0;
 }
 
 function goHome() {
@@ -633,6 +821,7 @@ function goHome() {
   hideSheet("videos-sheet");
   hideConfirm();
   closePlayer();
+  document.body.classList.remove("songs-page");
   const input = document.getElementById("find-song");
   if (state.query || input.value) {
     input.value = "";
@@ -1006,6 +1195,22 @@ function youtubeNames(videoTitle, channel) {
 
 function tidyName(value) {
   return String(value || "").replace(/\s+/g, " ").replace(/^[\s\-–—|]+|[\s\-–—|]+$/g, "").trim();
+}
+
+async function fixSavedYouTubeArtists() {
+  let changed = false;
+  for (const track of state.tracks) {
+    if (track.source !== "youtube") continue;
+    const named = youtubeNames(track.title, track.artist);
+    if (!named.title || (named.title === track.title && named.artist === track.artist)) continue;
+    track.title = named.title;
+    track.artist = named.artist;
+    changed = true;
+    try {
+      await putTrack(track);
+    } catch { /* The corrected name still shows for this visit. */ }
+  }
+  if (changed) state.tracks = sortTracks(state.tracks);
 }
 
 function needsMeta(track) {
@@ -1442,10 +1647,11 @@ window.onYouTubeIframeAPIReady = function onYouTubeIframeAPIReady() {
     width: "100%",
     height: "100%",
     videoId: pendingVideo || undefined,
-    playerVars: { playsinline: 1, rel: 0, modestbranding: 1, controls: 1, fs: 0, iv_load_policy: 3 },
+    playerVars: { playsinline: 1, rel: 0, modestbranding: 1, controls: 1, fs: 1, iv_load_policy: 3 },
     events: {
       onReady: () => {
         ytReady = true;
+        allowYouTubeFullscreen();
         fitYouTube();
         if (pendingVideo && isSource("youtube")) {
           ytPlayer.loadVideoById(pendingVideo);
@@ -1469,6 +1675,16 @@ window.onYouTubeIframeAPIReady = function onYouTubeIframeAPIReady() {
     }
   });
 };
+
+function allowYouTubeFullscreen() {
+  const frame = ytPlayer && ytPlayer.getIframe ? ytPlayer.getIframe() : document.getElementById("yt-player");
+  if (!frame || frame.tagName !== "IFRAME") return;
+  frame.setAttribute("allowfullscreen", "");
+  frame.setAttribute("webkitallowfullscreen", "");
+  const allow = new Set((frame.getAttribute("allow") || "").split(";").map((part) => part.trim()).filter(Boolean));
+  allow.add("fullscreen");
+  frame.setAttribute("allow", [...allow].join("; "));
+}
 
 function fitYouTube() {
   const stage = document.getElementById("stage-yt");
