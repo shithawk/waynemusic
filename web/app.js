@@ -8,7 +8,12 @@ const state = {
   linkOpen: false,
   working: false,
   removeId: null,
-  readyId: null
+  readyId: null,
+  shuffle: false,
+  shuffleOrder: [],
+  shuffleIndex: -1,
+  shuffleHistory: [],
+  shuffleRewind: false
 };
 
 let dbPromise = null;
@@ -28,6 +33,7 @@ document.addEventListener("DOMContentLoaded", init);
 
 async function init() {
   document.getElementById("install-hint").hidden = standalone();
+  state.shuffle = loadShuffle();
   bindEvents();
   bindMediaSession();
   audio().addEventListener("play", () => { if (isSource("local")) setPlaying(true); });
@@ -40,6 +46,7 @@ async function init() {
   } catch {
     setNotice("This iPad could not open saved songs. Leave private browsing, then add Wayne's Music to the Home Screen.");
   }
+  if (state.shuffle) startShuffle(state.currentId);
   render();
   requestPersist();
   if ("serviceWorker" in navigator) {
@@ -64,6 +71,13 @@ function bindEvents() {
   document.getElementById("find-song").addEventListener("input", (event) => {
     state.query = event.target.value;
     renderSongs();
+  });
+  document.getElementById("clear-search").addEventListener("click", () => {
+    const input = document.getElementById("find-song");
+    input.value = "";
+    state.query = "";
+    renderSongs();
+    input.focus();
   });
   document.getElementById("song-list").addEventListener("click", (event) => {
     const button = event.target.closest("[data-play]");
@@ -97,6 +111,9 @@ function bindEvents() {
     if (isAudiblyPlaying()) userPause();
     else userPlay(currentTrack() || songToStart(), playerIsOpen());
   });
+  document.getElementById("shuffle").addEventListener("click", () => {
+    setShuffle(!state.shuffle);
+  });
 }
 
 function bindMediaSession() {
@@ -118,6 +135,7 @@ function standalone() {
 function render() {
   renderSongs();
   renderPlayer();
+  updateShuffleButton();
 }
 
 function renderSongs() {
@@ -132,10 +150,11 @@ function renderSongs() {
     if (!query) return true;
     return track.title.toLowerCase().includes(query) || track.artist.toLowerCase().includes(query);
   });
+  document.getElementById("clear-search").hidden = query.length === 0;
   if (hasTracks && visible.length === 0) {
     const empty = document.createElement("p");
-    empty.className = "lede";
-    empty.textContent = "No songs match that.";
+    empty.className = "search-empty";
+    empty.textContent = "No song matches that. Try another word.";
     list.append(empty);
   }
   for (const track of visible) {
@@ -576,6 +595,13 @@ async function confirmRemove() {
 
 async function playTrack(track, options) {
   const open = !options || options.open !== false;
+  if (state.shuffle && state.currentId && state.currentId !== track.id && !state.shuffleRewind) {
+    state.shuffleHistory.push(state.currentId);
+    if (state.shuffleHistory.length > 40) state.shuffleHistory.shift();
+  }
+  state.shuffleRewind = false;
+  const shuffleAt = state.shuffle ? state.shuffleOrder.indexOf(track.id) : -1;
+  if (shuffleAt >= 0) state.shuffleIndex = shuffleAt;
   if (state.currentId === track.id) {
     if (!state.playing) {
       if (track.source === "local" && realSource(audio()) && !audio().paused) setPlaying(true);
@@ -649,6 +675,7 @@ function skip(direction) {
   const track = trackForStep(direction);
   if (!track) return;
   if (track.id === state.currentId) {
+    state.shuffleRewind = false;
     restart();
     return;
   }
@@ -669,16 +696,115 @@ function prepareURL(id, blob) {
 }
 
 function songToStart() {
+  if (state.shuffle && state.tracks.length) {
+    if (!state.shuffleOrder.length) startShuffle(null);
+    else syncShuffleOrder();
+    if (!state.shuffleOrder.length) return null;
+    const index = Math.floor(Math.random() * state.shuffleOrder.length);
+    state.shuffleIndex = index;
+    return state.tracks.find((track) => track.id === state.shuffleOrder[index]) || null;
+  }
   return state.tracks.find((track) => track.id === state.readyId) || state.tracks[0] || null;
 }
 
 function trackForStep(direction) {
   if (!state.tracks.length) return null;
+  if (state.shuffle) return shuffledTrack(direction);
   if (!state.currentId) return songToStart();
   const index = state.tracks.findIndex((track) => track.id === state.currentId);
   const start = index < 0 ? 0 : index;
   const nextIndex = (start + direction + state.tracks.length) % state.tracks.length;
   return state.tracks[nextIndex];
+}
+
+function shuffledTrack(direction) {
+  if (state.tracks.length < 2) return state.tracks[0] || null;
+  if (!state.shuffleOrder.length) startShuffle(state.currentId);
+  else syncShuffleOrder();
+  if (!state.currentId) return songToStart();
+  if (direction < 0) {
+    const previousId = state.shuffleHistory.pop();
+    const previous = previousId ? state.tracks.find((track) => track.id === previousId) : null;
+    state.shuffleRewind = true;
+    if (previous) {
+      const at = state.shuffleOrder.indexOf(previous.id);
+      if (at >= 0) state.shuffleIndex = at;
+      return previous;
+    }
+    return currentTrack() || state.tracks[0];
+  }
+  let index = state.shuffleOrder.indexOf(state.currentId);
+  if (index < 0 || index >= state.shuffleOrder.length - 1) {
+    startShuffle(state.currentId);
+    index = 0;
+  }
+  const nextId = state.shuffleOrder[index + 1];
+  state.shuffleIndex = index + 1;
+  return state.tracks.find((track) => track.id === nextId) || null;
+}
+
+function startShuffle(currentId) {
+  const ids = state.tracks.map((track) => track.id);
+  const rest = shuffleIds(ids.filter((id) => id !== currentId));
+  state.shuffleOrder = currentId && ids.includes(currentId) ? [currentId].concat(rest) : rest;
+  state.shuffleIndex = currentId ? 0 : -1;
+}
+
+function syncShuffleOrder() {
+  const ids = state.tracks.map((track) => track.id);
+  const have = new Set(ids);
+  const kept = state.shuffleOrder.filter((id) => have.has(id));
+  const seen = new Set(kept);
+  state.shuffleOrder = kept.concat(shuffleIds(ids.filter((id) => !seen.has(id))));
+  state.shuffleHistory = state.shuffleHistory.filter((id) => have.has(id));
+}
+
+function shuffleIds(ids) {
+  const copy = ids.slice();
+  for (let i = copy.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    const swap = copy[i];
+    copy[i] = copy[j];
+    copy[j] = swap;
+  }
+  return copy;
+}
+
+function setShuffle(on) {
+  state.shuffle = on;
+  state.shuffleHistory = [];
+  state.shuffleRewind = false;
+  if (on) startShuffle(state.currentId);
+  saveShuffle();
+  updateShuffleButton();
+}
+
+function updateShuffleButton() {
+  const button = document.getElementById("shuffle");
+  const label = document.getElementById("shuffle-label");
+  if (!button || !label) return;
+  const on = state.shuffle;
+  button.classList.toggle("is-on", on);
+  button.classList.toggle("plain", !on);
+  button.setAttribute("aria-pressed", on ? "true" : "false");
+  button.setAttribute("aria-label", on ? "Shuffle on" : "Shuffle off");
+  label.textContent = on ? "Shuffle on" : "Shuffle off";
+}
+
+function loadShuffle() {
+  try {
+    return localStorage.getItem("waynes-shuffle") === "on";
+  } catch {
+    return false;
+  }
+}
+
+function saveShuffle() {
+  try {
+    localStorage.setItem("waynes-shuffle", state.shuffle ? "on" : "off");
+  } catch {
+    // The button still shows the choice for this visit.
+  }
 }
 
 async function playLocal(track) {
@@ -849,21 +975,14 @@ async function toggle() {
 }
 
 function step(direction) {
-  if (!state.tracks.length) return;
-  if (!state.currentId) {
-    const track = songToStart();
-    if (track) playTrack(track, { open: playerIsOpen() });
-    return;
-  }
-  const index = state.tracks.findIndex((track) => track.id === state.currentId);
-  const start = index < 0 ? 0 : index;
-  const nextIndex = (start + direction + state.tracks.length) % state.tracks.length;
-  const nextTrack = state.tracks[nextIndex];
-  if (nextTrack.id === state.currentId) {
+  const track = trackForStep(direction);
+  if (!track) return;
+  if (track.id === state.currentId) {
+    state.shuffleRewind = false;
     restart();
     return;
   }
-  playTrack(nextTrack, { open: playerIsOpen() });
+  playTrack(track, { open: playerIsOpen() });
 }
 
 function restart() {

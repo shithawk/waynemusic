@@ -1,4 +1,4 @@
-const CACHE = "waynes-shell-v6";
+const CACHE = "waynes-shell-v8";
 const SHELL = [
   "/",
   "/index.html",

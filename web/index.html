@@ -33,8 +33,16 @@
     <p id="empty" class="empty">Tap Add music to put songs on this iPad.</p>
 
     <div id="finder" class="finder" hidden>
-      <label for="find-song">Tap a song to play it</label>
-      <input id="find-song" type="search" placeholder="Or type a song or artist" autocomplete="off" aria-label="Find a song">
+      <label class="search-label" for="find-song">Search</label>
+      <div class="search-box">
+        <svg class="search-icon" viewBox="0 0 36 36" width="36" height="36" aria-hidden="true">
+          <circle cx="15" cy="15" r="8" fill="none" stroke="currentColor" stroke-width="3"></circle>
+          <path d="M21.5 21.5 L31 31" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"></path>
+        </svg>
+        <input id="find-song" type="search" placeholder="Type a song or artist" enterkeyhint="search" autocomplete="off" autocapitalize="none" autocorrect="off" spellcheck="false">
+        <button id="clear-search" type="button" hidden>Clear</button>
+      </div>
+      <p class="finder-hint">Tap a song to play it</p>
       <div id="song-list"></div>
     </div>
 
@@ -119,6 +127,15 @@
     <button id="next" class="big plain" type="button">
       <svg viewBox="0 0 36 36" width="36" height="36" aria-hidden="true"><path d="M5 6 L23 18 L5 30 Z"></path><rect x="27" y="6" width="5" height="24" rx="1"></rect></svg>
       <span>Next</span>
+    </button>
+    <button id="shuffle" class="big plain" type="button" aria-pressed="false" aria-label="Shuffle off">
+      <svg viewBox="0 0 36 36" width="36" height="36" aria-hidden="true">
+        <path d="M4 11 H12 L24 25 H32" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"></path>
+        <path d="M26 21 L32 25 L26 29" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"></path>
+        <path d="M4 25 H12 L24 11 H32" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"></path>
+        <path d="M26 7 L32 11 L26 15" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"></path>
+      </svg>
+      <span id="shuffle-label">Shuffle off</span>
     </button>
   </div>
 
