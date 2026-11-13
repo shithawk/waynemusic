@@ -27,6 +27,7 @@
 		rewrite * /oembed?format=json&{http.request.uri.query}
 		reverse_proxy https://www.youtube.com {
 			header_up Host www.youtube.com
+			header_up User-Agent "Mozilla/5.0"
 		}
 	}
 
@@ -40,6 +41,7 @@
 	handle {
 		root * web
 		encode gzip
+		header Cache-Control "no-cache"
 		header /manifest.webmanifest Content-Type application/manifest+json
 		file_server
 	}

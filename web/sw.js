@@ -1,9 +1,11 @@
-const CACHE = "waynes-shell-v8";
+const CACHE = "waynes-shell-v10";
 const SHELL = [
   "/",
   "/index.html",
   "/styles.css",
+  "/styles.css?v=10",
   "/app.js",
+  "/app.js?v=10",
   "/manifest.webmanifest",
   "/car.jpeg",
   "/icon-180.png",
@@ -32,7 +34,7 @@ self.addEventListener("fetch", (event) => {
   }
 
   event.respondWith(
-    fetch(event.request)
+    fetch(new Request(event.request, { cache: "no-cache" }))
       .then((response) => {
         if (response.ok && event.request.method === "GET") {
           const copy = response.clone();

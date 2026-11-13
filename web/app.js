@@ -48,6 +48,7 @@ async function init() {
   }
   if (state.shuffle) startShuffle(state.currentId);
   render();
+  refreshSavedLinks();
   requestPersist();
   if ("serviceWorker" in navigator) {
     navigator.serviceWorker.register("/sw.js").catch(() => {});
@@ -84,8 +85,11 @@ function bindEvents() {
     if (!button) return;
     const track = state.tracks.find((item) => item.id === button.dataset.play);
     if (!track) return;
-    if (track.id === state.currentId && state.playing) return;
-    userPlay(track, false);
+    if (track.id === state.currentId && state.playing) {
+      if (track.source !== "local") openPlayer();
+      return;
+    }
+    userPlay(track, track.source !== "local");
   });
   document.getElementById("catalog-list").addEventListener("click", (event) => {
     const button = event.target.closest("[data-download]");
@@ -174,9 +178,10 @@ function renderSongs() {
   const current = currentTrack();
   const bar = document.getElementById("now-bar");
   bar.hidden = !current;
-  document.getElementById("now-bar-title").textContent = current ? current.title : "";
-  const kicker = document.querySelector(".now-kicker");
-  if (kicker) kicker.textContent = state.playing ? "Now playing" : "Paused";
+  document.body.classList.toggle("has-now", Boolean(current));
+  const label = current ? nowLabel(current) : "";
+  document.getElementById("now-bar-title").textContent = label;
+  bar.setAttribute("aria-label", label ? (state.playing ? "Now playing: " : "Paused: ") + label : "Now playing");
 }
 
 function renderPlayer() {
@@ -187,6 +192,13 @@ function renderPlayer() {
   document.getElementById("stage-yt").hidden = !track || track.source !== "youtube";
   document.getElementById("stage-sc").hidden = !track || track.source !== "soundcloud";
   setPlaying(state.playing);
+}
+
+function nowLabel(track) {
+  const title = (track.title || "").trim();
+  const artist = (track.artist || "").trim();
+  if (title && artist) return title + " - " + artist;
+  return title || artist;
 }
 
 function subtitle(track) {
@@ -209,6 +221,7 @@ function openPlayer() {
   player.classList.add("open");
   player.inert = false;
   player.setAttribute("aria-hidden", "false");
+  if (isSource("youtube")) requestAnimationFrame(fitYouTube);
 }
 
 function closePlayer() {
@@ -531,13 +544,75 @@ async function fetchOEmbed(parsed) {
     const response = await fetch(endpoint + "?url=" + encodeURIComponent(parsed.pageURL));
     if (!response.ok) return { title: fallback, artist: "" };
     const payload = await response.json();
-    return {
-      title: String(payload.title || "").trim() || fallback,
-      artist: String(payload.author_name || "").trim()
-    };
+    const videoTitle = String(payload.title || "").trim();
+    const channel = String(payload.author_name || "").trim();
+    if (parsed.source === "youtube") return youtubeNames(videoTitle, channel);
+    return { title: videoTitle || fallback, artist: channel };
   } catch {
     return { title: fallback, artist: "" };
   }
+}
+
+function youtubeNames(videoTitle, channel) {
+  const raw = String(videoTitle || "").replace(/\s+/g, " ").trim();
+  if (!raw) return { title: "YouTube video", artist: "" };
+  const quoted = raw.match(/^(.+?)\s+["“]([^"”]+)["”]/);
+  if (quoted) {
+    const artist = tidyName(quoted[1]);
+    const title = tidyName(quoted[2]);
+    if (artist && title) return { title: title, artist: artist };
+  }
+  const byline = raw.match(/^(.+?)\s+\bby\b\s+(.+)$/i);
+  if (byline) {
+    const title = tidyName(byline[1].split(/\s+[|]\s+/)[0]);
+    const artist = tidyName(byline[2].split(/\s+[|]\s+/)[0]);
+    if (title && artist) return { title: title, artist: artist };
+  }
+  const pieces = raw.split(/\s+[-–—]\s+/);
+  if (pieces.length >= 2) {
+    const left = tidyName(pieces[0]);
+    const right = tidyName(pieces[1].split(/\s+[|(]\s+/)[0]);
+    if (left && right) {
+      const channelName = tidyName(channel).toLowerCase();
+      if (channelName && right.toLowerCase() === channelName) return { title: left, artist: right };
+      return { title: right, artist: left };
+    }
+  }
+  return {
+    title: tidyName(raw.split(/\s+[|]\s+/)[0]) || "YouTube video",
+    artist: tidyName(channel)
+  };
+}
+
+function tidyName(value) {
+  return String(value || "").replace(/\s+/g, " ").replace(/^[\s\-–—|]+|[\s\-–—|]+$/g, "").trim();
+}
+
+function needsMeta(track) {
+  const title = (track.title || "").trim();
+  return !title || !String(track.artist || "").trim() || title === "YouTube video" || title === "SoundCloud song";
+}
+
+async function refreshSavedLinks() {
+  const pending = state.tracks.filter(needsMeta);
+  if (!pending.length) return;
+  let changed = false;
+  for (const track of pending) {
+    if (track.source !== "youtube" && track.source !== "soundcloud") continue;
+    const pageURL = track.source === "youtube" ? "https://www.youtube.com/watch?v=" + track.mediaRef : track.mediaRef;
+    const meta = await fetchOEmbed({ source: track.source, pageURL: pageURL });
+    if (!meta.title || meta.title === "YouTube video" || meta.title === "SoundCloud song") continue;
+    if (meta.title === track.title && meta.artist === track.artist) continue;
+    track.title = meta.title;
+    track.artist = meta.artist;
+    try {
+      await putTrack(track);
+      changed = true;
+    } catch { /* The name still shows for this visit. */ }
+  }
+  if (!changed) return;
+  state.tracks = sortTracks(state.tracks);
+  render();
 }
 
 function openManage() {
@@ -650,6 +725,7 @@ function userPause() {
 
 function userPlay(track, open) {
   if (!track) return;
+  const show = Boolean(open || track.source !== "local");
   const player = audio();
   if (track.source === "local") {
     const url = fileURLs.get(track.id);
@@ -665,10 +741,10 @@ function userPlay(track, open) {
   }
   if (track.source === "local" && state.currentId === track.id && realSource(player) && !player.paused) {
     setPlaying(true);
-    if (open) openPlayer();
+    if (show) openPlayer();
     return;
   }
-  playTrack(track, { open: open });
+  playTrack(track, { open: show });
 }
 
 function skip(direction) {
@@ -861,6 +937,7 @@ function playYouTube(track) {
   pendingVideo = track.mediaRef;
   loadYouTubeAPI();
   if (ytReady && ytPlayer && ytPlayer.loadVideoById) {
+    fitYouTube();
     ytPlayer.loadVideoById(track.mediaRef);
     ytPlayer.playVideo();
   }
@@ -901,10 +978,11 @@ window.onYouTubeIframeAPIReady = function onYouTubeIframeAPIReady() {
     width: "100%",
     height: "100%",
     videoId: pendingVideo || undefined,
-    playerVars: { playsinline: 1, rel: 0, modestbranding: 1, controls: 0, fs: 0, iv_load_policy: 3 },
+    playerVars: { playsinline: 1, rel: 0, modestbranding: 1, controls: 1, fs: 0, iv_load_policy: 3 },
     events: {
       onReady: () => {
         ytReady = true;
+        fitYouTube();
         if (pendingVideo && isSource("youtube")) {
           ytPlayer.loadVideoById(pendingVideo);
           ytPlayer.playVideo();
@@ -920,6 +998,14 @@ window.onYouTubeIframeAPIReady = function onYouTubeIframeAPIReady() {
     }
   });
 };
+
+function fitYouTube() {
+  const stage = document.getElementById("stage-yt");
+  if (!ytPlayer || !ytPlayer.setSize || !stage) return;
+  const width = stage.clientWidth;
+  const height = stage.clientHeight;
+  if (width > 0 && height > 0) ytPlayer.setSize(width, height);
+}
 
 function loadSoundCloudAPI() {
   if (window.SC && window.SC.Widget) return Promise.resolve();
@@ -982,7 +1068,7 @@ function step(direction) {
     restart();
     return;
   }
-  playTrack(track, { open: playerIsOpen() });
+  playTrack(track, { open: playerIsOpen() || track.source !== "local" });
 }
 
 function restart() {
