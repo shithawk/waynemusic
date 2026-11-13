@@ -6,8 +6,6 @@
   --red: #db141a;
   --text: #fff;
   --transport-bar: calc(128px + env(safe-area-inset-bottom));
-  --now-bar-space: 0px;
-  --transport-space: calc(var(--transport-bar) + var(--now-bar-space));
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 }
 
@@ -23,9 +21,14 @@ html, body {
 
 body {
   min-height: 100dvh;
+  --now-bar-space: 0px;
+  --transport-space: calc(var(--transport-bar) + var(--now-bar-space));
 }
 
-body.has-now { --now-bar-space: 108px; }
+body.has-now {
+  --now-bar-space: 120px;
+  --transport-space: calc(var(--transport-bar) + 120px);
+}
 
 button, input {
   font: inherit;
@@ -52,10 +55,14 @@ h1, h2, p { margin: 0; }
   top: 0;
   right: 0;
   left: 0;
-  bottom: var(--transport-space);
+  bottom: var(--transport-bar);
   min-height: 0;
   overflow: auto;
 }
+
+body.has-now #songs { bottom: calc(var(--transport-bar) + 120px); }
+
+#song-list { padding-bottom: 16px; }
 
 .banner {
   position: relative;
@@ -298,15 +305,18 @@ input::placeholder { color: rgba(255, 255, 255, 0.72); }
   position: fixed;
   left: 16px;
   right: 16px;
-  bottom: var(--transport-bar);
+  bottom: calc(var(--transport-bar) + 12px);
   z-index: 31;
   width: auto;
+  height: auto;
   min-height: 76px;
-  margin: 0 0 8px;
+  margin: 0;
   padding: 14px 18px;
   align-items: flex-start;
   text-align: left;
 }
+
+#now-bar { box-shadow: none; }
 
 #now-bar-title {
   font-size: 1.45rem;
@@ -414,11 +424,13 @@ input::placeholder { color: rgba(255, 255, 255, 0.72); }
   top: 0;
   right: 0;
   left: 0;
-  bottom: var(--transport-space);
+  bottom: var(--transport-bar);
   z-index: 8;
   background: var(--bg);
   color: #fff;
 }
+
+body.has-now .sheet-screen { bottom: calc(var(--transport-bar) + 120px); }
 
 .sheet {
   position: relative;
@@ -451,12 +463,35 @@ input::placeholder { color: rgba(255, 255, 255, 0.72); }
 }
 
 .catalog-row .text,
+.catalog-play,
 .manage-row .text {
   display: flex;
   flex-direction: column;
   gap: 4px;
   flex: 1;
   min-width: 0;
+}
+
+.catalog-play {
+  align-items: flex-start;
+  padding: 0;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+}
+
+.catalog-row.saved {
+  background: var(--yellow);
+  color: #000;
+  box-shadow: inset 0 0 0 3px var(--red);
+}
+
+.catalog-row.saved .song-sub { color: rgba(0, 0, 0, 0.75); }
+
+.catalog-row.saved .download {
+  background: #000;
+  color: var(--yellow);
+  box-shadow: none;
 }
 
 .download,

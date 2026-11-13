@@ -25,6 +25,7 @@ let ytReady = false;
 let pendingVideo = "";
 let scWidget = null;
 let noticeTimer = 0;
+let ignoreAdvance = false;
 const downloading = new Set();
 
 const audio = () => document.getElementById("audio");
@@ -37,10 +38,16 @@ async function init() {
   bindEvents();
   bindMediaSession();
   audio().addEventListener("play", () => { if (isSource("local")) setPlaying(true); });
+  audio().addEventListener("playing", () => { if (isSource("local")) finishTrackChange(); });
   audio().addEventListener("pause", () => {
     if (isSource("local") && !audio().ended) setPlaying(false);
   });
-  audio().addEventListener("ended", () => { if (isSource("local")) step(1); });
+  audio().addEventListener("ended", () => {
+    const player = audio();
+    if (!shouldAdvance() || !isSource("local")) return;
+    if (!player.duration || player.currentTime + 0.75 < player.duration) return;
+    step(1);
+  });
   try {
     state.tracks = sortTracks(await allTracks());
   } catch {
@@ -92,6 +99,11 @@ function bindEvents() {
     userPlay(track, track.source !== "local");
   });
   document.getElementById("catalog-list").addEventListener("click", (event) => {
+    const saved = event.target.closest("[data-play-saved]");
+    if (saved) {
+      playSaved(saved.dataset.playSaved);
+      return;
+    }
     const button = event.target.closest("[data-download]");
     if (!button || button.disabled) return;
     const entry = state.catalog.find((item) => item.file === button.dataset.download);
@@ -107,7 +119,11 @@ function bindEvents() {
   });
   document.getElementById("confirm-keep").addEventListener("click", hideConfirm);
   document.getElementById("confirm-remove").addEventListener("click", confirmRemove);
-  document.getElementById("now-bar").addEventListener("click", () => openPlayer());
+  document.getElementById("now-bar").addEventListener("click", () => {
+    const track = currentTrack();
+    if (track && track.source !== "local") openPlayer();
+    else showSongList();
+  });
   document.getElementById("back-songs").addEventListener("click", closePlayer);
   document.getElementById("previous").addEventListener("click", () => skip(-1));
   document.getElementById("next").addEventListener("click", () => skip(1));
@@ -140,6 +156,7 @@ function render() {
   renderSongs();
   renderPlayer();
   updateShuffleButton();
+  renderCatalog();
 }
 
 function renderSongs() {
@@ -231,6 +248,19 @@ function closePlayer() {
   player.setAttribute("aria-hidden", "true");
 }
 
+function showSongList() {
+  closePlayer();
+  const songs = document.getElementById("songs");
+  const current = document.querySelector("#song-list .song.current");
+  if (!songs || !current) return;
+  const limit = songs.getBoundingClientRect().bottom - 16;
+  const rect = current.getBoundingClientRect();
+  if (rect.bottom > limit) songs.scrollTop += rect.bottom - limit;
+  else if (rect.top < songs.getBoundingClientRect().top + 12) {
+    songs.scrollTop -= songs.getBoundingClientRect().top + 12 - rect.top;
+  }
+}
+
 function setPlaying(playing) {
   state.playing = playing;
   document.getElementById("play-label").textContent = playing ? "Pause" : "Play";
@@ -241,6 +271,7 @@ function setPlaying(playing) {
     navigator.mediaSession.playbackState = playing ? "playing" : "paused";
   }
   renderSongs();
+  if (!document.getElementById("add-sheet").hidden) renderCatalog();
 }
 
 function setNotice(text) {
@@ -292,19 +323,31 @@ async function loadCatalog() {
 function renderCatalog() {
   const status = document.getElementById("mac-status");
   const list = document.getElementById("catalog-list");
+  const scroller = list.closest(".sheet-body");
+  const scrollTop = scroller ? scroller.scrollTop : 0;
   list.replaceChildren();
+  const savedCount = state.catalog.filter((entry) => savedOnIpad(entry)).length;
   if (state.macError) {
     status.textContent = state.macError;
   } else if (state.catalog.length === 0) {
     status.textContent = "No songs on the computer yet.";
-  } else {
+  } else if (savedCount === 0) {
     status.textContent = "Tap Download to put a song on this iPad.";
+  } else {
+    status.textContent = "Yellow songs are on this iPad. Tap Play.";
   }
   for (const entry of state.catalog) {
+    const already = savedOnIpad(entry);
+    const savedTrack = already ? trackForFile(entry.file) : null;
+    const playing = Boolean(savedTrack && savedTrack.id === state.currentId && state.playing);
     const row = document.createElement("div");
-    row.className = "catalog-row";
-    const text = document.createElement("div");
-    text.className = "text";
+    row.className = "catalog-row" + (already ? " saved" : "");
+    const text = document.createElement(already ? "button" : "div");
+    text.className = already ? "catalog-play" : "text";
+    if (already) {
+      text.type = "button";
+      text.dataset.playSaved = entry.file;
+    }
     const title = document.createElement("span");
     title.className = "song-title";
     title.textContent = entry.title;
@@ -314,11 +357,16 @@ function renderCatalog() {
     text.append(title, sub);
     const button = document.createElement("button");
     button.type = "button";
-    button.dataset.download = entry.file;
-    const already = savedOnIpad(entry);
-    button.className = "download" + (already ? " saved" : "");
-    button.disabled = already || downloading.has(entry.file);
-    button.textContent = already ? "On this iPad" : "Download";
+    if (already) {
+      button.className = "download play-ready";
+      button.dataset.playSaved = entry.file;
+      button.textContent = playing ? "Playing" : "Play";
+    } else {
+      button.className = "download";
+      button.dataset.download = entry.file;
+      button.disabled = downloading.has(entry.file);
+      button.textContent = downloading.has(entry.file) ? "Downloading…" : "Download";
+    }
     row.append(text, button);
     list.append(row);
   }
@@ -326,6 +374,18 @@ function renderCatalog() {
   const downloadAll = document.getElementById("download-all");
   downloadAll.hidden = pending.length === 0;
   downloadAll.disabled = state.working || pending.length === 0;
+  if (scroller) scroller.scrollTop = scrollTop;
+}
+
+function trackForFile(file) {
+  return state.tracks.find((track) => track.source === "local" && track.mediaRef === file) || null;
+}
+
+function playSaved(file) {
+  const track = trackForFile(file);
+  if (!track) return;
+  if (track.id === state.currentId && state.playing) return;
+  userPlay(track, false);
 }
 
 function savedOnIpad(entry) {
@@ -350,7 +410,7 @@ async function downloadAll() {
   }
   render();
   renderCatalog();
-  if (count > 0) setNotice(count === 1 ? "1 song is on this iPad. Tap Done, then tap the song." : count + " songs are on this iPad. Tap Done, then tap a song.");
+  if (count > 0) setNotice(count === 1 ? "1 song is yellow. Tap Play." : count + " songs are yellow. Tap Play.");
 }
 
 async function downloadEntry(entry, announce) {
@@ -400,7 +460,7 @@ async function downloadEntry(entry, announce) {
     render();
     renderCatalog();
   }
-  if (saved && announce) setNotice(savedTitle + " is on this iPad. Tap Done, then tap the song.");
+  if (saved && announce) setNotice(savedTitle + " is yellow. Tap Play.");
   return saved;
 }
 
@@ -668,7 +728,31 @@ async function confirmRemove() {
   renderManage();
 }
 
+function youtubeActuallyEnded(event) {
+  if (!shouldAdvance() || !isSource("youtube")) return false;
+  const current = currentTrack();
+  if (!current) return false;
+  try {
+    const playingId = event.target && event.target.getVideoData ? event.target.getVideoData().video_id : "";
+    if (playingId && playingId !== current.mediaRef) return false;
+  } catch { /* Keep the button state if the player is not ready. */ }
+  return true;
+}
+
+function beginTrackChange() {
+  ignoreAdvance = true;
+}
+
+function finishTrackChange() {
+  ignoreAdvance = false;
+}
+
+function shouldAdvance() {
+  return !ignoreAdvance;
+}
+
 async function playTrack(track, options) {
+  beginTrackChange();
   const open = !options || options.open !== false;
   if (state.shuffle && state.currentId && state.currentId !== track.id && !state.shuffleRewind) {
     state.shuffleHistory.push(state.currentId);
@@ -682,22 +766,28 @@ async function playTrack(track, options) {
       if (track.source === "local" && realSource(audio()) && !audio().paused) setPlaying(true);
       else await toggle();
     }
-    if (open) openPlayer();
+    if (track.source === "local") showSongList();
+    else if (open) openPlayer();
+    finishTrackChange();
     render();
+    if (track.source === "local") showSongList();
     return;
   }
   state.currentId = track.id;
   const player = audio();
   const started = track.source === "local" && player.src === fileURLs.get(track.id) && !player.paused && !player.error;
   state.playing = Boolean(started);
-  if (open) openPlayer();
+  if (track.source === "local") closePlayer();
+  else if (open) openPlayer();
   publishSession(track);
   render();
+  if (track.source === "local") showSongList();
   try {
     if (track.source === "local") await playLocal(track);
     else if (track.source === "youtube") playYouTube(track);
     else await playSoundCloud(track);
   } catch {
+    finishTrackChange();
     setNotice("That song could not be played.");
   }
 }
@@ -725,6 +815,9 @@ function userPause() {
 
 function userPlay(track, open) {
   if (!track) return;
+  beginTrackChange();
+  pauseYouTube();
+  pauseSoundCloud();
   const show = Boolean(open || track.source !== "local");
   const player = audio();
   if (track.source === "local") {
@@ -741,7 +834,9 @@ function userPlay(track, open) {
   }
   if (track.source === "local" && state.currentId === track.id && realSource(player) && !player.paused) {
     setPlaying(true);
+    finishTrackChange();
     if (show) openPlayer();
+    else showSongList();
     return;
   }
   playTrack(track, { open: show });
@@ -890,6 +985,7 @@ async function playLocal(track) {
   if (!url) {
     const blob = await playableBlob(track);
     if (!blob) {
+      finishTrackChange();
       setNotice("That song is not on this iPad.");
       return;
     }
@@ -902,6 +998,7 @@ async function playLocal(track) {
   }
   if (!player.paused && !player.error) {
     setPlaying(true);
+    finishTrackChange();
     return;
   }
   try {
@@ -960,9 +1057,15 @@ async function playSoundCloud(track) {
   scWidget.bind(window.SC.Widget.Events.READY, () => {
     if (isSource("soundcloud")) scWidget.play();
   });
-  scWidget.bind(window.SC.Widget.Events.PLAY, () => { if (isSource("soundcloud")) setPlaying(true); });
+  scWidget.bind(window.SC.Widget.Events.PLAY, () => {
+    if (!isSource("soundcloud")) return;
+    finishTrackChange();
+    setPlaying(true);
+  });
   scWidget.bind(window.SC.Widget.Events.PAUSE, () => { if (isSource("soundcloud")) setPlaying(false); });
-  scWidget.bind(window.SC.Widget.Events.FINISH, () => { if (isSource("soundcloud")) step(1); });
+  scWidget.bind(window.SC.Widget.Events.FINISH, () => {
+    if (isSource("soundcloud") && shouldAdvance()) step(1);
+  });
 }
 
 function loadYouTubeAPI() {
@@ -990,11 +1093,17 @@ window.onYouTubeIframeAPIReady = function onYouTubeIframeAPIReady() {
       },
       onStateChange: (event) => {
         if (!isSource("youtube") || !window.YT) return;
-        if (event.data === YT.PlayerState.PLAYING) setPlaying(true);
+        if (event.data === YT.PlayerState.PLAYING) {
+          finishTrackChange();
+          setPlaying(true);
+        }
         if (event.data === YT.PlayerState.PAUSED) setPlaying(false);
-        if (event.data === YT.PlayerState.ENDED) step(1);
+        if (event.data === YT.PlayerState.ENDED && youtubeActuallyEnded(event)) step(1);
       },
-      onError: () => setNotice("That video could not be played.")
+      onError: () => {
+        finishTrackChange();
+        setNotice("That video could not be played.");
+      }
     }
   });
 };
@@ -1101,7 +1210,8 @@ function stopPlayback() {
 
 function pauseYouTube() {
   try {
-    if (ytPlayer && ytPlayer.pauseVideo) ytPlayer.pauseVideo();
+    if (ytPlayer && ytPlayer.stopVideo) ytPlayer.stopVideo();
+    else if (ytPlayer && ytPlayer.pauseVideo) ytPlayer.pauseVideo();
   } catch { /* The player may not be ready yet. */ }
 }
 
