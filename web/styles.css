@@ -50,12 +50,15 @@ h1, h2, p { margin: 0; }
 
 .top-nav {
   position: fixed;
-  top: calc(12px + env(safe-area-inset-top));
-  left: 16px;
+  top: 0;
+  left: 0;
+  right: 0;
   z-index: 40;
   display: flex;
   gap: 12px;
-  max-width: calc(100% - 32px);
+  padding: calc(12px + env(safe-area-inset-top)) 16px 12px;
+  background: var(--bg);
+  transform: translateZ(0);
 }
 
 .home {
@@ -83,6 +86,7 @@ h1, h2, p { margin: 0; }
   right: 0;
   left: 0;
   bottom: var(--transport-bar);
+  z-index: 1;
   min-height: 0;
   overflow: auto;
 }
@@ -205,7 +209,7 @@ body.has-now #songs { bottom: calc(var(--transport-bar) + var(--now-bar-space));
 
 .search-box {
   position: sticky;
-  top: 0;
+  top: calc(88px + env(safe-area-inset-top));
   z-index: 2;
   display: flex;
   align-items: center;
@@ -423,10 +427,13 @@ input::placeholder { color: rgba(255, 255, 255, 0.72); }
 .seek-time.end { right: 16px; }
 
 
-#now-bar { box-shadow: none; }
+#now-bar {
+  background: #ff7a00;
+  box-shadow: none;
+}
 
 #now-bar-title {
-  font-size: 1.45rem;
+  font-size: 1.25rem;
   line-height: 1.2;
   display: -webkit-box;
   -webkit-line-clamp: 2;
