@@ -11,7 +11,7 @@
   <title>Wayne's Music</title>
   <link rel="manifest" href="/manifest.webmanifest">
   <link rel="apple-touch-icon" href="/icon-180.png">
-  <link rel="stylesheet" href="/styles.css?v=24">
+  <link rel="stylesheet" href="/styles.css?v=25">
 </head>
 <body>
   <div class="top-nav">
@@ -20,6 +20,8 @@
       <span>Home</span>
     </button>
     <button id="artists" class="home" type="button">Artists</button>
+    <button id="songs-nav" class="home" type="button">Songs</button>
+    <button id="videos-nav" class="home" type="button">Videos</button>
   </div>
   <div id="songs" class="screen">
     <header class="banner">
@@ -68,7 +70,6 @@
 
   <div id="player" class="screen" aria-hidden="true" inert>
     <div class="player-scroll">
-      <button id="back-songs" class="big plain songs-back" type="button">Songs</button>
       <h1 id="player-title"></h1>
       <p id="player-sub"></p>
       <div class="stage">
@@ -137,6 +138,16 @@
     </div>
   </div>
 
+  <div id="videos-sheet" class="sheet-screen" hidden>
+    <div class="sheet">
+      <div class="sheet-body">
+        <h1>Videos</h1>
+        <p id="videos-empty" class="empty" hidden>No videos on this iPad yet.</p>
+        <div id="video-list"></div>
+      </div>
+    </div>
+  </div>
+
   <div class="transport">
     <button id="previous" class="big plain" type="button">
       <svg viewBox="0 0 36 36" width="36" height="36" aria-hidden="true"><rect x="4" y="6" width="5" height="24" rx="1"></rect><path d="M31 6 L13 18 L31 30 Z"></path></svg>
@@ -164,6 +175,6 @@
 
   <div id="notice" class="notice" hidden role="status"></div>
   <audio id="audio" playsinline preload="none"></audio>
-  <script src="/app.js?v=20" defer></script>
+  <script src="/app.js?v=22" defer></script>
 </body>
 </html>

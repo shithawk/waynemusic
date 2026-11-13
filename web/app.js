@@ -81,6 +81,12 @@ async function init() {
 function bindEvents() {
   document.getElementById("home").addEventListener("click", goHome);
   document.getElementById("artists").addEventListener("click", openArtists);
+  document.getElementById("songs-nav").addEventListener("click", showSongs);
+  document.getElementById("videos-nav").addEventListener("click", openVideos);
+  document.getElementById("video-list").addEventListener("click", (event) => {
+    const button = event.target.closest("[data-play]");
+    if (button) playListed(button.dataset.play);
+  });
   document.getElementById("artist-list").addEventListener("click", (event) => {
     const button = event.target.closest("[data-play]");
     if (button) {
@@ -156,7 +162,6 @@ function bindEvents() {
     if (track && track.source !== "local") openPlayer();
     else showSongList();
   });
-  document.getElementById("back-songs").addEventListener("click", closePlayer);
   document.getElementById("previous").addEventListener("click", () => skip(-1));
   document.getElementById("next").addEventListener("click", () => skip(1));
   document.getElementById("play-button").addEventListener("click", () => {
@@ -190,6 +195,7 @@ function render() {
   updateShuffleButton();
   renderCatalog();
   renderArtists();
+  renderVideos();
 }
 
 function renderSongs() {
@@ -417,7 +423,10 @@ function clock(seconds) {
 function playListed(id) {
   const track = state.tracks.find((item) => item.id === id);
   if (!track) return;
-  if (track.source !== "local") hideSheet("artists-sheet");
+  if (track.source !== "local") {
+    hideSheet("artists-sheet");
+    hideSheet("videos-sheet");
+  }
   if (track.id === state.currentId && state.playing) {
     if (track.source !== "local") openPlayer();
     return;
@@ -428,10 +437,49 @@ function playListed(id) {
 function openArtists() {
   hideSheet("add-sheet");
   hideSheet("manage-sheet");
+  hideSheet("videos-sheet");
   hideConfirm();
   closePlayer();
   showSheet("artists-sheet");
   renderArtists();
+}
+
+function openVideos() {
+  hideSheet("add-sheet");
+  hideSheet("manage-sheet");
+  hideSheet("artists-sheet");
+  hideConfirm();
+  closePlayer();
+  showSheet("videos-sheet");
+  renderVideos();
+}
+
+function renderVideos() {
+  const sheet = document.getElementById("videos-sheet");
+  if (!sheet || sheet.hidden) return;
+  const list = document.getElementById("video-list");
+  const scroller = list.closest(".sheet-body");
+  const scrollTop = scroller ? scroller.scrollTop : 0;
+  const videos = state.tracks
+    .filter((track) => track.source === "youtube" || track.source === "soundcloud")
+    .sort((a, b) => (a.title || "").localeCompare(b.title || "", undefined, { sensitivity: "base", numeric: true }));
+  list.replaceChildren();
+  document.getElementById("videos-empty").hidden = videos.length > 0;
+  for (const track of videos) {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "song" + (track.id === state.currentId ? " current" : "");
+    button.dataset.play = track.id;
+    const title = document.createElement("span");
+    title.className = "song-title";
+    title.textContent = track.title;
+    const sub = document.createElement("span");
+    sub.className = "song-sub";
+    sub.textContent = (track.id === state.currentId && state.playing ? "Playing · " : "") + subtitle(track);
+    button.append(title, sub);
+    list.append(button);
+  }
+  if (scroller) scroller.scrollTop = scrollTop;
 }
 
 function artistNames(track) {
@@ -558,6 +606,7 @@ function setPlaying(playing) {
   renderSongs();
   if (!document.getElementById("add-sheet").hidden) renderCatalog();
   if (!document.getElementById("artists-sheet").hidden) renderArtists();
+  if (!document.getElementById("videos-sheet").hidden) renderVideos();
 }
 
 function setNotice(text) {
@@ -568,10 +617,20 @@ function setNotice(text) {
   if (text) noticeTimer = setTimeout(() => { el.hidden = true; }, 4000);
 }
 
+function showSongs() {
+  hideSheet("add-sheet");
+  hideSheet("manage-sheet");
+  hideSheet("artists-sheet");
+  hideSheet("videos-sheet");
+  hideConfirm();
+  closePlayer();
+}
+
 function goHome() {
   hideSheet("add-sheet");
   hideSheet("manage-sheet");
   hideSheet("artists-sheet");
+  hideSheet("videos-sheet");
   hideConfirm();
   closePlayer();
   const input = document.getElementById("find-song");

@@ -470,8 +470,6 @@ input::placeholder { color: rgba(255, 255, 255, 0.72); }
   padding: calc(88px + env(safe-area-inset-top)) 24px var(--transport-space);
 }
 
-.songs-back { max-width: 220px; }
-
 #player-title { font-size: 2.1rem; font-weight: 700; }
 #player-sub { font-size: 1.35rem; opacity: 0.9; }
 
