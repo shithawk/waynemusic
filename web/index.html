@@ -12,7 +12,7 @@
   <link rel="icon" href="/favicon.ico">
   <link rel="manifest" href="/manifest.webmanifest">
   <link rel="apple-touch-icon" href="/icon-180.png">
-  <link rel="stylesheet" href="/styles.css?v=35">
+  <link rel="stylesheet" href="/styles.css?v=36">
 </head>
 <body>
   <div class="top-nav">
@@ -107,6 +107,15 @@
         <p id="mac-status" class="lede"></p>
         <div id="catalog-list"></div>
       </div>
+      <div id="link-confirm" class="confirm" hidden>
+        <div class="confirm-card" role="alertdialog" aria-labelledby="link-confirm-status">
+          <h2 id="link-confirm-status">Adding…</h2>
+          <p id="link-confirm-name" hidden></p>
+          <p id="link-confirm-detail" hidden></p>
+          <button id="link-confirm-play" class="big prominent" type="button" hidden>Play</button>
+          <button id="link-confirm-done" class="big plain" type="button">Done</button>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -200,6 +209,6 @@
 
   <div id="notice" class="notice" hidden role="status"></div>
   <audio id="audio" playsinline preload="none"></audio>
-  <script src="/app.js?v=30" defer></script>
+  <script src="/app.js?v=31" defer></script>
 </body>
 </html>

@@ -710,6 +710,7 @@ body.has-now .sheet-screen { bottom: calc(var(--transport-bar) + var(--now-bar-s
 
 .confirm-card h2 { font-size: 2rem; }
 .confirm-card p { font-size: 1.35rem; }
+#link-confirm-name { font-size: 1.7rem; font-weight: 700; }
 
 .notice {
   position: fixed;

@@ -33,6 +33,7 @@ let seekBar = null;
 let pendingSeek = null;
 let lastSeekAt = 0;
 let youtubeSearchToken = 0;
+let linkConfirmId = "";
 const downloading = new Set();
 
 const audio = () => document.getElementById("audio");
@@ -134,6 +135,8 @@ function bindEvents() {
   document.getElementById("from-ipad").addEventListener("click", () => document.getElementById("file-input").click());
   document.getElementById("file-input").addEventListener("change", (event) => importFiles(event.target.files));
   document.getElementById("paste-link").addEventListener("click", pasteLink);
+  document.getElementById("link-confirm-done").addEventListener("click", hideLinkConfirm);
+  document.getElementById("link-confirm-play").addEventListener("click", playConfirmedLink);
   document.getElementById("type-link").addEventListener("click", toggleLinkBox);
   document.getElementById("add-link").addEventListener("click", () => addTypedLink());
   document.getElementById("link-input").addEventListener("input", () => {
@@ -837,6 +840,7 @@ function showSheet(id) {
 
 function hideSheet(id) {
   document.getElementById(id).hidden = true;
+  if (id === "add-sheet") hideLinkConfirm();
 }
 
 function playerIsOpen() {
@@ -1080,6 +1084,7 @@ async function importFiles(fileList) {
 }
 
 async function pasteLink() {
+  showLinkConfirm("Adding…");
   let copied = "";
   try {
     copied = await navigator.clipboard.readText();
@@ -1087,10 +1092,77 @@ async function pasteLink() {
     copied = "";
   }
   if (!copied.trim()) {
-    setAddError("Copy a YouTube or SoundCloud link first.");
+    showLinkConfirm("Copy a YouTube or SoundCloud link first.");
     return;
   }
-  await addLinkText(copied);
+  await addPastedLink(copied);
+}
+
+async function addPastedLink(text) {
+  state.working = true;
+  document.getElementById("paste-link").disabled = true;
+  try {
+    const parsed = parseLink(text);
+    if (!parsed) {
+      showLinkConfirm("Use a YouTube or SoundCloud link.");
+      return;
+    }
+    const existing = state.tracks.find((track) => track.source === parsed.source && track.mediaRef === parsed.mediaRef);
+    if (existing) {
+      showLinkConfirm("That song is already in the list.", existing);
+      return;
+    }
+    const track = await addLink(text);
+    render();
+    if (linkConfirmVisible()) showLinkConfirm("Added", track);
+    else setNotice("Added " + track.title);
+  } catch (error) {
+    const message = error.message || "That link could not be added.";
+    if (linkConfirmVisible()) showLinkConfirm(message);
+    else setAddError(message);
+  } finally {
+    state.working = false;
+    document.getElementById("paste-link").disabled = false;
+  }
+}
+
+function showLinkConfirm(status, track) {
+  document.getElementById("link-confirm-status").textContent = status;
+  const name = document.getElementById("link-confirm-name");
+  const detail = document.getElementById("link-confirm-detail");
+  const play = document.getElementById("link-confirm-play");
+  if (track) {
+    linkConfirmId = track.id;
+    name.hidden = false;
+    name.textContent = track.title;
+    detail.hidden = false;
+    detail.textContent = subtitle(track);
+    play.hidden = false;
+  } else {
+    linkConfirmId = "";
+    name.hidden = true;
+    name.textContent = "";
+    detail.hidden = true;
+    detail.textContent = "";
+    play.hidden = true;
+  }
+  document.getElementById("link-confirm").hidden = false;
+}
+
+function linkConfirmVisible() {
+  return !document.getElementById("link-confirm").hidden;
+}
+
+function hideLinkConfirm() {
+  linkConfirmId = "";
+  document.getElementById("link-confirm").hidden = true;
+}
+
+function playConfirmedLink() {
+  const id = linkConfirmId;
+  hideLinkConfirm();
+  hideSheet("add-sheet");
+  if (id) playListed(id);
 }
 
 function toggleLinkBox() {
@@ -1110,11 +1182,11 @@ async function addLinkText(text) {
   document.getElementById("add-link").disabled = true;
   document.getElementById("add-link").textContent = "Adding…";
   try {
-    const title = await addLink(text);
+    const track = await addLink(text);
     document.getElementById("link-input").value = "";
     hideSheet("add-sheet");
     render();
-    setNotice("Added " + title);
+    setNotice("Added " + track.title);
   } catch (error) {
     setAddError(error.message || "That link could not be added.");
   } finally {
@@ -1143,7 +1215,7 @@ async function addLink(text) {
   };
   await putTrack(track);
   state.tracks = sortTracks(state.tracks.concat(track));
-  return track.title;
+  return track;
 }
 
 async function fetchOEmbed(parsed) {
