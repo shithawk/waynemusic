@@ -63,6 +63,7 @@ async function init() {
 }
 
 function bindEvents() {
+  document.getElementById("home").addEventListener("click", goHome);
   document.getElementById("add-music").addEventListener("click", openAdd);
   document.getElementById("close-add").addEventListener("click", () => hideSheet("add-sheet"));
   document.getElementById("manage-songs").addEventListener("click", openManage);
@@ -280,6 +281,20 @@ function setNotice(text) {
   el.hidden = !text;
   clearTimeout(noticeTimer);
   if (text) noticeTimer = setTimeout(() => { el.hidden = true; }, 4000);
+}
+
+function goHome() {
+  hideSheet("add-sheet");
+  hideSheet("manage-sheet");
+  hideConfirm();
+  closePlayer();
+  const input = document.getElementById("find-song");
+  if (state.query || input.value) {
+    input.value = "";
+    state.query = "";
+    renderSongs();
+  }
+  document.getElementById("songs").scrollTop = 0;
 }
 
 function showSheet(id) {

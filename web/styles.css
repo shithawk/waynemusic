@@ -48,6 +48,26 @@ img { display: block; max-width: 100%; }
 
 h1, h2, p { margin: 0; }
 
+.home {
+  position: fixed;
+  top: calc(12px + env(safe-area-inset-top));
+  left: 16px;
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 64px;
+  padding: 10px 18px;
+  border-radius: 18px;
+  background: #fff;
+  color: #000;
+  font-size: 1.35rem;
+  font-weight: 700;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.45);
+}
+
+.home:active { opacity: 0.65; }
+
 .screen { min-height: 100dvh; }
 
 #songs {
@@ -353,7 +373,7 @@ input::placeholder { color: rgba(255, 255, 255, 0.72); }
   display: flex;
   flex-direction: column;
   gap: 16px;
-  padding: calc(24px + env(safe-area-inset-top)) 24px var(--transport-space);
+  padding: calc(88px + env(safe-area-inset-top)) 24px var(--transport-space);
 }
 
 .songs-back { max-width: 220px; }
@@ -437,7 +457,7 @@ body.has-now .sheet-screen { bottom: calc(var(--transport-bar) + 120px); }
   display: flex;
   flex-direction: column;
   height: 100%;
-  padding: calc(24px + env(safe-area-inset-top)) 24px calc(16px + env(safe-area-inset-bottom));
+  padding: calc(88px + env(safe-area-inset-top)) 24px calc(16px + env(safe-area-inset-bottom));
 }
 
 .sheet-body {

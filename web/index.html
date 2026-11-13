@@ -11,9 +11,13 @@
   <title>Wayne's Music</title>
   <link rel="manifest" href="/manifest.webmanifest">
   <link rel="apple-touch-icon" href="/icon-180.png">
-  <link rel="stylesheet" href="/styles.css?v=15">
+  <link rel="stylesheet" href="/styles.css?v=17">
 </head>
 <body>
+  <button id="home" class="home" type="button">
+    <svg viewBox="0 0 36 36" width="28" height="28" aria-hidden="true"><path fill="currentColor" d="M18 4 L33 17 H28 V32 H21 V22 H15 V32 H8 V17 H3 Z"></path></svg>
+    <span>Home</span>
+  </button>
   <div id="songs" class="screen">
     <header class="banner">
       <img src="/car.jpeg" alt="">
@@ -73,13 +77,9 @@
     <div class="sheet">
       <div class="sheet-body stack">
         <h1>Add music</h1>
-        <h2>On the computer</h2>
-        <p id="mac-status" class="lede"></p>
-        <div id="catalog-list"></div>
         <button id="download-all" class="big prominent" type="button">Download all</button>
         <button id="from-ipad" class="big plain" type="button">Choose a song saved on this iPad</button>
         <input id="file-input" type="file" accept="audio/*,.mp3,.m4a,.aac,.wav" multiple hidden>
-        <h2>YouTube or SoundCloud</h2>
         <button id="paste-link" class="big plain" type="button">Paste a link</button>
         <button id="type-link" class="big plain" type="button">Type a link</button>
         <div id="link-box" class="stack" hidden>
@@ -88,6 +88,9 @@
           <button id="add-link" class="big prominent" type="button" disabled>Add this link</button>
         </div>
         <p id="add-error" class="error" hidden></p>
+        <h2>On the computer</h2>
+        <p id="mac-status" class="lede"></p>
+        <div id="catalog-list"></div>
       </div>
       <button id="close-add" class="big prominent" type="button">Done</button>
     </div>
@@ -140,6 +143,6 @@
 
   <div id="notice" class="notice" hidden role="status"></div>
   <audio id="audio" playsinline preload="none"></audio>
-  <script src="/app.js?v=15" defer></script>
+  <script src="/app.js?v=17" defer></script>
 </body>
 </html>
