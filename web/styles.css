@@ -55,10 +55,74 @@ h1, h2, p { margin: 0; }
   right: 0;
   z-index: 40;
   display: flex;
+  flex-direction: column;
   gap: 12px;
   padding: calc(12px + env(safe-area-inset-top)) 16px 12px;
   background: var(--bg);
   transform: translateZ(0);
+}
+
+.top-nav-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.nav-search {
+  flex: 1;
+  min-width: 140px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 64px;
+  padding: 8px 16px;
+  border-radius: 18px;
+  background: #fff;
+  color: #000;
+  box-shadow: inset 0 0 0 4px var(--yellow);
+}
+
+.nav-search input {
+  flex: 1;
+  min-width: 0;
+  width: auto;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: #000;
+  font-size: 1.35rem;
+  font-weight: 700;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.nav-search input::placeholder { color: rgba(0, 0, 0, 0.55); }
+
+.nav-search input::-webkit-search-decoration,
+.nav-search input::-webkit-search-cancel-button,
+.nav-search input::-webkit-search-results-button {
+  -webkit-appearance: none;
+  appearance: none;
+  display: none;
+}
+
+.nav-results {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: min(52dvh, 480px);
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-y;
+}
+
+.nav-results .song,
+.nav-results .artist-row { margin-top: 0; }
+
+.nav-results-label {
+  font-size: 1.35rem;
+  font-weight: 700;
 }
 
 .home {
@@ -188,7 +252,12 @@ body.has-now #songs { bottom: calc(var(--transport-bar) + var(--now-bar-space));
 
 #add-music {
   background: #ff7a00;
-  color: #000;
+  color: #fff;
+}
+
+#manage-songs {
+  background: var(--red);
+  color: #fff;
 }
 
 .big svg { fill: currentColor; }

@@ -83,29 +83,28 @@ async function init() {
 
 function bindEvents() {
   document.getElementById("home").addEventListener("click", goHome);
-  document.getElementById("artists").addEventListener("click", openArtists);
+  document.getElementById("artists").addEventListener("click", () => openArtists());
   document.getElementById("songs-nav").addEventListener("click", showSongs);
   document.getElementById("videos-nav").addEventListener("click", openVideos);
   document.getElementById("video-list").addEventListener("click", (event) => {
     const button = event.target.closest("[data-play]");
     if (button) playListed(button.dataset.play);
   });
-  document.getElementById("youtube-search-go").addEventListener("click", searchYouTube);
-  document.getElementById("youtube-search").addEventListener("keydown", (event) => {
-    if (event.key === "Enter") {
-      event.preventDefault();
-      searchYouTube();
-    }
-  });
-  document.getElementById("youtube-results").addEventListener("click", (event) => {
-    const play = event.target.closest("[data-play]");
-    if (play) {
-      playListed(play.dataset.play);
+  document.getElementById("nav-search").addEventListener("submit", (event) => event.preventDefault());
+  document.getElementById("nav-search-input").addEventListener("input", renderNavSearch);
+  document.getElementById("nav-search-input").addEventListener("focus", renderNavSearch);
+  document.getElementById("nav-results").addEventListener("click", (event) => {
+    const song = event.target.closest("[data-play]");
+    if (song) {
+      chooseNavSong(song.dataset.play);
       return;
     }
-    const button = event.target.closest("[data-add-video]");
-    if (!button || button.disabled) return;
-    addYouTubeVideo(button.dataset.addVideo, button);
+    const artist = event.target.closest("[data-artist-jump]");
+    if (artist) chooseNavArtist(artist.dataset.artistJump);
+  });
+  document.addEventListener("click", (event) => {
+    if (event.target.closest(".top-nav")) return;
+    document.getElementById("nav-results").hidden = true;
   });
   document.getElementById("artist-list").addEventListener("click", (event) => {
     const button = event.target.closest("[data-play]");
@@ -139,28 +138,6 @@ function bindEvents() {
   document.getElementById("add-link").addEventListener("click", () => addTypedLink());
   document.getElementById("link-input").addEventListener("input", () => {
     document.getElementById("add-link").disabled = !document.getElementById("link-input").value.trim();
-  });
-  document.getElementById("find-song").addEventListener("input", (event) => {
-    state.query = event.target.value;
-    renderSongs();
-  });
-  document.getElementById("clear-search").addEventListener("click", () => {
-    const input = document.getElementById("find-song");
-    input.value = "";
-    state.query = "";
-    renderSongs();
-    input.focus();
-  });
-  document.getElementById("find-artist").addEventListener("input", (event) => {
-    state.artistQuery = event.target.value;
-    renderArtists();
-  });
-  document.getElementById("clear-artist-search").addEventListener("click", () => {
-    const input = document.getElementById("find-artist");
-    input.value = "";
-    state.artistQuery = "";
-    renderArtists();
-    input.focus();
   });
   document.getElementById("song-list").addEventListener("click", (event) => {
     const button = event.target.closest("[data-play]");
@@ -241,7 +218,6 @@ function renderSongs() {
     if (!query) return true;
     return track.title.toLowerCase().includes(query) || track.artist.toLowerCase().includes(query);
   });
-  document.getElementById("clear-search").hidden = query.length === 0;
   if (hasTracks && visible.length === 0) {
     const empty = document.createElement("p");
     empty.className = "search-empty";
@@ -465,14 +441,114 @@ function playListed(id) {
   userPlay(track, track.source !== "local");
 }
 
-function openArtists() {
+function openArtists(name) {
   hideSheet("add-sheet");
   hideSheet("manage-sheet");
   hideSheet("videos-sheet");
   hideConfirm();
   closePlayer();
+  if (typeof name === "string" && name) state.openArtists.add(name);
   showSheet("artists-sheet");
   renderArtists();
+  if (typeof name === "string" && name) {
+    const match = [...document.querySelectorAll("#artist-list [data-artist]")].find((item) => item.dataset.artist === name);
+    if (match) match.scrollIntoView({ block: "nearest" });
+  }
+}
+
+function clearNavSearch() {
+  const input = document.getElementById("nav-search-input");
+  input.value = "";
+  document.getElementById("nav-results").hidden = true;
+  document.getElementById("nav-results").replaceChildren();
+}
+
+function chooseNavSong(id) {
+  clearNavSearch();
+  hideSheet("add-sheet");
+  hideSheet("manage-sheet");
+  hideSheet("artists-sheet");
+  hideSheet("videos-sheet");
+  hideConfirm();
+  playListed(id);
+}
+
+function chooseNavArtist(name) {
+  clearNavSearch();
+  openArtists(name);
+}
+
+function renderNavSearch() {
+  const list = document.getElementById("nav-results");
+  const query = document.getElementById("nav-search-input").value.trim().toLowerCase();
+  list.replaceChildren();
+  if (!query) {
+    list.hidden = true;
+    return;
+  }
+  const artistNamesSeen = new Set();
+  const artists = [];
+  for (const track of state.tracks) {
+    for (const name of artistNames(track)) {
+      const key = name.toLocaleLowerCase();
+      if (artistNamesSeen.has(key) || !key.includes(query)) continue;
+      artistNamesSeen.add(key);
+      artists.push(name);
+    }
+  }
+  artists.sort((a, b) => a.localeCompare(b, undefined, { sensitivity: "base" }));
+  const songs = state.tracks.filter((track) => {
+    return track.title.toLowerCase().includes(query) || (track.artist || "").toLowerCase().includes(query);
+  });
+  if (!artists.length && !songs.length) {
+    const empty = document.createElement("p");
+    empty.className = "search-empty";
+    empty.textContent = "No song or artist matches that.";
+    list.append(empty);
+    list.hidden = false;
+    return;
+  }
+  if (artists.length) {
+    const heading = document.createElement("p");
+    heading.className = "nav-results-label";
+    heading.textContent = "Artists";
+    list.append(heading);
+  }
+  for (const name of artists) {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "artist-row";
+    button.dataset.artistJump = name;
+    const title = document.createElement("span");
+    title.className = "song-title";
+    title.textContent = name;
+    const sub = document.createElement("span");
+    sub.className = "song-sub";
+    sub.textContent = "Artist";
+    button.append(title, sub);
+    list.append(button);
+  }
+  if (songs.length) {
+    const heading = document.createElement("p");
+    heading.className = "nav-results-label";
+    heading.textContent = "Songs";
+    list.append(heading);
+  }
+  for (const track of songs) {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "song" + (track.id === state.currentId ? " current" : "");
+    button.dataset.play = track.id;
+    const title = document.createElement("span");
+    title.className = "song-title";
+    title.textContent = track.title;
+    const sub = document.createElement("span");
+    sub.className = "song-sub";
+    sub.textContent = subtitle(track);
+    button.append(title, sub);
+    list.append(button);
+  }
+  list.hidden = false;
 }
 
 function openVideos() {
@@ -678,20 +754,9 @@ function renderArtists() {
       if (!group.tracks.some((item) => item.id === track.id)) group.tracks.push(track);
     }
   }
-  const query = state.artistQuery.trim().toLowerCase();
-  const artists = [...groups.values()]
-    .filter((group) => !query || group.name.toLowerCase().includes(query))
-    .sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: "base" }));
+  const artists = [...groups.values()].sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: "base" }));
   list.replaceChildren();
-  document.getElementById("artist-finder").hidden = groups.size === 0;
   document.getElementById("artists-empty").hidden = groups.size > 0;
-  document.getElementById("clear-artist-search").hidden = query.length === 0;
-  if (groups.size > 0 && artists.length === 0) {
-    const empty = document.createElement("p");
-    empty.className = "search-empty";
-    empty.textContent = "No artist matches that. Try another word.";
-    list.append(empty);
-  }
   for (const group of artists) {
     group.tracks.sort((a, b) => (a.title || "").localeCompare(b.title || "", undefined, { sensitivity: "base", numeric: true }));
     const open = state.openArtists.has(group.name);
@@ -823,12 +888,6 @@ function goHome() {
   hideConfirm();
   closePlayer();
   document.body.classList.remove("songs-page");
-  const input = document.getElementById("find-song");
-  if (state.query || input.value) {
-    input.value = "";
-    state.query = "";
-    renderSongs();
-  }
   document.getElementById("songs").scrollTop = 0;
 }
 
