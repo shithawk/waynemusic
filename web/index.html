@@ -12,7 +12,7 @@
   <link rel="icon" href="/favicon.ico">
   <link rel="manifest" href="/manifest.webmanifest">
   <link rel="apple-touch-icon" href="/icon-180.png">
-  <link rel="stylesheet" href="/styles.css?v=41">
+  <link rel="stylesheet" href="/styles.css?v=52">
 </head>
 <body>
   <div class="top-nav">
@@ -24,15 +24,17 @@
       <button id="artists" class="home" type="button">Artists</button>
       <button id="songs-nav" class="home" type="button">Songs</button>
       <button id="videos-nav" class="home" type="button">Videos</button>
-      <form id="nav-search" class="nav-search" role="search">
-        <svg class="search-icon" viewBox="0 0 36 36" width="36" height="36" aria-hidden="true">
-          <circle cx="15" cy="15" r="8" fill="none" stroke="currentColor" stroke-width="3"></circle>
-          <path d="M21.5 21.5 L31 31" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"></path>
-        </svg>
-        <input id="nav-search-input" type="search" placeholder="Search" aria-label="Search" enterkeyhint="search" autocomplete="off" autocapitalize="none" autocorrect="off" spellcheck="false">
-      </form>
+      <div class="nav-search-wrap">
+        <form id="nav-search" class="nav-search" role="search">
+          <svg class="search-icon" viewBox="0 0 36 36" width="36" height="36" aria-hidden="true">
+            <circle cx="15" cy="15" r="8" fill="none" stroke="currentColor" stroke-width="3"></circle>
+            <path d="M21.5 21.5 L31 31" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"></path>
+          </svg>
+          <input id="nav-search-input" type="search" placeholder="Search" aria-label="Search" enterkeyhint="search" autocomplete="off" autocapitalize="none" autocorrect="off" spellcheck="false">
+        </form>
+        <button id="search-clear" class="home search-clear" type="button">Clear</button>
+      </div>
     </div>
-    <div id="nav-results" class="nav-results" hidden></div>
   </div>
   <div id="songs" class="screen">
     <header class="banner home-only">
@@ -46,13 +48,19 @@
     </section>
 
     <div class="actions home-only">
-      <button id="add-music" class="big white" type="button">Add music</button>
-      <button id="manage-songs" class="big white" type="button" hidden>Remove songs</button>
+      <button id="add-music" class="big white" type="button">+ Add music</button>
+      <button id="manage-songs" class="big white" type="button" hidden>- Remove songs</button>
     </div>
 
-    <p id="empty" class="empty home-only">Tap Add music to put songs on this iPad.</p>
+    <p id="empty" class="empty home-only">Tap + Add music to put songs on this iPad.</p>
 
     <h1 id="songs-title" class="songs-title">Songs</h1>
+    <h1 id="search-title" class="search-title">Search results</h1>
+
+    <div id="search-page" class="finder">
+      <p id="search-hint" class="finder-hint"></p>
+      <div id="search-results"></div>
+    </div>
 
     <div id="finder" class="finder" hidden>
       <p class="finder-hint">Tap a song to play it</p>
@@ -92,7 +100,7 @@
   <div id="add-sheet" class="sheet-screen" hidden>
     <div class="sheet">
       <div class="sheet-body stack">
-        <h1>Add music</h1>
+        <h1>+ Add music</h1>
         <button id="download-all" class="big prominent" type="button">Download all</button>
         <button id="from-ipad" class="big plain" type="button">Choose a song saved on this iPad</button>
         <input id="file-input" type="file" accept="audio/*,.mp3,.m4a,.aac,.wav" multiple hidden>
@@ -122,7 +130,7 @@
   <div id="manage-sheet" class="sheet-screen" hidden>
     <div class="sheet">
       <div class="sheet-body">
-        <h1>Remove songs</h1>
+        <h1>- Remove songs</h1>
         <p class="lede">This takes a song off this iPad.</p>
         <p id="manage-empty" class="empty" hidden>No songs to remove.</p>
         <div id="manage-list"></div>
@@ -153,7 +161,18 @@
     <div class="sheet">
       <div class="sheet-body">
         <h1>Videos</h1>
-        <h2>On this iPad</h2>
+        <h2 class="youtube-heading">Search YouTube</h2>
+        <form id="youtube-search-form" class="search-box sheet-search" role="search">
+          <svg class="search-icon" viewBox="0 0 36 36" width="36" height="36" aria-hidden="true">
+            <circle cx="15" cy="15" r="8" fill="none" stroke="currentColor" stroke-width="3"></circle>
+            <path d="M21.5 21.5 L31 31" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"></path>
+          </svg>
+          <input id="youtube-search" type="search" placeholder="Song or artist on YouTube" aria-label="Search YouTube" enterkeyhint="search" autocomplete="off" autocapitalize="none" autocorrect="off" spellcheck="false">
+          <button id="youtube-search-go" type="submit">Search</button>
+        </form>
+        <p id="youtube-search-status" class="finder-hint" hidden></p>
+        <div id="youtube-results"></div>
+        <h2 class="on-ipad">On this iPad</h2>
         <p id="videos-empty" class="empty" hidden>No videos on this iPad yet.</p>
         <div id="video-list"></div>
       </div>
@@ -187,6 +206,6 @@
 
   <div id="notice" class="notice" hidden role="status"></div>
   <audio id="audio" playsinline preload="none"></audio>
-  <script src="/app.js?v=33" defer></script>
+  <script src="/app.js?v=42" defer></script>
 </body>
 </html>

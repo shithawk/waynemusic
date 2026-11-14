@@ -5,6 +5,7 @@ const state = {
   currentId: null,
   playing: false,
   query: "",
+  searchQuery: "",
   artistQuery: "",
   working: false,
   removeId: null,
@@ -14,7 +15,9 @@ const state = {
   shuffleIndex: -1,
   shuffleHistory: [],
   shuffleRewind: false,
-  openArtists: new Set()
+  openArtists: new Set(),
+  openSearchArtists: new Set(),
+  artistQueue: null
 };
 
 let dbPromise = null;
@@ -86,27 +89,63 @@ function bindEvents() {
   document.getElementById("artists").addEventListener("click", () => openArtists());
   document.getElementById("songs-nav").addEventListener("click", showSongs);
   document.getElementById("videos-nav").addEventListener("click", openVideos);
+  document.getElementById("youtube-search-form").addEventListener("submit", (event) => {
+    event.preventDefault();
+    searchYouTube();
+  });
+  document.getElementById("youtube-search").addEventListener("keydown", (event) => {
+    if (event.key !== "Enter") return;
+    event.preventDefault();
+    searchYouTube();
+  });
+  document.getElementById("youtube-results").addEventListener("click", (event) => {
+    const play = event.target.closest("[data-play]");
+    if (play) {
+      playListed(play.dataset.play);
+      return;
+    }
+    const add = event.target.closest("[data-add-video]");
+    if (!add || add.disabled) return;
+    addYouTubeVideo(add.dataset.addVideo, add);
+  });
   document.getElementById("video-list").addEventListener("click", (event) => {
     const button = event.target.closest("[data-play]");
     if (button) playListed(button.dataset.play);
   });
-  document.getElementById("nav-search").addEventListener("submit", (event) => event.preventDefault());
-  document.getElementById("nav-search-input").addEventListener("input", renderNavSearch);
-  document.getElementById("nav-search-input").addEventListener("focus", renderNavSearch);
-  document.getElementById("nav-results").addEventListener("click", (event) => {
+  document.getElementById("nav-search").addEventListener("submit", (event) => {
+    event.preventDefault();
+    showSearch();
+  });
+  document.getElementById("search-clear").addEventListener("click", clearSearch);
+  document.getElementById("nav-search-input").addEventListener("input", () => {
+    const value = document.getElementById("nav-search-input").value.trim();
+    if (!value && !document.body.classList.contains("search-page")) return;
+    showSearch({ typing: true });
+  });
+  document.getElementById("nav-search-input").addEventListener("keydown", (event) => {
+    if (event.key !== "Enter") return;
+    event.preventDefault();
+    showSearch();
+  });
+  document.getElementById("search-results").addEventListener("click", (event) => {
     const song = event.target.closest("[data-play]");
     if (song) {
-      chooseNavSong(song.dataset.play);
+      playListed(song.dataset.play);
       return;
     }
-    const artist = event.target.closest("[data-artist-jump]");
-    if (artist) chooseNavArtist(artist.dataset.artistJump);
-  });
-  document.addEventListener("click", (event) => {
-    if (event.target.closest(".top-nav")) return;
-    document.getElementById("nav-results").hidden = true;
+    const artist = event.target.closest("[data-artist-search]");
+    if (!artist) return;
+    const name = artist.dataset.artistSearch;
+    if (state.openSearchArtists.has(name)) state.openSearchArtists.delete(name);
+    else state.openSearchArtists.add(name);
+    renderSearchResults();
   });
   document.getElementById("artist-list").addEventListener("click", (event) => {
+    const playAll = event.target.closest("[data-play-all]");
+    if (playAll) {
+      playAllArtist(playAll.dataset.playAll);
+      return;
+    }
     const button = event.target.closest("[data-play]");
     if (button) {
       playListed(button.dataset.play);
@@ -199,6 +238,7 @@ function standalone() {
 
 function render() {
   renderSongs();
+  renderSearchResults();
   renderPlayer();
   updateShuffleButton();
   renderCatalog();
@@ -224,21 +264,7 @@ function renderSongs() {
     empty.textContent = "No song matches that. Try another word.";
     list.append(empty);
   }
-  for (const track of visible) {
-    const currentSong = track.id === state.currentId;
-    const button = document.createElement("button");
-    button.type = "button";
-    button.className = "song" + (currentSong ? " current" : "");
-    button.dataset.play = track.id;
-    const title = document.createElement("span");
-    title.className = "song-title";
-    title.textContent = track.title;
-    const sub = document.createElement("span");
-    sub.className = "song-sub";
-    sub.textContent = (currentSong && state.playing ? "Playing · " : "") + subtitle(track);
-    button.append(title, sub);
-    list.append(button);
-  }
+  for (const track of visible) list.append(songBox(track));
   const current = currentTrack();
   document.getElementById("now-stack").hidden = !current;
   document.body.classList.toggle("has-now", Boolean(current));
@@ -427,14 +453,69 @@ function clock(seconds) {
   return hours ? hours + ":" + paddedMinutes + ":" + paddedSeconds : paddedMinutes + ":" + paddedSeconds;
 }
 
-function playListed(id) {
+function songBox(track) {
+  const currentSong = track.id === state.currentId;
+  const row = document.createElement("div");
+  row.className = "song" + (currentSong ? " current" : "");
+  row.dataset.play = track.id;
+  const copy = document.createElement("div");
+  copy.className = "song-copy";
+  const title = document.createElement("span");
+  title.className = "song-title";
+  title.textContent = track.title;
+  const sub = document.createElement("span");
+  sub.className = "song-sub";
+  sub.textContent = (currentSong && state.playing ? "Playing · " : "") + subtitle(track);
+  copy.append(title, sub);
+  const play = document.createElement("button");
+  play.type = "button";
+  play.className = "song-play";
+  play.dataset.play = track.id;
+  play.setAttribute("aria-label", "Play " + track.title);
+  play.append(playIcon());
+  row.append(copy, play);
+  return row;
+}
+
+function playIcon() {
+  const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+  svg.setAttribute("viewBox", "0 0 36 36");
+  svg.setAttribute("width", "36");
+  svg.setAttribute("height", "36");
+  svg.setAttribute("aria-hidden", "true");
+  const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+  path.setAttribute("fill", "currentColor");
+  path.setAttribute("d", "M11 5 L31 18 L11 31 Z");
+  svg.append(path);
+  return svg;
+}
+
+function tracksForArtist(name) {
+  const key = name.toLocaleLowerCase();
+  return state.tracks
+    .filter((track) => artistNames(track).some((item) => item.toLocaleLowerCase() === key))
+    .sort((a, b) => (a.title || "").localeCompare(b.title || "", undefined, { sensitivity: "base", numeric: true }));
+}
+
+function playAllArtist(name) {
+  const tracks = tracksForArtist(name);
+  if (!tracks.length) return;
+  let ids = tracks.map((track) => track.id);
+  if (state.shuffle) ids = shuffleIds(ids);
+  state.artistQueue = { name, ids, index: 0 };
+  playListed(ids[0], { keepQueue: true });
+}
+
+function playListed(id, options) {
   const track = state.tracks.find((item) => item.id === id);
   if (!track) return;
+  const keepQueue = Boolean(options && options.keepQueue);
+  if (!keepQueue) state.artistQueue = null;
   if (track.source !== "local") {
     hideSheet("artists-sheet");
     hideSheet("videos-sheet");
   }
-  if (track.id === state.currentId && state.playing) {
+  if (!keepQueue && track.id === state.currentId && state.playing) {
     if (track.source !== "local") openPlayer();
     return;
   }
@@ -456,36 +537,46 @@ function openArtists(name) {
   }
 }
 
-function clearNavSearch() {
+function clearSearch() {
   const input = document.getElementById("nav-search-input");
   input.value = "";
-  document.getElementById("nav-results").hidden = true;
-  document.getElementById("nav-results").replaceChildren();
+  state.searchQuery = "";
+  state.openSearchArtists.clear();
+  if (document.body.classList.contains("search-page")) renderSearchResults();
+  input.focus();
 }
 
-function chooseNavSong(id) {
-  clearNavSearch();
-  hideSheet("add-sheet");
-  hideSheet("manage-sheet");
-  hideSheet("artists-sheet");
-  hideSheet("videos-sheet");
-  hideConfirm();
-  playListed(id);
+function showSearch(options) {
+  const typing = Boolean(options && options.typing);
+  const input = document.getElementById("nav-search-input");
+  state.searchQuery = input.value.trim();
+  const already = document.body.classList.contains("search-page");
+  if (!already) {
+    hideSheet("add-sheet");
+    hideSheet("manage-sheet");
+    hideSheet("artists-sheet");
+    hideSheet("videos-sheet");
+    hideConfirm();
+    closePlayer();
+    document.body.classList.remove("songs-page");
+    document.body.classList.add("search-page");
+    document.getElementById("songs").scrollTop = 0;
+  }
+  if (!typing) input.blur();
+  renderSearchResults();
 }
 
-function chooseNavArtist(name) {
-  clearNavSearch();
-  openArtists(name);
-}
-
-function renderNavSearch() {
-  const list = document.getElementById("nav-results");
-  const query = document.getElementById("nav-search-input").value.trim().toLowerCase();
+function renderSearchResults() {
+  const list = document.getElementById("search-results");
+  const hint = document.getElementById("search-hint");
+  if (!list || !hint) return;
   list.replaceChildren();
+  const query = state.searchQuery.trim().toLowerCase();
   if (!query) {
-    list.hidden = true;
+    hint.textContent = "Start typing in Search box above and results will show here...";
     return;
   }
+  hint.textContent = state.searchQuery.trim();
   const artistNamesSeen = new Set();
   const artists = [];
   for (const track of state.tracks) {
@@ -505,50 +596,41 @@ function renderNavSearch() {
     empty.className = "search-empty";
     empty.textContent = "No song or artist matches that.";
     list.append(empty);
-    list.hidden = false;
     return;
   }
-  if (artists.length) {
-    const heading = document.createElement("p");
-    heading.className = "nav-results-label";
-    heading.textContent = "Artists";
-    list.append(heading);
-  }
+  if (artists.length) list.append(searchHeading("Artists"));
   for (const name of artists) {
+    const open = state.openSearchArtists.has(name);
+    const tracks = tracksForArtist(name);
     const button = document.createElement("button");
     button.type = "button";
-    button.className = "artist-row";
-    button.dataset.artistJump = name;
+    button.className = "artist-row search-artist" + (open ? " open" : "");
+    button.dataset.artistSearch = name;
+    button.setAttribute("aria-expanded", open ? "true" : "false");
     const title = document.createElement("span");
     title.className = "song-title";
     title.textContent = name;
     const sub = document.createElement("span");
     sub.className = "song-sub";
-    sub.textContent = "Artist";
+    const count = tracks.length === 1 ? "1 song" : tracks.length + " songs";
+    sub.textContent = count + (open ? " · Tap to hide" : " · Tap to show");
     button.append(title, sub);
     list.append(button);
+    if (!open) continue;
+    const songs = document.createElement("div");
+    songs.className = "artist-songs";
+    for (const track of tracks) songs.append(songBox(track));
+    list.append(songs);
   }
-  if (songs.length) {
-    const heading = document.createElement("p");
-    heading.className = "nav-results-label";
-    heading.textContent = "Songs";
-    list.append(heading);
-  }
-  for (const track of songs) {
-    const button = document.createElement("button");
-    button.type = "button";
-    button.className = "song" + (track.id === state.currentId ? " current" : "");
-    button.dataset.play = track.id;
-    const title = document.createElement("span");
-    title.className = "song-title";
-    title.textContent = track.title;
-    const sub = document.createElement("span");
-    sub.className = "song-sub";
-    sub.textContent = subtitle(track);
-    button.append(title, sub);
-    list.append(button);
-  }
-  list.hidden = false;
+  if (songs.length) list.append(searchHeading("Songs"));
+  for (const track of songs) list.append(songBox(track));
+}
+
+function searchHeading(text) {
+  const heading = document.createElement("p");
+  heading.className = "search-results-label";
+  heading.textContent = text;
+  return heading;
 }
 
 function openVideos() {
@@ -572,20 +654,7 @@ function renderVideos() {
     .sort((a, b) => (a.title || "").localeCompare(b.title || "", undefined, { sensitivity: "base", numeric: true }));
   list.replaceChildren();
   document.getElementById("videos-empty").hidden = videos.length > 0;
-  for (const track of videos) {
-    const button = document.createElement("button");
-    button.type = "button";
-    button.className = "song" + (track.id === state.currentId ? " current" : "");
-    button.dataset.play = track.id;
-    const title = document.createElement("span");
-    title.className = "song-title";
-    title.textContent = track.title;
-    const sub = document.createElement("span");
-    sub.className = "song-sub";
-    sub.textContent = (track.id === state.currentId && state.playing ? "Playing · " : "") + subtitle(track);
-    button.append(title, sub);
-    list.append(button);
-  }
+  for (const track of videos) list.append(songBox(track));
   if (scroller) scroller.scrollTop = scrollTop;
 }
 
@@ -599,7 +668,7 @@ async function searchYouTube() {
   const query = document.getElementById("youtube-search").value.trim();
   const token = ++youtubeSearchToken;
   if (!query) {
-    setVideoSearchStatus("Type a song or artist.");
+    setVideoSearchStatus("Type a song or artist on YouTube.");
     return;
   }
   setVideoSearchStatus("Searching…");
@@ -760,11 +829,13 @@ function renderArtists() {
   for (const group of artists) {
     group.tracks.sort((a, b) => (a.title || "").localeCompare(b.title || "", undefined, { sensitivity: "base", numeric: true }));
     const open = state.openArtists.has(group.name);
-    const row = document.createElement("button");
-    row.type = "button";
+    const row = document.createElement("div");
     row.className = "artist-row" + (open ? " open" : "");
-    row.dataset.artist = group.name;
-    row.setAttribute("aria-expanded", open ? "true" : "false");
+    const toggle = document.createElement("button");
+    toggle.type = "button";
+    toggle.className = "artist-toggle";
+    toggle.dataset.artist = group.name;
+    toggle.setAttribute("aria-expanded", open ? "true" : "false");
     const title = document.createElement("span");
     title.className = "song-title";
     title.textContent = group.name;
@@ -772,25 +843,18 @@ function renderArtists() {
     sub.className = "song-sub";
     const count = group.tracks.length === 1 ? "1 song" : group.tracks.length + " songs";
     sub.textContent = count + (open ? " · Tap to hide" : " · Tap to show");
-    row.append(title, sub);
+    toggle.append(title, sub);
+    const playAll = document.createElement("button");
+    playAll.type = "button";
+    playAll.className = "play-all";
+    playAll.dataset.playAll = group.name;
+    playAll.textContent = "Play all " + group.name + " songs";
+    row.append(toggle, playAll);
     list.append(row);
     if (!open) continue;
     const songs = document.createElement("div");
     songs.className = "artist-songs";
-    for (const track of group.tracks) {
-      const button = document.createElement("button");
-      button.type = "button";
-      button.className = "song" + (track.id === state.currentId ? " current" : "");
-      button.dataset.play = track.id;
-      const songTitle = document.createElement("span");
-      songTitle.className = "song-title";
-      songTitle.textContent = track.title;
-      const songSub = document.createElement("span");
-      songSub.className = "song-sub";
-      songSub.textContent = (track.id === state.currentId && state.playing ? "Playing · " : "") + subtitle(track);
-      button.append(songTitle, songSub);
-      songs.append(button);
-    }
+    for (const track of group.tracks) songs.append(songBox(track));
     list.append(songs);
   }
   if (scroller) scroller.scrollTop = scrollTop;
@@ -856,6 +920,7 @@ function setPlaying(playing) {
     navigator.mediaSession.playbackState = playing ? "playing" : "paused";
   }
   renderSongs();
+  renderSearchResults();
   if (!document.getElementById("add-sheet").hidden) renderCatalog();
   if (!document.getElementById("artists-sheet").hidden) renderArtists();
   if (!document.getElementById("videos-sheet").hidden) renderVideos();
@@ -876,6 +941,7 @@ function showSongs() {
   hideSheet("videos-sheet");
   hideConfirm();
   closePlayer();
+  document.body.classList.remove("search-page");
   document.body.classList.add("songs-page");
   document.getElementById("songs").scrollTop = 0;
 }
@@ -888,6 +954,7 @@ function goHome() {
   hideConfirm();
   closePlayer();
   document.body.classList.remove("songs-page");
+  document.body.classList.remove("search-page");
   document.getElementById("songs").scrollTop = 0;
 }
 
@@ -1406,6 +1473,10 @@ async function confirmRemove() {
   if (!id) return;
   await deleteTrack(id);
   state.tracks = state.tracks.filter((track) => track.id !== id);
+  if (state.artistQueue) {
+    state.artistQueue.ids = state.artistQueue.ids.filter((item) => item !== id);
+    if (state.currentId === id || !state.artistQueue.ids.length) state.artistQueue = null;
+  }
   if (state.currentId === id) {
     stopPlayback();
     state.currentId = null;
@@ -1531,6 +1602,20 @@ function userPlay(track, open) {
 }
 
 function skip(direction) {
+  if (state.artistQueue) {
+    const track = moveArtistQueue(direction);
+    if (!track) {
+      stopArtistQueue();
+      return;
+    }
+    if (track.id === state.currentId) {
+      state.shuffleRewind = false;
+      restart();
+      return;
+    }
+    userPlay(track, playerIsOpen());
+    return;
+  }
   const track = trackForStep(direction);
   if (!track) return;
   if (track.id === state.currentId) {
@@ -1870,7 +1955,46 @@ async function toggle() {
   }
 }
 
+function moveArtistQueue(direction) {
+  const queue = state.artistQueue;
+  if (!queue || !queue.ids.length) return null;
+  let index = queue.ids.indexOf(state.currentId);
+  if (index < 0) index = Math.max(0, queue.index);
+  const next = index + direction;
+  if (direction > 0 && next >= queue.ids.length) return null;
+  if (next < 0) return currentTrack();
+  queue.index = next;
+  return state.tracks.find((track) => track.id === queue.ids[next]) || null;
+}
+
+function stopArtistQueue() {
+  state.artistQueue = null;
+  const track = currentTrack();
+  if (!track) {
+    setPlaying(false);
+    return;
+  }
+  if (track.source === "local") audio().pause();
+  else if (track.source === "youtube") pauseYouTube();
+  else pauseSoundCloud();
+  setPlaying(false);
+}
+
 function step(direction) {
+  if (state.artistQueue) {
+    const track = moveArtistQueue(direction);
+    if (!track) {
+      stopArtistQueue();
+      return;
+    }
+    if (track.id === state.currentId) {
+      state.shuffleRewind = false;
+      restart();
+      return;
+    }
+    playTrack(track, { open: playerIsOpen() || track.source !== "local" });
+    return;
+  }
   const track = trackForStep(direction);
   if (!track) return;
   if (track.id === state.currentId) {
