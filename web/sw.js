@@ -1,11 +1,11 @@
-const CACHE = "waynes-shell-v79";
+const CACHE = "waynes-shell-v12";
 const SHELL = [
   "/",
   "/index.html",
   "/styles.css",
-  "/styles.css?v=58",
+  "/styles.css?v=69",
   "/app.js",
-  "/app.js?v=51",
+  "/app.js?v=57",
   "/manifest.webmanifest",
   "/favicon.ico",
   "/youtube-logo.png",

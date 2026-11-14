@@ -3,16 +3,16 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta name="theme-color" content="#0d0d0d">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black">
   <meta name="apple-mobile-web-app-title" content="Wayne's Music">
   <title>Wayne's Music</title>
+  <meta name="theme-color" content="#0d0d0d">
   <link rel="icon" href="/favicon.ico">
   <link rel="manifest" href="/manifest.webmanifest">
-  <link rel="apple-touch-icon" href="/icon-180.png">
-  <link rel="stylesheet" href="/styles.css?v=58">
+  <link rel="apple-touch-icon" sizes="180x180" href="/icon-180.png">
+  <link rel="stylesheet" href="/styles.css?v=70">
 </head>
 <body>
   <div class="top-nav">
@@ -43,13 +43,14 @@
       <img src="/car.jpeg" alt="">
       <h1>Wayne's Music</h1>
     </header>
-    <div class="stripe home-only" aria-hidden="true"><span class="yellow"></span><span class="red"></span></div>
+    <div class="stripe home-only" aria-hidden="true"><span class="accent"></span><span class="accent-alt"></span></div>
 
     <section id="install-hint" class="hint-card home-only" hidden>
       <p>To install this app, tap Share, then Add to Home Screen.</p>
     </section>
 
     <div class="actions home-only">
+      <button id="play-favourites" class="big play-favourites" type="button" disabled>Select heart to add song to favourites</button>
       <button id="add-music" class="big white" type="button">+ Add music</button>
       <button id="manage-songs" class="big white" type="button" hidden>- Remove songs</button>
     </div>
@@ -71,14 +72,30 @@
   </div>
 
   <div id="now-stack" class="now-stack" hidden>
-    <button id="now-bar" class="big prominent now-bar" type="button">
-      <strong id="now-bar-title"></strong>
-    </button>
-    <div id="seek" class="seek dock-seek" role="slider" tabindex="0" aria-label="Skip in this song" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
-      <div class="seek-fill"></div>
-      <span class="seek-thumb" id="seek-thumb"></span>
-      <span class="seek-time start seek-elapsed" id="seek-elapsed">0:00</span>
-      <span class="seek-time end seek-total" id="seek-total">0:00</span>
+    <div class="now-dock" role="region" aria-label="Now playing">
+      <div class="now-stripe" aria-hidden="true"><span class="accent"></span><span class="accent-alt"></span></div>
+      <div class="now-bar-row">
+        <button id="now-favorite" class="now-favorite" type="button" hidden aria-pressed="false" aria-label="Add to favourites">
+          <svg class="heart-outline" viewBox="0 0 36 36" width="28" height="28" aria-hidden="true">
+            <path fill="none" stroke="currentColor" stroke-width="3" d="M18 31 C10 24 4 19 4 13 C4 8 8 4 13 4 C15.5 4 17.5 5.5 18 7.5 C18.5 5.5 20.5 4 23 4 C28 4 32 8 32 13 C32 19 26 24 18 31 Z"></path>
+          </svg>
+          <svg class="heart-solid" viewBox="0 0 36 36" width="28" height="28" aria-hidden="true">
+            <path fill="currentColor" d="M18 31 C10 24 4 19 4 13 C4 8 8 4 13 4 C15.5 4 17.5 5.5 18 7.5 C18.5 5.5 20.5 4 23 4 C28 4 32 8 32 13 C32 19 26 24 18 31 Z"></path>
+          </svg>
+        </button>
+        <button id="now-bar" class="now-bar" type="button">
+          <span class="now-bar-line">
+            <span id="now-bar-status" class="now-bar-status">Now playing</span>
+            <strong id="now-bar-title"></strong>
+          </span>
+        </button>
+      </div>
+      <div id="seek" class="seek dock-seek" role="slider" tabindex="0" aria-label="Skip in this song" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+        <div class="seek-fill"></div>
+        <span class="seek-thumb" id="seek-thumb"></span>
+        <span class="seek-time start seek-elapsed" id="seek-elapsed">0:00</span>
+        <span class="seek-time end seek-total" id="seek-total">0:00</span>
+      </div>
     </div>
   </div>
 
@@ -208,8 +225,11 @@
     </button>
   </div>
 
-  <div id="notice" class="notice" hidden role="status"></div>
+  <div id="notice" class="notice" hidden role="status">
+    <p id="notice-text"></p>
+    <button id="notice-action" class="notice-action" type="button" hidden>Open in YouTube</button>
+  </div>
   <audio id="audio" playsinline preload="none"></audio>
-  <script src="/app.js?v=51" defer></script>
+  <script src="/app.js?v=57" defer></script>
 </body>
 </html>

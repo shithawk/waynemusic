@@ -31,6 +31,7 @@ let pendingYtPlay = false;
 let pendingYtVideo = "";
 let scWidget = null;
 let noticeTimer = 0;
+let noticeActionURL = "";
 let ignoreAdvance = false;
 let seekHold = false;
 let seekBar = null;
@@ -87,6 +88,11 @@ async function init() {
 }
 
 function bindEvents() {
+  document.getElementById("notice-action").addEventListener("click", () => {
+    if (!noticeActionURL) return;
+    window.open(noticeActionURL, "_blank", "noopener,noreferrer");
+    clearNotice();
+  });
   document.getElementById("home").addEventListener("click", goHome);
   document.getElementById("artists").addEventListener("click", () => openArtists());
   document.getElementById("songs-nav").addEventListener("click", showSongs);
@@ -115,7 +121,14 @@ function bindEvents() {
     addYouTubeVideo(add.dataset.addVideo, add);
   });
   document.getElementById("video-list").addEventListener("click", (event) => {
-    const button = event.target.closest("[data-play]");
+    const fav = event.target.closest("[data-favorite]");
+    if (fav) {
+      event.preventDefault();
+      event.stopPropagation();
+      toggleFavorite(fav.dataset.favorite);
+      return;
+    }
+    const button = event.target.closest(".song-play[data-play]");
     if (button) playListed(button.dataset.play);
   });
   document.getElementById("nav-search").addEventListener("submit", (event) => {
@@ -156,12 +169,19 @@ function bindEvents() {
     showSearch();
   });
   document.getElementById("search-results").addEventListener("click", (event) => {
+    const fav = event.target.closest("[data-favorite]");
+    if (fav) {
+      event.preventDefault();
+      event.stopPropagation();
+      toggleFavorite(fav.dataset.favorite);
+      return;
+    }
     const playAll = event.target.closest("[data-play-all]");
     if (playAll) {
       playAllArtist(playAll.dataset.playAll);
       return;
     }
-    const song = event.target.closest("[data-play]");
+    const song = event.target.closest(".song-play[data-play]");
     if (song) {
       playListed(song.dataset.play);
       return;
@@ -179,7 +199,14 @@ function bindEvents() {
       playAllArtist(playAll.dataset.playAll);
       return;
     }
-    const button = event.target.closest("[data-play]");
+    const fav = event.target.closest("[data-favorite]");
+    if (fav) {
+      event.preventDefault();
+      event.stopPropagation();
+      toggleFavorite(fav.dataset.favorite);
+      return;
+    }
+    const button = event.target.closest(".song-play[data-play]");
     if (button) {
       playListed(button.dataset.play);
       return;
@@ -212,7 +239,14 @@ function bindEvents() {
     document.getElementById("add-link").disabled = !document.getElementById("link-input").value.trim();
   });
   document.getElementById("song-list").addEventListener("click", (event) => {
-    const button = event.target.closest("[data-play]");
+    const fav = event.target.closest("[data-favorite]");
+    if (fav) {
+      event.preventDefault();
+      event.stopPropagation();
+      toggleFavorite(fav.dataset.favorite);
+      return;
+    }
+    const button = event.target.closest(".song-play[data-play]");
     if (!button) return;
     playListed(button.dataset.play);
   });
@@ -237,11 +271,18 @@ function bindEvents() {
   });
   document.getElementById("confirm-keep").addEventListener("click", hideConfirm);
   document.getElementById("confirm-remove").addEventListener("click", confirmRemove);
+  document.getElementById("now-favorite").addEventListener("click", (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    const track = currentTrack();
+    if (track) toggleFavorite(track.id);
+  });
   document.getElementById("now-bar").addEventListener("click", () => {
     const track = currentTrack();
     if (track && track.source !== "local") openPlayer();
     else showSongList();
   });
+  document.getElementById("play-favourites").addEventListener("click", playFavourites);
   document.getElementById("previous").addEventListener("click", () => skip(-1));
   document.getElementById("next").addEventListener("click", () => skip(1));
   document.getElementById("play-button").addEventListener("click", () => {
@@ -302,10 +343,75 @@ function renderSongs() {
   document.getElementById("now-stack").hidden = !current;
   document.body.classList.toggle("has-now", Boolean(current));
   const label = current ? nowLabel(current) : "";
-  document.getElementById("now-bar-title").textContent = label ? "Now Playing: " + label : "";
+  document.getElementById("now-bar-status").textContent = state.playing ? "Now playing" : "Paused";
+  document.getElementById("now-bar-title").textContent = label ? "— " + label : "";
   const bar = document.getElementById("now-bar");
   bar.setAttribute("aria-label", label ? (state.playing ? "Now playing: " : "Paused: ") + label : "Now playing");
+  document.getElementById("now-stack").classList.toggle("is-playing", Boolean(current && state.playing));
+  updateNowFavoriteButton();
+  refreshPlayFavouritesButton();
   if (current) refreshSeek();
+}
+
+function trackIsFavorite(track) {
+  return Boolean(track && track.favorite);
+}
+
+function favoriteTracks() {
+  return state.tracks.filter(trackIsFavorite);
+}
+
+function refreshPlayFavouritesButton() {
+  const button = document.getElementById("play-favourites");
+  const count = favoriteTracks().length;
+  button.disabled = count === 0;
+  if (count === 0) {
+    button.textContent = "Select heart to add song to favourites";
+  } else if (count === 1) {
+    button.textContent = "♥ Play favourite";
+  } else {
+    button.textContent = "♥ Play favourites (" + count + ")";
+  }
+}
+
+function updateNowFavoriteButton() {
+  const button = document.getElementById("now-favorite");
+  const track = currentTrack();
+  if (!track) {
+    button.hidden = true;
+    return;
+  }
+  button.hidden = false;
+  const on = trackIsFavorite(track);
+  button.classList.toggle("is-on", on);
+  button.setAttribute("aria-pressed", on ? "true" : "false");
+  button.setAttribute("aria-label", on ? "Remove from favourites" : "Add to favourites");
+}
+
+async function toggleFavorite(id) {
+  const track = state.tracks.find((item) => item.id === id);
+  if (!track) return;
+  track.favorite = !trackIsFavorite(track);
+  try {
+    await putTrack(track);
+  } catch {
+    setNotice("Could not save favourite.");
+    track.favorite = !track.favorite;
+    return;
+  }
+  render();
+}
+
+function playFavourites() {
+  const tracks = favoriteTracks();
+  if (!tracks.length) {
+    setNotice("Select heart to add song to favourites.");
+    return;
+  }
+  let ids = tracks.map((track) => track.id);
+  if (state.shuffle) ids = shuffleIds(ids);
+  state.artistQueue = { name: "Favourites", ids, index: 0 };
+  playListed(ids[0], { keepQueue: true });
 }
 
 function renderPlayer() {
@@ -490,7 +596,6 @@ function songBox(track) {
   const currentSong = track.id === state.currentId;
   const row = document.createElement("div");
   row.className = "song" + (currentSong ? " current" : "");
-  row.dataset.play = track.id;
   const copy = document.createElement("div");
   copy.className = "song-copy";
   const title = document.createElement("span");
@@ -506,8 +611,57 @@ function songBox(track) {
   play.dataset.play = track.id;
   play.setAttribute("aria-label", "Play " + track.title);
   play.append(playIcon());
-  row.append(copy, play);
+  row.append(copy, favoriteHeartButton(track), play);
   return row;
+}
+
+function favoriteHeartButton(track) {
+  const on = trackIsFavorite(track);
+  const button = document.createElement("button");
+  button.type = "button";
+  button.className = "song-favorite" + (on ? " is-on" : "");
+  button.dataset.favorite = track.id;
+  button.setAttribute("aria-pressed", on ? "true" : "false");
+  button.setAttribute(
+    "aria-label",
+    on ? "Remove " + track.title + " from favourites" : "Add " + track.title + " to favourites"
+  );
+  button.append(heartIcons());
+  return button;
+}
+
+function heartIcons() {
+  const wrap = document.createDocumentFragment();
+  const outline = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+  outline.setAttribute("class", "heart-outline");
+  outline.setAttribute("viewBox", "0 0 36 36");
+  outline.setAttribute("width", "26");
+  outline.setAttribute("height", "26");
+  outline.setAttribute("aria-hidden", "true");
+  const outlinePath = document.createElementNS("http://www.w3.org/2000/svg", "path");
+  outlinePath.setAttribute("fill", "none");
+  outlinePath.setAttribute("stroke", "currentColor");
+  outlinePath.setAttribute("stroke-width", "3");
+  outlinePath.setAttribute(
+    "d",
+    "M18 31 C10 24 4 19 4 13 C4 8 8 4 13 4 C15.5 4 17.5 5.5 18 7.5 C18.5 5.5 20.5 4 23 4 C28 4 32 8 32 13 C32 19 26 24 18 31 Z"
+  );
+  outline.append(outlinePath);
+  const solid = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+  solid.setAttribute("class", "heart-solid");
+  solid.setAttribute("viewBox", "0 0 36 36");
+  solid.setAttribute("width", "26");
+  solid.setAttribute("height", "26");
+  solid.setAttribute("aria-hidden", "true");
+  const solidPath = document.createElementNS("http://www.w3.org/2000/svg", "path");
+  solidPath.setAttribute("fill", "currentColor");
+  solidPath.setAttribute(
+    "d",
+    "M18 31 C10 24 4 19 4 13 C4 8 8 4 13 4 C15.5 4 17.5 5.5 18 7.5 C18.5 5.5 20.5 4 23 4 C28 4 32 8 32 13 C32 19 26 24 18 31 Z"
+  );
+  solid.append(solidPath);
+  wrap.append(outline, solid);
+  return wrap;
 }
 
 function playIcon() {
@@ -978,12 +1132,70 @@ function setPlaying(playing) {
   if (!document.getElementById("videos-sheet").hidden) renderVideos();
 }
 
-function setNotice(text) {
-  const el = document.getElementById("notice");
-  el.textContent = text;
-  el.hidden = !text;
+function clearNotice() {
   clearTimeout(noticeTimer);
-  if (text) noticeTimer = setTimeout(() => { el.hidden = true; }, 4000);
+  noticeTimer = 0;
+  noticeActionURL = "";
+  const el = document.getElementById("notice");
+  const action = document.getElementById("notice-action");
+  document.getElementById("notice-text").textContent = "";
+  action.hidden = true;
+  el.hidden = true;
+}
+
+function setNotice(text, options = {}) {
+  const el = document.getElementById("notice");
+  const textEl = document.getElementById("notice-text");
+  const action = document.getElementById("notice-action");
+  if (!text) {
+    clearNotice();
+    return;
+  }
+  textEl.textContent = text;
+  const duration = options.duration || 4000;
+  const url = options.url || "";
+  if (url && options.actionLabel) {
+    noticeActionURL = url;
+    action.textContent = options.actionLabel;
+    action.hidden = false;
+  } else {
+    noticeActionURL = "";
+    action.hidden = true;
+  }
+  el.hidden = false;
+  clearTimeout(noticeTimer);
+  noticeTimer = setTimeout(clearNotice, duration);
+}
+
+function youtubeWatchURL(videoId) {
+  return videoId ? "https://www.youtube.com/watch?v=" + encodeURIComponent(videoId) : "";
+}
+
+function youtubePlaybackErrorMessage(code) {
+  switch (code) {
+    case 2:
+      return "YouTube could not load this video (bad request).";
+    case 5:
+      return "YouTube could not play this video in the browser.";
+    case 100:
+      return "This video is private, removed, or not available in your region.";
+    case 101:
+    case 150:
+      return "This uploader does not allow playback inside the app. Try another upload of the same song, add an MP3 from the Mac, or open it in YouTube.";
+    default:
+      return "This YouTube video could not be played in the app. Try another upload or add an MP3 from the Mac.";
+  }
+}
+
+function noticeYouTubePlaybackError(code) {
+  const track = currentTrack();
+  const url = track && track.source === "youtube" ? youtubeWatchURL(track.mediaRef) : "";
+  setPlaying(false);
+  setNotice(youtubePlaybackErrorMessage(code), {
+    duration: 14000,
+    actionLabel: url ? "Open in YouTube" : "",
+    url
+  });
 }
 
 function showSongs() {
@@ -1063,7 +1275,7 @@ function renderCatalog() {
   } else if (savedCount === 0) {
     status.textContent = "Tap Download to put a song on this iPad.";
   } else {
-    status.textContent = "Yellow songs are on this iPad. Tap Play.";
+    status.textContent = "Songs on this iPad are ready. Tap Play.";
   }
   for (const entry of state.catalog) {
     const already = savedOnIpad(entry);
@@ -1139,7 +1351,11 @@ async function downloadAll() {
   }
   render();
   renderCatalog();
-  if (count > 0) setNotice(count === 1 ? "1 song is yellow. Tap Play." : count + " songs are yellow. Tap Play.");
+  if (count > 0) {
+    setNotice(
+      count === 1 ? "1 song is ready on this iPad. Tap Play." : count + " songs are ready on this iPad. Tap Play."
+    );
+  }
 }
 
 async function downloadEntry(entry, announce) {
@@ -1189,7 +1405,7 @@ async function downloadEntry(entry, announce) {
     render();
     renderCatalog();
   }
-  if (saved && announce) setNotice(savedTitle + " is yellow. Tap Play.");
+  if (saved && announce) setNotice(savedTitle + " is ready on this iPad. Tap Play.");
   return saved;
 }
 
@@ -1937,7 +2153,16 @@ window.onYouTubeIframeAPIReady = function onYouTubeIframeAPIReady() {
     width: "100%",
     height: "100%",
     videoId: pendingVideo || undefined,
-    playerVars: { autoplay: 1, playsinline: 1, rel: 0, modestbranding: 1, controls: 1, fs: 1, iv_load_policy: 3 },
+    playerVars: {
+      autoplay: 1,
+      playsinline: 1,
+      rel: 0,
+      modestbranding: 1,
+      controls: 1,
+      fs: 1,
+      iv_load_policy: 3,
+      origin: window.location.origin
+    },
     events: {
       onReady: () => {
         ytReady = true;
@@ -1970,9 +2195,9 @@ window.onYouTubeIframeAPIReady = function onYouTubeIframeAPIReady() {
         if (event.data === YT.PlayerState.PAUSED) setPlaying(false);
         if (event.data === YT.PlayerState.ENDED && youtubeActuallyEnded(event)) step(1);
       },
-      onError: () => {
+      onError: (event) => {
         finishTrackChange();
-        setNotice("That video could not be played.");
+        noticeYouTubePlaybackError(event && event.data);
       }
     }
   });

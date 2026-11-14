@@ -3,12 +3,13 @@
 	auto_https off
 }
 
-# Localhost only. Port 8080 is already used by another app on this Mac.
-# Tailscale Serve sends the tailnet hostname, so this site accepts that Host
-# while the socket stays on 127.0.0.1.
-#   tailscale serve --bg 8090
-# Start this from the project folder so the music/ folder is the song library.
-:8090 {
+# Wayne's Music — local port 8091 (Jori's uses 8090 on the same Mac).
+# Tailscale (second URL on this machine):
+#   tailscale serve --bg --https=8443 http://127.0.0.1:8091
+#   https://<machine>.<tailnet>.ts.net:8443/
+# Start from this folder so music/ is the song library:
+#   caddy run --config Caddyfile
+:8091 {
 	bind 127.0.0.1
 	handle /music/* {
 		uri strip_prefix /music
