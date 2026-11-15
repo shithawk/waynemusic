@@ -47,7 +47,7 @@ const audio = () => document.getElementById("audio");
 
 document.addEventListener("DOMContentLoaded", init);
 
-const SW_BUILD = "14";
+const SW_BUILD = "16";
 
 function registerServiceWorker() {
   if (!("serviceWorker" in navigator)) return;
@@ -147,7 +147,7 @@ function bindEvents() {
       toggleFavorite(fav.dataset.favorite);
       return;
     }
-    const button = event.target.closest(".song-play[data-play]");
+    const button = event.target.closest(".song[data-play]");
     if (button) playListed(button.dataset.play);
   });
   document.getElementById("nav-search").addEventListener("submit", (event) => {
@@ -200,7 +200,7 @@ function bindEvents() {
       playAllArtist(playAll.dataset.playAll);
       return;
     }
-    const song = event.target.closest(".song-play[data-play]");
+    const song = event.target.closest(".song[data-play]");
     if (song) {
       playListed(song.dataset.play);
       return;
@@ -225,7 +225,7 @@ function bindEvents() {
       toggleFavorite(fav.dataset.favorite);
       return;
     }
-    const button = event.target.closest(".song-play[data-play]");
+    const button = event.target.closest(".song[data-play]");
     if (button) {
       playListed(button.dataset.play);
       return;
@@ -265,7 +265,7 @@ function bindEvents() {
       toggleFavorite(fav.dataset.favorite);
       return;
     }
-    const button = event.target.closest(".song-play[data-play]");
+    const button = event.target.closest(".song[data-play]");
     if (!button) return;
     playListed(button.dataset.play);
   });
@@ -637,6 +637,7 @@ function songBox(track) {
   const currentSong = track.id === state.currentId;
   const row = document.createElement("div");
   row.className = "song" + (currentSong ? " current" : "");
+  row.dataset.play = track.id;
   const copy = document.createElement("div");
   copy.className = "song-copy";
   const title = document.createElement("span");
@@ -902,7 +903,7 @@ function renderVideos() {
   list.replaceChildren();
   document.getElementById("videos-empty").hidden = videos.length > 0;
   for (const track of videos) list.append(songBox(track));
-  if (scroller) scroller.scrollTop = scrollTop;
+  if (scroller) scroller.scrollTop = resetScroll ? 0 : scrollTop;
 }
 
 function setVideoSearchStatus(text) {
@@ -1272,6 +1273,13 @@ function hideSheet(id) {
   if (id === "add-sheet") hideLinkConfirm();
 }
 
+function scrollSheetBodyToTop(sheetId) {
+  const sheet = document.getElementById(sheetId);
+  if (!sheet) return;
+  const body = sheet.querySelector(".sheet-body");
+  if (body) body.scrollTop = 0;
+}
+
 function playerIsOpen() {
   return document.getElementById("player").classList.contains("open");
 }
@@ -1284,9 +1292,11 @@ function setAddError(text) {
 
 async function openAdd() {
   setAddError("");
+  hideConfirm();
   showSheet("add-sheet");
+  scrollSheetBodyToTop("add-sheet");
   await loadCatalog();
-  renderCatalog();
+  renderCatalog({ resetScroll: true });
 }
 
 async function loadCatalog() {
@@ -1302,7 +1312,8 @@ async function loadCatalog() {
   }
 }
 
-function renderCatalog() {
+function renderCatalog(options) {
+  const resetScroll = Boolean(options && options.resetScroll);
   const status = document.getElementById("mac-status");
   const list = document.getElementById("catalog-list");
   const scroller = list.closest(".sheet-body");
