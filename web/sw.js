@@ -1,9 +1,9 @@
-const CACHE = "waynes-shell-v21";
+const CACHE = "waynes-shell-v22";
 const SHELL = [
   "/",
   "/index.html",
   "/styles.css",
-  "/styles.css?v=74",
+  "/styles.css?v=75",
   "/app.js",
   "/app.js?v=63",
   "/manifest.webmanifest",
@@ -28,29 +28,61 @@ self.addEventListener("activate", (event) => {
   );
 });
 
+function offlineResponse() {
+  return new Response("Offline", { status: 503, statusText: "Offline" });
+}
+
+function refreshShell(request) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 4000);
+  return fetch(new Request(request, { cache: "no-cache" }), { signal: controller.signal })
+    .then((response) => {
+      if (response && response.ok) {
+        const copy = response.clone();
+        caches.open(CACHE).then((cache) => cache.put(request, copy)).catch(() => {});
+      }
+      return response;
+    })
+    .catch(() => null)
+    .finally(() => clearTimeout(timer));
+}
+
+async function cachedShell(request) {
+  const exact = await caches.match(request);
+  if (exact) return exact;
+  const ignored = await caches.match(request, { ignoreSearch: true });
+  if (ignored) return ignored;
+  if (request.mode === "navigate") {
+    return (await caches.match("/index.html")) || (await caches.match("/"));
+  }
+  return null;
+}
+
 self.addEventListener("fetch", (event) => {
   const url = new URL(event.request.url);
   if (url.origin !== self.location.origin) return;
-  if (url.pathname.startsWith("/music/") || url.pathname.startsWith("/api/") || url.pathname === "/catalog.json") {
+  if (event.request.method !== "GET") return;
+  if (
+    url.pathname === "/sw.js" ||
+    url.pathname.startsWith("/music/") ||
+    url.pathname.startsWith("/api/") ||
+    url.pathname === "/catalog.json"
+  ) {
     return;
   }
 
-  event.respondWith(
-    fetch(new Request(event.request, { cache: "no-cache" }))
-      .then((response) => {
-        if (response.ok && event.request.method === "GET") {
-          const copy = response.clone();
-          caches.open(CACHE).then((cache) => cache.put(event.request, copy));
-        }
-        return response;
-      })
-      .catch(async () => {
-        const cached = await caches.match(event.request);
-        if (cached) return cached;
-        if (event.request.mode === "navigate") {
-          return (await caches.match("/index.html")) || (await caches.match("/"));
-        }
-        return new Response("Offline", { status: 503, statusText: "Offline" });
-      })
-  );
+  const request = event.request;
+  event.respondWith((async () => {
+    const cached = await cachedShell(request);
+    if (cached) return cached;
+    const fresh = await refreshShell(request);
+    if (fresh) return fresh;
+    if (request.mode === "navigate") {
+      return (await caches.match("/index.html")) || (await caches.match("/")) || offlineResponse();
+    }
+    return offlineResponse();
+  })());
+  event.waitUntil((async () => {
+    if (await cachedShell(request)) await refreshShell(request);
+  })());
 });

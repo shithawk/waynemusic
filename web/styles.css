@@ -881,8 +881,18 @@ input::placeholder { color: rgba(255, 255, 255, 0.72); }
   padding: var(--top-nav-offset) 24px var(--transport-space);
 }
 
-#player-title { font-size: 2.1rem; font-weight: 700; }
-#player-sub { font-size: 1.35rem; opacity: 0.9; }
+#player-title {
+  font-size: 1.35rem;
+  line-height: 1.25;
+  font-weight: 700;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+html.iphone #player-title { font-size: 1.02rem; }
+#player-sub { font-size: 1rem; opacity: 0.9; }
+html.iphone #player-sub { font-size: 0.88rem; }
 
 .stage {
   position: relative;
