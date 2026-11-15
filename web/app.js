@@ -17,7 +17,8 @@ const state = {
   shuffleRewind: false,
   openArtists: new Set(),
   openSearchArtists: new Set(),
-  artistQueue: null
+  artistQueue: null,
+  catalogSessionDownloads: new Set()
 };
 
 let dbPromise = null;
@@ -47,7 +48,7 @@ const audio = () => document.getElementById("audio");
 
 document.addEventListener("DOMContentLoaded", init);
 
-const SW_BUILD = "16";
+const SW_BUILD = "18";
 
 function registerServiceWorker() {
   if (!("serviceWorker" in navigator)) return;
@@ -1293,10 +1294,11 @@ function setAddError(text) {
 async function openAdd() {
   setAddError("");
   hideConfirm();
+  state.catalogSessionDownloads.clear();
   showSheet("add-sheet");
   scrollSheetBodyToTop("add-sheet");
   await loadCatalog();
-  renderCatalog({ resetScroll: true });
+  renderCatalog({ resetScroll: true, onlyPending: true });
 }
 
 async function loadCatalog() {
@@ -1312,28 +1314,51 @@ async function loadCatalog() {
   }
 }
 
+function catalogEntriesForDisplay(onlyPending) {
+  const pending = state.catalog.filter((entry) => !savedOnIpad(entry));
+  if (onlyPending) return pending;
+  const session = state.catalogSessionDownloads;
+  return state.catalog.filter((entry) => {
+    if (!savedOnIpad(entry)) return true;
+    return session.has(entry.file);
+  });
+}
+
 function renderCatalog(options) {
   const resetScroll = Boolean(options && options.resetScroll);
+  const onlyPending = Boolean(options && options.onlyPending);
   const status = document.getElementById("mac-status");
   const list = document.getElementById("catalog-list");
   const scroller = list.closest(".sheet-body");
   const scrollTop = scroller ? scroller.scrollTop : 0;
   list.replaceChildren();
   const pending = state.catalog.filter((entry) => !savedOnIpad(entry));
+  const entries = catalogEntriesForDisplay(onlyPending);
   if (state.macError) {
     status.textContent = state.macError;
   } else if (state.catalog.length === 0) {
     status.textContent = "No songs on the computer yet.";
-  } else if (pending.length === 0) {
+  } else if (onlyPending && pending.length === 0) {
     status.textContent = "Every song on the computer is already " + onThisDevice() + ".";
+  } else if (!onlyPending && pending.length === 0 && entries.length > 0) {
+    status.textContent = "Tap Play on the songs you just downloaded.";
   } else {
-    status.textContent = "Tap Download to put a song " + onThisDevice() + ".";
+    status.textContent = onlyPending
+      ? "Tap Download to put a song " + onThisDevice() + "."
+      : "Download more, or tap Play on songs you just added.";
   }
-  for (const entry of pending) {
+  for (const entry of entries) {
+    const already = savedOnIpad(entry);
+    const savedTrack = already ? trackForFile(entry.file) : null;
+    const playing = Boolean(savedTrack && savedTrack.id === state.currentId && state.playing);
     const row = document.createElement("div");
-    row.className = "catalog-row";
-    const text = document.createElement("div");
-    text.className = "text";
+    row.className = "catalog-row" + (already ? " saved" : "");
+    const text = document.createElement(already ? "button" : "div");
+    text.className = already ? "catalog-play" : "text";
+    if (already) {
+      text.type = "button";
+      text.dataset.playSaved = entry.file;
+    }
     const title = document.createElement("span");
     title.className = "song-title";
     title.textContent = entry.title;
@@ -1343,10 +1368,16 @@ function renderCatalog(options) {
     text.append(title, sub);
     const button = document.createElement("button");
     button.type = "button";
-    button.className = "download";
-    button.dataset.download = entry.file;
-    button.disabled = downloading.has(entry.file);
-    button.textContent = downloading.has(entry.file) ? "Downloading…" : "Download";
+    if (already) {
+      button.className = "download play-ready";
+      button.dataset.playSaved = entry.file;
+      button.textContent = playing ? "Playing" : "Play";
+    } else {
+      button.className = "download";
+      button.dataset.download = entry.file;
+      button.disabled = downloading.has(entry.file);
+      button.textContent = downloading.has(entry.file) ? "Downloading…" : "Download";
+    }
     row.append(text, button);
     list.append(row);
   }
@@ -1432,6 +1463,7 @@ async function downloadEntry(entry, announce) {
     await saveLocal(track, blob, tags.artwork);
     state.readyId = track.id;
     state.tracks = sortTracks(state.tracks.filter((item) => item.id !== track.id).concat(track));
+    state.catalogSessionDownloads.add(entry.file);
     saved = true;
     savedTitle = track.title;
   } catch {
