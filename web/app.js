@@ -23,6 +23,8 @@ const state = {
 let dbPromise = null;
 const fileBlobs = new Map();
 const fileURLs = new Map();
+const artBlobs = new Map();
+const artURLs = new Map();
 const SILENT_WAV = "data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQAAAAA=";
 let ytPlayer = null;
 let ytReady = false;
@@ -45,7 +47,7 @@ const audio = () => document.getElementById("audio");
 
 document.addEventListener("DOMContentLoaded", init);
 
-const SW_BUILD = "13";
+const SW_BUILD = "14";
 
 function registerServiceWorker() {
   if (!("serviceWorker" in navigator)) return;
@@ -366,8 +368,30 @@ function renderSongs() {
   bar.setAttribute("aria-label", label ? (state.playing ? "Now playing: " : "Paused: ") + label : "Now playing");
   document.getElementById("now-stack").classList.toggle("is-playing", Boolean(current && state.playing));
   updateNowFavoriteButton();
+  updateNowArtwork();
   refreshPlayFavouritesButton();
   if (current) refreshSeek();
+}
+
+function updateNowArtwork() {
+  const img = document.getElementById("now-art");
+  const track = currentTrack();
+  const trackId = track ? track.id : "";
+  if (!track || track.source !== "local") {
+    img.hidden = true;
+    img.removeAttribute("src");
+    return;
+  }
+  void artURLForTrack(track).then((url) => {
+    if (currentTrack()?.id !== trackId) return;
+    if (!url) {
+      img.hidden = true;
+      img.removeAttribute("src");
+      return;
+    }
+    img.src = url;
+    img.hidden = false;
+  });
 }
 
 function trackIsFavorite(track) {
@@ -1398,16 +1422,17 @@ async function downloadEntry(entry, announce) {
       if (button) button.textContent = "Downloading… " + Math.round(ratio * 100) + "%";
     });
     if (!blob.size || (total > 0 && blob.size < total)) throw new Error("download");
+    const tags = await readID3(blob);
     const track = {
       id: "mac:" + entry.file,
-      title: entry.title || entry.file,
-      artist: entry.artist || "",
+      title: tags.title || entry.title || entry.file,
+      artist: tags.artist || entry.artist || "",
       source: "local",
       mediaRef: entry.file,
       bytes: blob.size,
       createdAt: Date.now()
     };
-    await saveLocal(track, blob);
+    await saveLocal(track, blob, tags.artwork);
     state.readyId = track.id;
     state.tracks = sortTracks(state.tracks.filter((item) => item.id !== track.id).concat(track));
     saved = true;
@@ -1474,7 +1499,7 @@ async function importFiles(fileList) {
         bytes: file.size,
         createdAt: Date.now()
       };
-      await saveLocal(track, file);
+      await saveLocal(track, file, tags.artwork);
       state.readyId = track.id;
       titles.push(track.title);
       state.tracks.push(track);
@@ -1922,6 +1947,32 @@ function prepareURL(id, blob) {
   const url = URL.createObjectURL(blob);
   fileURLs.set(id, url);
   return url;
+}
+
+function prepareArtURL(id, blob) {
+  const existing = artURLs.get(id);
+  if (existing) URL.revokeObjectURL(existing);
+  const url = URL.createObjectURL(blob);
+  artURLs.set(id, url);
+  return url;
+}
+
+async function artURLForTrack(track) {
+  if (!track || track.source !== "local") return null;
+  if (artURLs.has(track.id)) return artURLs.get(track.id);
+  let blob = artBlobs.get(track.id);
+  if (!blob) blob = await getArtworkBlob(track.id);
+  if (blob) {
+    artBlobs.set(track.id, blob);
+    return prepareArtURL(track.id, blob);
+  }
+  const audio = await playableBlob(track);
+  if (!audio) return null;
+  const tags = await readID3(audio);
+  if (!tags.artwork) return null;
+  await saveArtwork(track.id, tags.artwork);
+  artBlobs.set(track.id, tags.artwork);
+  return prepareArtURL(track.id, tags.artwork);
 }
 
 function songToStart() {
@@ -2452,46 +2503,96 @@ function isSoundCloud(url) {
   return url.pathname.replace(/\//g, "").length > 0;
 }
 
+function parsePictureFrame(frame, v22) {
+  if (!frame.length) return null;
+  let mime = "image/jpeg";
+  let i = 0;
+  if (v22) {
+    const format = String.fromCharCode(frame[0], frame[1], frame[2]).trim();
+    if (format === "PNG") mime = "image/png";
+    i = 3;
+    while (i < frame.length && frame[i] !== 0) i += 1;
+    i += 1;
+  } else {
+    const encoding = frame[0];
+    i = 1;
+    const mimeBytes = [];
+    while (i < frame.length && frame[i] !== 0) {
+      mimeBytes.push(frame[i]);
+      i += 1;
+    }
+    i += 1;
+    mime = mimeBytes.length
+      ? new TextDecoder("latin1").decode(new Uint8Array(mimeBytes)).trim()
+      : "image/jpeg";
+    i += 1;
+    if (encoding === 1 || encoding === 2) {
+      while (i + 1 < frame.length && !(frame[i] === 0 && frame[i + 1] === 0)) i += 2;
+      i += 2;
+    } else {
+      while (i < frame.length && frame[i] !== 0) i += 1;
+      i += 1;
+    }
+  }
+  const data = frame.subarray(i);
+  if (data.length < 32) return null;
+  return new Blob([data], { type: mime.split(";")[0].trim() || "image/jpeg" });
+}
+
 async function readID3(file) {
+  const empty = { title: "", artist: "", artwork: null };
   try {
-    const head = new Uint8Array(await file.slice(0, 256 * 1024).arrayBuffer());
+    const size = file.size || 0;
+    const head = new Uint8Array(await file.slice(0, Math.min(size, 256 * 1024)).arrayBuffer());
     let title = "";
     let artist = "";
+    let artwork = null;
     if (head[0] === 0x49 && head[1] === 0x44 && head[2] === 0x33) {
       const version = head[3];
+      const v22 = version === 2;
       let offset = 10;
       const tagSize = syncsafe(head, 6);
-    if (head[5] & 0x40) {
-      const extended = version === 4 ? syncsafe(head, offset) : be32(head, offset);
-      offset += version === 4 ? extended : extended + 4;
-    }
+      if (head[5] & 0x40) {
+        const extended = version === 4 ? syncsafe(head, offset) : be32(head, offset);
+        offset += version === 4 ? extended : extended + 4;
+      }
       const end = Math.min(head.length, 10 + tagSize);
-      while (offset + 10 < end) {
-        const id = String.fromCharCode(head[offset], head[offset + 1], head[offset + 2], head[offset + 3]);
+      const headerSize = v22 ? 6 : 10;
+      while (offset + headerSize < end) {
+        const id = v22
+          ? String.fromCharCode(head[offset], head[offset + 1], head[offset + 2])
+          : String.fromCharCode(head[offset], head[offset + 1], head[offset + 2], head[offset + 3]);
         if (!id || id.charCodeAt(0) === 0) break;
-        const frameSize = version === 4 ? syncsafe(head, offset + 4) : be32(head, offset + 4);
-        const start = offset + 10;
+        const frameSize = v22
+          ? be24(head, offset + 3)
+          : version === 4
+            ? syncsafe(head, offset + 4)
+            : be32(head, offset + 4);
+        const start = offset + headerSize;
         if (frameSize <= 0 || start + frameSize > head.length) break;
-        if (id === "TIT2" || id === "TPE1") {
-          const text = decodeTextFrame(head.subarray(start, start + frameSize));
-          if (id === "TIT2") title = text;
-          else artist = text;
-        }
+        const frame = head.subarray(start, start + frameSize);
+        if (id === "TIT2" || id === "TT2") title = decodeTextFrame(frame);
+        else if (id === "TPE1" || id === "TP1") artist = decodeTextFrame(frame);
+        else if ((id === "APIC" || id === "PIC") && !artwork) artwork = parsePictureFrame(frame, v22);
         offset = start + frameSize;
       }
     }
     if (!title || !artist) {
-      const tail = new Uint8Array(await file.slice(Math.max(0, file.size - 128)).arrayBuffer());
+      const tail = new Uint8Array(await file.slice(Math.max(0, size - 128)).arrayBuffer());
       if (tail.length >= 128 && String.fromCharCode(tail[0], tail[1], tail[2]) === "TAG") {
         const decoder = new TextDecoder("latin1");
         if (!title) title = decoder.decode(tail.subarray(3, 33)).replace(/\0/g, "").trim();
         if (!artist) artist = decoder.decode(tail.subarray(33, 63)).replace(/\0/g, "").trim();
       }
     }
-    return { title: title.trim(), artist: artist.trim() };
+    return { title: title.trim(), artist: artist.trim(), artwork };
   } catch {
-    return { title: "", artist: "" };
+    return empty;
   }
+}
+
+function be24(bytes, offset) {
+  return ((bytes[offset] << 16) | (bytes[offset + 1] << 8) | bytes[offset + 2]) >>> 0;
 }
 
 function syncsafe(bytes, offset) {
@@ -2531,11 +2632,12 @@ async function requestPersist() {
 function openDB() {
   if (dbPromise) return dbPromise;
   dbPromise = new Promise((resolve, reject) => {
-    const request = indexedDB.open("waynesmusic", 1);
+    const request = indexedDB.open("waynesmusic", 2);
     request.onupgradeneeded = () => {
       const db = request.result;
       if (!db.objectStoreNames.contains("tracks")) db.createObjectStore("tracks", { keyPath: "id" });
       if (!db.objectStoreNames.contains("files")) db.createObjectStore("files", { keyPath: "id" });
+      if (!db.objectStoreNames.contains("artwork")) db.createObjectStore("artwork", { keyPath: "id" });
     };
     request.onsuccess = () => resolve(request.result);
     request.onerror = () => reject(request.error);
@@ -2568,16 +2670,39 @@ async function putTrack(track) {
   await transactionDone(tx);
 }
 
-async function saveLocal(track, blob) {
+async function saveLocal(track, blob, artwork) {
   const type = blob.type && blob.type.startsWith("audio/") ? blob.type : mimeFor(track.mediaRef || "", "");
   const stored = blob.type === type ? blob : new Blob([await blob.arrayBuffer()], { type });
   fileBlobs.set(track.id, stored);
   prepareURL(track.id, stored);
   const db = await openDB();
-  const tx = db.transaction(["tracks", "files"], "readwrite");
+  const stores = artwork ? ["tracks", "files", "artwork"] : ["tracks", "files"];
+  const tx = db.transaction(stores, "readwrite");
   tx.objectStore("tracks").put(track);
   tx.objectStore("files").put({ id: track.id, blob: stored });
+  if (artwork) {
+    artBlobs.set(track.id, artwork);
+    tx.objectStore("artwork").put({ id: track.id, blob: artwork });
+  }
   await transactionDone(tx);
+}
+
+async function saveArtwork(id, artwork) {
+  artBlobs.set(id, artwork);
+  const db = await openDB();
+  const tx = db.transaction("artwork", "readwrite");
+  tx.objectStore("artwork").put({ id, blob: artwork });
+  await transactionDone(tx);
+}
+
+async function getArtworkBlob(id) {
+  const db = await openDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction("artwork", "readonly");
+    const request = tx.objectStore("artwork").get(id);
+    request.onsuccess = () => resolve(request.result ? request.result.blob : null);
+    request.onerror = () => reject(request.error);
+  });
 }
 
 async function getBlob(id) {
@@ -2592,15 +2717,22 @@ async function getBlob(id) {
 
 async function deleteTrack(id) {
   fileBlobs.delete(id);
+  artBlobs.delete(id);
   const url = fileURLs.get(id);
   if (url) {
     URL.revokeObjectURL(url);
     fileURLs.delete(id);
   }
+  const artUrl = artURLs.get(id);
+  if (artUrl) {
+    URL.revokeObjectURL(artUrl);
+    artURLs.delete(id);
+  }
   if (state.readyId === id) state.readyId = null;
   const db = await openDB();
-  const tx = db.transaction(["tracks", "files"], "readwrite");
+  const tx = db.transaction(["tracks", "files", "artwork"], "readwrite");
   tx.objectStore("tracks").delete(id);
   tx.objectStore("files").delete(id);
+  tx.objectStore("artwork").delete(id);
   await transactionDone(tx);
 }

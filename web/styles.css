@@ -704,6 +704,16 @@ input::placeholder { color: rgba(255, 255, 255, 0.72); }
 
 .now-favorite:active { opacity: 0.72; }
 
+.now-art {
+  flex: none;
+  width: 56px;
+  height: 56px;
+  border-radius: 12px;
+  object-fit: cover;
+  background: rgba(255, 255, 255, 0.12);
+  box-shadow: inset 0 0 0 2px var(--accent);
+}
+
 .now-favorite.is-on {
   color: var(--accent-alt);
   background: rgba(219, 20, 26, 0.2);
