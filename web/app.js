@@ -45,6 +45,25 @@ const audio = () => document.getElementById("audio");
 
 document.addEventListener("DOMContentLoaded", init);
 
+const SW_BUILD = "13";
+
+function registerServiceWorker() {
+  if (!("serviceWorker" in navigator)) return;
+  let reloading = false;
+  navigator.serviceWorker.addEventListener("controllerchange", () => {
+    if (reloading) return;
+    reloading = true;
+    location.reload();
+  });
+  navigator.serviceWorker
+    .register("/sw.js?build=" + SW_BUILD, { updateViaCache: "none" })
+    .then((reg) => {
+      reg.update().catch(() => {});
+      setInterval(() => reg.update().catch(() => {}), 60 * 60 * 1000);
+    })
+    .catch(() => {});
+}
+
 async function init() {
   document.getElementById("install-hint").hidden = standalone();
   state.shuffle = loadShuffle();
@@ -77,9 +96,7 @@ async function init() {
   render();
   refreshSavedLinks();
   requestPersist();
-  if ("serviceWorker" in navigator) {
-    navigator.serviceWorker.register("/sw.js").catch(() => {});
-  }
+  registerServiceWorker();
   setInterval(() => {
     if (!state.currentId || seekHold) return;
     if (pendingSeek) applyPendingSeek();

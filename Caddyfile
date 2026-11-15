@@ -39,6 +39,12 @@
 		}
 	}
 
+	handle /sw.js {
+		root * web
+		header Cache-Control "no-store"
+		file_server
+	}
+
 	handle {
 		root * web
 		encode gzip
