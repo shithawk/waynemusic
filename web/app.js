@@ -50,7 +50,7 @@ const audio = () => document.getElementById("audio");
 
 document.addEventListener("DOMContentLoaded", init);
 
-const SW_BUILD = "24";
+const SW_BUILD = "25";
 
 const MARQUEE_PAUSE_S = 3;
 const MARQUEE_HOLD_END_S = 3;
@@ -1335,22 +1335,6 @@ function youtubeWatchURL(videoId) {
   return videoId ? "https://www.youtube.com/watch?v=" + encodeURIComponent(videoId) : "";
 }
 
-function youtubePlaybackErrorMessage(code) {
-  switch (code) {
-    case 2:
-      return "YouTube could not load this video (bad request).";
-    case 5:
-      return "YouTube could not play this video in the browser.";
-    case 100:
-      return "This video is private, removed, or not available in your region.";
-    case 101:
-    case 150:
-      return "This uploader does not allow playback inside the app. Try another upload of the same song, add an MP3 from the Mac, or open it in YouTube.";
-    default:
-      return "This YouTube video could not be played in the app. Try another upload or add an MP3 from the Mac.";
-  }
-}
-
 function clearStreamingWatchdog() {
   if (streamingWatchdog !== null) {
     clearTimeout(streamingWatchdog);
@@ -1397,19 +1381,13 @@ function armStreamingWatchdog() {
   }, 10000);
 }
 
-function noticeYouTubePlaybackError(code) {
+function noticeYouTubePlaybackError() {
   const track = currentTrack();
   if (track && track.source === "youtube" && streamingPlaybackUnavailable()) {
     advancePastStreamingFailure();
     return;
   }
-  const url = track && track.source === "youtube" ? youtubeWatchURL(track.mediaRef) : "";
   setPlaying(false);
-  setNotice(youtubePlaybackErrorMessage(code), {
-    duration: 14000,
-    actionLabel: url ? "Open in YouTube" : "",
-    url
-  });
 }
 
 function showSongs() {
