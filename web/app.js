@@ -48,7 +48,7 @@ const audio = () => document.getElementById("audio");
 
 document.addEventListener("DOMContentLoaded", init);
 
-const SW_BUILD = "20";
+const SW_BUILD = "21";
 
 const MARQUEE_PAUSE_S = 5;
 const MARQUEE_HOLD_END_S = 3;
@@ -117,6 +117,31 @@ function setMarqueeText(host, text) {
   inner.textContent = next;
   requestAnimationFrame(() => {
     requestAnimationFrame(() => refreshMarquee(host));
+  });
+}
+
+function setNowBarMarquee(playing, songLabel) {
+  const line = document.getElementById("now-bar-line");
+  if (!line) return;
+  const status = playing ? "Now playing" : "Paused";
+  const cacheKey = status + "\0" + (songLabel || "");
+  if (marqueeText.get(line) === cacheKey) return;
+  marqueeText.set(line, cacheKey);
+  const inner = ensureMarqueeHost(line);
+  if (!inner) return;
+  inner.replaceChildren();
+  const statusSpan = document.createElement("span");
+  statusSpan.className = "now-bar-status";
+  statusSpan.textContent = status;
+  inner.appendChild(statusSpan);
+  if (songLabel) {
+    const songSpan = document.createElement("span");
+    songSpan.className = "now-bar-song";
+    songSpan.textContent = " — " + songLabel;
+    inner.appendChild(songSpan);
+  }
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => refreshMarquee(line));
   });
 }
 
@@ -433,8 +458,7 @@ function renderSongs() {
   document.getElementById("now-stack").hidden = !current;
   document.body.classList.toggle("has-now", Boolean(current));
   const label = current ? nowLabel(current) : "";
-  document.getElementById("now-bar-status").textContent = state.playing ? "Now playing" : "Paused";
-  setMarqueeText(document.getElementById("now-bar-title"), label ? "— " + label : "");
+  if (current) setNowBarMarquee(state.playing, label);
   const bar = document.getElementById("now-bar");
   bar.setAttribute("aria-label", label ? (state.playing ? "Now playing: " : "Paused: ") + label : "Now playing");
   document.getElementById("now-stack").classList.toggle("is-playing", Boolean(current && state.playing));

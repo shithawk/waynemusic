@@ -759,11 +759,11 @@ input::placeholder { color: rgba(255, 255, 255, 0.72); }
 .now-bar-line {
   flex: 1;
   min-width: 0;
-  display: flex;
-  align-items: baseline;
-  gap: 6px;
   overflow: hidden;
-  white-space: nowrap;
+}
+
+#now-bar-line.text-marquee-host {
+  flex: 1;
 }
 
 .now-bar-status {
@@ -779,10 +779,7 @@ input::placeholder { color: rgba(255, 255, 255, 0.72); }
   color: rgba(240, 238, 248, 0.72);
 }
 
-#now-bar-title {
-  flex: 1;
-  min-width: 0;
-  overflow: hidden;
+.now-bar-song {
   font-size: 1.2rem;
   font-weight: 700;
   line-height: 1.25;
@@ -791,10 +788,6 @@ input::placeholder { color: rgba(255, 255, 255, 0.72); }
 .text-marquee-host {
   overflow: hidden;
   min-width: 0;
-}
-
-#now-bar-title.text-marquee-host {
-  flex: 1;
 }
 
 .text-marquee {
