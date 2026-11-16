@@ -48,7 +48,70 @@ const audio = () => document.getElementById("audio");
 
 document.addEventListener("DOMContentLoaded", init);
 
-const SW_BUILD = "18";
+const SW_BUILD = "19";
+
+const MARQUEE_PAUSE_S = 5;
+const MARQUEE_HOLD_END_S = 3;
+const MARQUEE_PX_PER_S = 40;
+const marqueeHosts = new WeakMap();
+
+function ensureMarqueeHost(host) {
+  if (!host) return null;
+  let inner = host.querySelector(":scope > .text-marquee > .text-marquee-inner");
+  if (!inner) {
+    host.classList.add("text-marquee-host");
+    const viewport = document.createElement("div");
+    viewport.className = "text-marquee";
+    inner = document.createElement("div");
+    inner.className = "text-marquee-inner";
+    viewport.appendChild(inner);
+    host.replaceChildren(viewport);
+    const ro = new ResizeObserver(() => refreshMarquee(host));
+    ro.observe(viewport);
+    marqueeHosts.set(host, ro);
+  }
+  return inner;
+}
+
+function refreshMarquee(host) {
+  const viewport = host?.querySelector(":scope > .text-marquee");
+  const inner = viewport?.querySelector(".text-marquee-inner");
+  if (!viewport || !inner) return;
+  inner.getAnimations().forEach((a) => a.cancel());
+  if (!inner.textContent.trim()) {
+    inner.style.transform = "";
+    return;
+  }
+  const overflow = inner.scrollWidth - viewport.clientWidth;
+  if (overflow <= 1) {
+    inner.style.transform = "";
+    return;
+  }
+  const shift = -overflow;
+  const scrollS = Math.max(3, overflow / MARQUEE_PX_PER_S);
+  const total = MARQUEE_PAUSE_S + scrollS + MARQUEE_HOLD_END_S;
+  const oPause = MARQUEE_PAUSE_S / total;
+  const oScroll = (MARQUEE_PAUSE_S + scrollS) / total;
+  const oHold = (MARQUEE_PAUSE_S + scrollS + MARQUEE_HOLD_END_S) / total;
+  inner.animate(
+    [
+      { transform: "translateX(0)", offset: 0 },
+      { transform: "translateX(0)", offset: oPause },
+      { transform: `translateX(${shift}px)`, offset: oScroll },
+      { transform: `translateX(${shift}px)`, offset: oHold },
+      { transform: "translateX(0)", offset: 1 },
+    ],
+    { duration: total * 1000, iterations: Infinity, easing: "ease-in-out" },
+  );
+}
+
+function setMarqueeText(host, text) {
+  const inner = ensureMarqueeHost(host);
+  if (!inner) return;
+  const next = text || "";
+  if (inner.textContent !== next) inner.textContent = next;
+  requestAnimationFrame(() => refreshMarquee(host));
+}
 
 function registerServiceWorker() {
   if (!("serviceWorker" in navigator)) return;
@@ -364,7 +427,7 @@ function renderSongs() {
   document.body.classList.toggle("has-now", Boolean(current));
   const label = current ? nowLabel(current) : "";
   document.getElementById("now-bar-status").textContent = state.playing ? "Now playing" : "Paused";
-  document.getElementById("now-bar-title").textContent = label ? "— " + label : "";
+  setMarqueeText(document.getElementById("now-bar-title"), label ? "— " + label : "");
   const bar = document.getElementById("now-bar");
   bar.setAttribute("aria-label", label ? (state.playing ? "Now playing: " : "Paused: ") + label : "Now playing");
   document.getElementById("now-stack").classList.toggle("is-playing", Boolean(current && state.playing));
@@ -458,8 +521,8 @@ function playFavourites() {
 
 function renderPlayer() {
   const track = currentTrack();
-  document.getElementById("player-title").textContent = track ? track.title : "";
-  document.getElementById("player-sub").textContent = track ? subtitle(track) : "";
+  setMarqueeText(document.getElementById("player-title"), track ? track.title : "");
+  setMarqueeText(document.getElementById("player-sub"), track ? subtitle(track) : "");
   document.getElementById("stage-local").hidden = !track || track.source !== "local";
   document.getElementById("stage-yt").hidden = !track || track.source !== "youtube";
   document.getElementById("stage-sc").hidden = !track || track.source !== "soundcloud";

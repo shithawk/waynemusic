@@ -783,10 +783,30 @@ input::placeholder { color: rgba(255, 255, 255, 0.72); }
   flex: 1;
   min-width: 0;
   overflow: hidden;
-  text-overflow: ellipsis;
   font-size: 1.2rem;
   font-weight: 700;
   line-height: 1.25;
+}
+
+.text-marquee-host {
+  overflow: hidden;
+  min-width: 0;
+}
+
+#now-bar-title.text-marquee-host {
+  flex: 1;
+}
+
+.text-marquee {
+  overflow: hidden;
+  min-width: 0;
+  width: 100%;
+}
+
+.text-marquee-inner {
+  display: inline-block;
+  white-space: nowrap;
+  will-change: transform;
 }
 
 .now-dock .seek {
@@ -885,13 +905,15 @@ input::placeholder { color: rgba(255, 255, 255, 0.72); }
   font-size: 1.35rem;
   line-height: 1.25;
   font-weight: 700;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
   overflow: hidden;
+  min-width: 0;
 }
 html.iphone #player-title { font-size: 1.02rem; }
-#player-sub { font-size: 1rem; opacity: 0.9; }
+#player-title.text-marquee-host,
+#player-sub.text-marquee-host {
+  min-width: 0;
+}
+#player-sub { font-size: 1rem; opacity: 0.9; min-width: 0; }
 html.iphone #player-sub { font-size: 0.88rem; }
 
 .stage {
