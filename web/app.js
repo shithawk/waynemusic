@@ -1555,6 +1555,13 @@ function renderCatalog(options) {
   const downloadAll = document.getElementById("download-all");
   downloadAll.hidden = pending.length === 0;
   downloadAll.disabled = state.working || pending.length === 0;
+  if (pending.length > 0) {
+    const pendingBytes = pending.reduce((sum, entry) => sum + (Number(entry.bytes) || 0), 0);
+    const total = formatBytesCompact(pendingBytes);
+    downloadAll.textContent = total ? "Download all " + total : "Download all";
+  } else {
+    downloadAll.textContent = "Download all";
+  }
   if (scroller) scroller.scrollTop = resetScroll ? 0 : scrollTop;
 }
 
@@ -1579,6 +1586,14 @@ function formatBytes(bytes) {
   const mb = size / (1024 * 1024);
   if (mb >= 1) return mb.toFixed(1) + " MB";
   return Math.max(1, Math.round(size / 1024)) + " KB";
+}
+
+function formatBytesCompact(bytes) {
+  const size = Number(bytes) || 0;
+  if (size <= 0) return "";
+  const mb = size / (1024 * 1024);
+  if (mb >= 1) return Math.round(mb) + "MB";
+  return Math.max(1, Math.round(size / 1024)) + "KB";
 }
 
 async function downloadAll() {
@@ -1741,7 +1756,7 @@ async function addPastedLink(text) {
       showLinkConfirm("Use a YouTube or SoundCloud link.");
       return;
     }
-    const existing = state.tracks.find((track) => track.source === parsed.source && track.mediaRef === parsed.mediaRef);
+    const existing = state.tracks.find((track) => linkRefsMatch(track, parsed));
     if (existing) {
       showLinkConfirm("That song is already in the list.", existing);
       return;
@@ -1828,7 +1843,7 @@ async function addLinkText(text) {
 async function addLink(text) {
   const parsed = parseLink(text);
   if (!parsed) throw new Error("Use a YouTube or SoundCloud link.");
-  if (state.tracks.some((track) => track.source === parsed.source && track.mediaRef === parsed.mediaRef)) {
+  if (state.tracks.some((track) => linkRefsMatch(track, parsed))) {
     throw new Error("That song is already in the list.");
   }
   const meta = await fetchOEmbed(parsed);
@@ -1841,9 +1856,45 @@ async function addLink(text) {
     bytes: 0,
     createdAt: Date.now()
   };
+  if (parsed.source === "soundcloud" && meta.streamRef) track.streamRef = meta.streamRef;
   await putTrack(track);
   state.tracks = sortTracks(state.tracks.concat(track));
   return track;
+}
+
+function linkRefsMatch(track, parsed) {
+  if (track.source !== parsed.source) return false;
+  if (parsed.source === "soundcloud") {
+    return normalizeSoundCloudURL(track.mediaRef) === parsed.mediaRef;
+  }
+  return track.mediaRef === parsed.mediaRef;
+}
+
+function soundCloudStreamRefFromOEmbed(payload) {
+  const html = String(payload.html || "");
+  const match = html.match(/player\/\?[^"]*?\burl=([^"&]+)/) || html.match(/\burl=([^"&]+)/);
+  if (!match) return "";
+  try {
+    return decodeURIComponent(match[1]);
+  } catch {
+    return match[1];
+  }
+}
+
+async function resolveSoundCloudPlayURL(track) {
+  const page = normalizeSoundCloudURL(track.mediaRef);
+  const stored = String(track.streamRef || "").trim();
+  if (stored) return stored;
+  if (page.includes("api.soundcloud.com/tracks/")) return page;
+  const meta = await fetchOEmbed({ source: "soundcloud", pageURL: page, mediaRef: page });
+  const streamRef = meta.streamRef || page;
+  if (meta.streamRef && meta.streamRef !== track.streamRef) {
+    track.streamRef = meta.streamRef;
+    try {
+      await putTrack(track);
+    } catch { /* Playback can still use the resolved URL for this visit. */ }
+  }
+  return streamRef;
 }
 
 async function fetchOEmbed(parsed) {
@@ -1851,16 +1902,19 @@ async function fetchOEmbed(parsed) {
   const endpoint = parsed.source === "youtube" ? "/api/youtube-oembed" : "/api/soundcloud-oembed";
   try {
     const response = await fetch(endpoint + "?url=" + encodeURIComponent(parsed.pageURL));
-    if (!response.ok) return { title: fallback, artist: "" };
+    if (!response.ok) return { title: fallback, artist: "", streamRef: "" };
     const payload = await response.json();
     const videoTitle = String(payload.title || "").trim();
     const channel = String(payload.author_name || "").trim();
-    if (parsed.source === "youtube") return youtubeNames(videoTitle, channel);
-    return { title: videoTitle || fallback, artist: channel };
+    if (parsed.source === "youtube") return { ...youtubeNames(videoTitle, channel), streamRef: "" };
+    const streamRef = soundCloudStreamRefFromOEmbed(payload);
+    return { title: videoTitle || fallback, artist: channel, streamRef: streamRef };
   } catch {
-    return { title: fallback, artist: "" };
+    return { title: fallback, artist: "", streamRef: "" };
   }
 }
+
+
 
 function youtubeNames(videoTitle, channel) {
   const raw = String(videoTitle || "").replace(/\s+/g, " ").trim();
@@ -1920,14 +1974,29 @@ function needsMeta(track) {
 
 async function refreshSavedLinks() {
   const pending = state.tracks.filter(needsMeta);
-  if (!pending.length) return;
+  const soundcloudMissing = state.tracks.filter(
+    (track) => track.source === "soundcloud" && !track.streamRef && !String(track.mediaRef || "").includes("api.soundcloud.com/tracks/")
+  );
+  const targets = [...new Set(pending.concat(soundcloudMissing))];
+  if (!targets.length) return;
   let changed = false;
-  for (const track of pending) {
+  for (const track of targets) {
     if (track.source !== "youtube" && track.source !== "soundcloud") continue;
-    const pageURL = track.source === "youtube" ? "https://www.youtube.com/watch?v=" + track.mediaRef : track.mediaRef;
-    const meta = await fetchOEmbed({ source: track.source, pageURL: pageURL });
+    const pageURL =
+      track.source === "youtube"
+        ? "https://www.youtube.com/watch?v=" + track.mediaRef
+        : normalizeSoundCloudURL(track.mediaRef);
+    if (track.source === "soundcloud" && track.mediaRef !== pageURL) {
+      track.mediaRef = pageURL;
+      changed = true;
+    }
+    const meta = await fetchOEmbed({ source: track.source, pageURL: pageURL, mediaRef: pageURL });
     if (!meta.title || meta.title === "YouTube video" || meta.title === "SoundCloud song") continue;
-    if (meta.title === track.title && meta.artist === track.artist) continue;
+    if (track.source === "soundcloud" && meta.streamRef && meta.streamRef !== track.streamRef) {
+      track.streamRef = meta.streamRef;
+      changed = true;
+    }
+    if (meta.title === track.title && meta.artist === track.artist && !changed) continue;
     track.title = meta.title;
     track.artist = meta.artist;
     try {
@@ -1979,6 +2048,8 @@ function hideConfirm() {
 
 async function confirmRemove() {
   const id = state.removeId;
+  const track = id ? state.tracks.find((item) => item.id === id) : null;
+  const removedTitle = track ? track.title : "Song";
   hideConfirm();
   if (!id) return;
   await deleteTrack(id);
@@ -1995,6 +2066,7 @@ async function confirmRemove() {
   }
   render();
   renderManage();
+  setNotice(removedTitle + " removed from this device.");
 }
 
 function youtubeActuallyEnded(event) {
@@ -2393,18 +2465,26 @@ function playYouTube(track) {
 async function playSoundCloud(track) {
   audio().pause();
   pauseYouTube();
+  scWidget = null;
   await loadSoundCloudAPI();
+  const playURL = await resolveSoundCloudPlayURL(track);
   const stage = document.getElementById("stage-sc");
   stage.replaceChildren();
   const frame = document.createElement("iframe");
   frame.id = "sc-frame";
-  frame.setAttribute("allow", "autoplay");
+  frame.setAttribute("allow", "autoplay; encrypted-media");
   frame.setAttribute("scrolling", "no");
-  frame.src = "https://w.soundcloud.com/player/?url=" + encodeURIComponent(track.mediaRef) + "&auto_play=true&hide_related=true&show_comments=false&show_user=true&show_reposts=false&visual=true&show_teaser=false";
+  frame.title = track.title || "SoundCloud";
+  const widgetQuery =
+    "url=" +
+    encodeURIComponent(playURL) +
+    "&auto_play=true&hide_related=true&show_comments=false&show_user=true&show_reposts=false&visual=true&show_teaser=false";
+  frame.src = "https://w.soundcloud.com/player/?" + widgetQuery;
   stage.append(frame);
   if (!window.SC || !window.SC.Widget) {
     finishTrackChange();
     if (streamingPlaybackUnavailable()) advancePastStreamingFailure();
+    else setNotice("SoundCloud could not load. Check your connection and try again.");
     return;
   }
   scWidget = window.SC.Widget(frame);
@@ -2514,16 +2594,30 @@ function fitYouTube() {
 function loadSoundCloudAPI() {
   if (window.SC && window.SC.Widget) return Promise.resolve();
   return new Promise((resolve) => {
+    let settled = false;
+    const finish = () => {
+      if (settled) return;
+      settled = true;
+      resolve();
+    };
     const existing = document.getElementById("sc-api");
     if (existing) {
-      existing.addEventListener("load", () => resolve(), { once: true });
+      if (window.SC && window.SC.Widget) {
+        finish();
+        return;
+      }
+      existing.addEventListener("load", finish, { once: true });
+      existing.addEventListener("error", finish, { once: true });
+      queueMicrotask(() => {
+        if (window.SC && window.SC.Widget) finish();
+      });
       return;
     }
     const tag = document.createElement("script");
     tag.id = "sc-api";
     tag.src = "https://w.soundcloud.com/player/api.js";
-    tag.onload = () => resolve();
-    tag.onerror = () => resolve();
+    tag.onload = finish;
+    tag.onerror = finish;
     document.body.append(tag);
   });
 }
@@ -2680,9 +2774,25 @@ function parseLink(text) {
     return { source: "youtube", mediaRef: id, pageURL: "https://www.youtube.com/watch?v=" + id };
   }
   if (isSoundCloud(url)) {
-    return { source: "soundcloud", mediaRef: url.href, pageURL: url.href };
+    const pageURL = normalizeSoundCloudURL(url);
+    return { source: "soundcloud", mediaRef: pageURL, pageURL: pageURL };
   }
   return null;
+}
+
+function normalizeSoundCloudURL(input) {
+  let url;
+  try {
+    url = input instanceof URL ? new URL(input.href) : new URL(String(input || ""));
+  } catch {
+    return String(input || "").trim();
+  }
+  url.protocol = "https:";
+  url.hash = "";
+  url.search = "";
+  url.hostname = url.hostname.toLowerCase();
+  if (url.pathname.length > 1) url.pathname = url.pathname.replace(/\/+$/, "");
+  return url.href;
 }
 
 function firstURL(text) {

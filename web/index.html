@@ -152,10 +152,11 @@
         <p id="manage-empty" class="empty" hidden>No songs to remove.</p>
         <div id="manage-list"></div>
         <div id="confirm" class="confirm" hidden>
-          <div class="confirm-card" role="alertdialog" aria-labelledby="confirm-title">
-            <h2 id="confirm-title">Remove this song?</h2>
+          <div class="confirm-card" role="alertdialog" aria-labelledby="confirm-title" aria-describedby="confirm-name confirm-detail">
+            <h2 id="confirm-title">Remove from this device?</h2>
             <p id="confirm-name"></p>
-            <button id="confirm-remove" class="big plain" type="button">Remove</button>
+            <p id="confirm-detail">The saved file will be deleted on this device only.</p>
+            <button id="confirm-remove" class="big plain" type="button">Remove from device</button>
             <button id="confirm-keep" class="big prominent" type="button">Keep</button>
           </div>
         </div>
@@ -232,6 +233,6 @@
     <button id="notice-action" class="notice-action" type="button" hidden>Open in YouTube</button>
   </div>
   <audio id="audio" playsinline preload="none"></audio>
-  <script src="/app.js?v=71" defer></script>
+  <script src="/app.js?v=74" defer></script>
 </body>
 </html>
