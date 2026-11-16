@@ -1,9 +1,9 @@
-const CACHE = "waynes-shell-v53";
+const CACHE = "waynes-shell-v54";
 const SHELL = [
   "/",
   "/index.html",
   "/styles.css",
-  "/styles.css?v=103",
+  "/styles.css?v=105",
   "/app.js",
   "/app.js?v=77",
   "/manifest.webmanifest",

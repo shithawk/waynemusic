@@ -1046,6 +1046,18 @@ html.iphone #player-sub { font-size: 0.88rem; }
     0 8px 16px rgba(0, 0, 0, 0.52);
 }
 
+.transport #shuffle #shuffle-label {
+  color: #fff;
+  font-weight: 800;
+}
+
+.transport #shuffle svg {
+  transform: scale(1.12);
+  filter:
+    drop-shadow(0 0 0.4px currentColor)
+    drop-shadow(0 1px 1px rgba(0, 0, 0, 0.55));
+}
+
 .transport #shuffle.is-on #shuffle-label {
   color: #fff;
 }
@@ -1342,7 +1354,11 @@ html.iphone .search-clear {
   }
 }
 
-\.transport #play-button {
+.transport #play-button:not(.is-playing) {
+  transform: translateY(0);
+}
+
+.transport #play-button {
   border: 3px solid #000;
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.38),
@@ -1353,12 +1369,48 @@ html.iphone .search-clear {
     0 10px 18px rgba(0, 0, 0, 0.58);
 }
 
+.transport #play-button.is-playing {
+  transform: translateY(3px);
+  filter: brightness(0.88);
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--accent) 58%, #000) 0%,
+    color-mix(in srgb, var(--accent) 70%, #000) 46%,
+    color-mix(in srgb, var(--accent) 62%, #000) 74%,
+    color-mix(in srgb, var(--accent) 42%, #000) 100%
+  );
+  box-shadow:
+    inset 0 2px 7px rgba(0, 0, 0, 0.4),
+    inset 0 -2px 4px rgba(0, 0, 0, 0.3),
+    0 0 8px color-mix(in srgb, var(--accent) 55%, transparent),
+    0 1px 0 rgba(0, 0, 0, 0.5),
+    0 3px 9px rgba(0, 0, 0, 0.52);
+}
+
+.transport #play-button:not(.is-playing):active:not(:disabled) {
+  transform: translateY(3px);
+}
+
 .transport #play-button:active:not(:disabled) {
   box-shadow:
     inset 0 2px 6px rgba(0, 0, 0, 0.32),
     0 0 7px color-mix(in srgb, var(--accent) 52%, transparent),
     0 1px 0 rgba(0, 0, 0, 0.4),
     0 3px 9px rgba(0, 0, 0, 0.42);
+}
+
+.transport #play-button.is-playing:active:not(:disabled) {
+  transform: translateY(5px);
+  filter: brightness(0.82);
+  box-shadow:
+    inset 0 3px 8px rgba(0, 0, 0, 0.46),
+    0 0 6px color-mix(in srgb, var(--accent) 46%, transparent),
+    0 1px 0 rgba(0, 0, 0, 0.42),
+    0 2px 7px rgba(0, 0, 0, 0.44);
+}
+
+html.iphone .transport #play-button:not(.is-playing) {
+  transform: translateY(0);
 }
 
 html.iphone .transport #play-button {
@@ -1372,11 +1424,31 @@ html.iphone .transport #play-button {
     0 7px 14px rgba(0, 0, 0, 0.52);
 }
 
+html.iphone .transport #play-button.is-playing {
+  transform: translateY(3px);
+  filter: brightness(0.88);
+  box-shadow:
+    inset 0 2px 6px rgba(0, 0, 0, 0.38),
+    inset 0 -2px 3px rgba(0, 0, 0, 0.28),
+    0 0 7px color-mix(in srgb, var(--accent) 52%, transparent),
+    0 1px 0 rgba(0, 0, 0, 0.46),
+    0 2px 8px rgba(0, 0, 0, 0.48);
+}
+
+html.iphone .transport #play-button:not(.is-playing):active:not(:disabled) {
+  transform: translateY(3px);
+}
+
 html.iphone .transport #play-button:active:not(:disabled) {
   box-shadow:
     inset 0 2px 5px rgba(0, 0, 0, 0.3),
     0 0 6px color-mix(in srgb, var(--accent) 48%, transparent),
     0 1px 0 rgba(0, 0, 0, 0.36),
     0 2px 7px rgba(0, 0, 0, 0.4);
+}
+
+html.iphone .transport #play-button.is-playing:active:not(:disabled) {
+  transform: translateY(5px);
+  filter: brightness(0.82);
 }
 
