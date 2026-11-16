@@ -63,12 +63,72 @@ html[data-family-theme="dan"] .now-stripe {
   );
 }
 
+.theme-picker-wrap {
+  width: 100%;
+  margin-top: 6px;
+}
+
+.theme-picker-label {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 5px;
+  margin: 0 0 8px;
+  padding: 0;
+}
+
+.theme-picker-label-stripe {
+  display: block;
+  height: 5px;
+  border-radius: 3px;
+  border: 1px solid #000;
+  background: linear-gradient(
+    90deg,
+    var(--accent) 0% 17.3%,
+    color-mix(in srgb, var(--accent) 70%, #fff) 17.3% 28%,
+    var(--accent-orange) 28% 33.35%,
+    color-mix(in srgb, var(--accent-orange) 72%, #000) 33.35% 36.65%,
+    var(--accent-alt) 36.65% 42%,
+    var(--accent-alt) 42% 77.84%,
+    color-mix(in srgb, var(--accent-alt) 75%, #fff) 77.84% 100%
+  );
+}
+
+.theme-picker-label-text {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 900;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  text-align: center;
+  color: var(--text);
+  text-shadow:
+    0 0 0 1px #000,
+    0 1px 0 #000,
+    0 0 14px color-mix(in srgb, var(--accent) 50%, transparent);
+}
+
+.theme-picker-label-text::before {
+  content: "◆ ";
+  font-size: 0.55em;
+  letter-spacing: 0;
+  color: var(--accent-orange);
+  vertical-align: middle;
+}
+
+.theme-picker-label-text::after {
+  content: " ◆";
+  font-size: 0.55em;
+  letter-spacing: 0;
+  color: var(--accent-alt);
+  vertical-align: middle;
+}
+
 .theme-picker {
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 6px;
   width: 100%;
-  margin-top: 4px;
 }
 
 .theme-chip {
@@ -76,13 +136,15 @@ html[data-family-theme="dan"] .now-stripe {
   padding: 6px 2px;
   border: 2px solid #000;
   border-radius: 12px;
-  font-size: 0.72rem;
-  font-weight: 800;
+  font-size: 0.78rem;
+  font-weight: 900;
   line-height: 1.1;
+  letter-spacing: 0.04em;
   text-align: center;
   cursor: pointer;
   background: var(--card);
   color: var(--text);
+  -webkit-font-smoothing: antialiased;
 }
 
 .theme-chip:active {
@@ -118,13 +180,44 @@ html[data-family-theme="dan"] .now-stripe {
   color: #000;
 }
 
+html.iphone .theme-picker-wrap {
+  margin-top: 4px;
+}
+
+html.iphone .theme-picker-label {
+  gap: 4px;
+  margin-bottom: 6px;
+}
+
+html.iphone .theme-picker-label-stripe {
+  height: 4px;
+}
+
+html.iphone .theme-picker-label-text {
+  font-size: 0.88rem;
+  letter-spacing: 0.24em;
+}
+
 html.iphone .theme-picker {
   gap: 4px;
-  margin-top: 2px;
 }
 
 html.iphone .theme-chip {
   min-height: 38px;
-  font-size: 0.66rem;
+  font-size: 0.7rem;
+  font-weight: 900;
   border-radius: 10px;
+}
+
+html[data-family-theme="dan"] .theme-picker-label-stripe {
+  background: linear-gradient(
+    90deg,
+    var(--accent) 0% 17.3%,
+    #e8a820 17.3% 28%,
+    var(--accent-orange) 28% 33.35%,
+    #d97810 33.35% 36.65%,
+    var(--accent-alt) 36.65% 42%,
+    var(--accent-alt) 42% 77.84%,
+    #4a8fc4 77.84% 100%
+  );
 }
