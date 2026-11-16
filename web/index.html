@@ -12,7 +12,7 @@
   <link rel="icon" href="/favicon.ico">
   <link rel="manifest" href="/manifest.webmanifest">
   <link rel="apple-touch-icon" sizes="180x180" href="/icon-180.png">
-  <link rel="stylesheet" href="/styles.css?v=77">
+  <link rel="stylesheet" href="/styles.css?v=78">
 </head>
 <body>
   <div class="top-nav">
@@ -178,7 +178,11 @@
     <div class="sheet">
       <div class="sheet-body">
         <h1>Videos</h1>
-        <h2 class="youtube-heading"><span>Search</span><img src="/youtube-logo.png" alt="YouTube"></h2>
+        <h2 class="youtube-heading">
+          <span>Search</span>
+          <img src="/youtube-logo.png" alt="YouTube">
+          <button id="youtube-clear-results" class="youtube-clear-results" type="button" hidden>Clear results</button>
+        </h2>
         <form id="youtube-search-form" class="search-box sheet-search" role="search">
           <button id="youtube-search-icon" class="search-box-icon" type="button" aria-label="Go to YouTube search box">
             <svg class="search-icon" viewBox="0 0 36 36" width="36" height="36" aria-hidden="true">
@@ -228,6 +232,6 @@
     <button id="notice-action" class="notice-action" type="button" hidden>Open in YouTube</button>
   </div>
   <audio id="audio" playsinline preload="none"></audio>
-  <script src="/app.js?v=68" defer></script>
+  <script src="/app.js?v=69" defer></script>
 </body>
 </html>
