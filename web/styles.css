@@ -212,6 +212,29 @@ body.search-page #search-page { padding-top: 16px; }
 
 .home:active { opacity: 0.65; }
 
+
+#home {
+  justify-content: center;
+}
+
+#home span {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+#home svg {
+  flex: none;
+  width: 32px;
+  height: 32px;
+}
+
 .home.search-clear {
   box-shadow: inset 0 0 0 4px var(--accent), 0 2px 8px rgba(0, 0, 0, 0.45);
 }
@@ -586,7 +609,7 @@ input::placeholder { color: rgba(255, 255, 255, 0.72); }
 .song.current {
   background: var(--accent);
   color: #000;
-  box-shadow: inset 0 0 0 3px var(--accent-alt);
+  background: var(--accent);
 }
 
 .song.current::before { background: var(--accent-alt); }
@@ -959,15 +982,92 @@ html.iphone #player-sub { font-size: 0.88rem; }
 
 .transport .big {
   min-height: 96px;
-  padding: 8px 4px;
+  padding: 8px 4px 12px;
   font-size: 1.23rem;
-  line-height: 1.1;
+  line-height: 1.12;
+  border-radius: 14px;
+  overflow: visible;
+  color: #fff;
 }
+
+.transport .big svg {
+  fill: currentColor;
+}
+
+.transport .big.plain {
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--accent-alt) 68%, #fff) 0%,
+    var(--accent-alt) 40%,
+    color-mix(in srgb, var(--accent-alt) 58%, #000) 70%,
+    color-mix(in srgb, var(--accent-alt) 32%, #000) 100%
+  );
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.3),
+    inset 0 -5px 8px rgba(0, 0, 0, 0.38),
+    0 5px 0 rgba(0, 0, 0, 0.48),
+    0 9px 16px rgba(0, 0, 0, 0.55);
+}
+
+.transport .big.prominent {
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--accent) 74%, #fff) 0%,
+    var(--accent) 44%,
+    color-mix(in srgb, var(--accent) 56%, #000) 72%,
+    color-mix(in srgb, var(--accent) 30%, #000) 100%
+  );
+  box-shadow:
+    inset 0 0 0 3px #000,
+    inset 0 1px 0 rgba(255, 255, 255, 0.38),
+    inset 0 -5px 8px rgba(0, 0, 0, 0.34),
+    0 5px 0 rgba(0, 0, 0, 0.5),
+    0 10px 18px rgba(0, 0, 0, 0.58);
+}
+
+.transport #shuffle.is-on {
+  color: #fff;
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--accent) 74%, #fff) 0%,
+    var(--accent) 44%,
+    color-mix(in srgb, var(--accent) 56%, #000) 72%,
+    color-mix(in srgb, var(--accent) 30%, #000) 100%
+  );
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.32),
+    inset 0 -5px 8px rgba(0, 0, 0, 0.32),
+    0 5px 0 rgba(0, 0, 0, 0.46),
+    0 8px 16px rgba(0, 0, 0, 0.52);
+}
+
+.transport #shuffle.is-on #shuffle-label {
+  color: #fff;
+}
+
+.transport .big:active:not(:disabled) {
+  opacity: 1;
+  transform: translateY(3px);
+}
+
+.transport .big.plain:active:not(:disabled) {
+  box-shadow:
+    inset 0 2px 6px rgba(0, 0, 0, 0.35),
+    0 1px 0 rgba(0, 0, 0, 0.35),
+    0 3px 8px rgba(0, 0, 0, 0.4);
+}
+
+.transport .big.prominent:active:not(:disabled) {
+  box-shadow:
+    inset 0 0 0 3px #000,
+    inset 0 2px 6px rgba(0, 0, 0, 0.32),
+    0 1px 0 rgba(0, 0, 0, 0.4),
+    0 3px 9px rgba(0, 0, 0, 0.42);
+}
+
 
 #shuffle.is-on {
   background: var(--accent);
-  color: #000;
-  box-shadow: inset 0 0 0 3px var(--accent-alt);
 }
 
 .sheet-screen {
@@ -1050,7 +1150,7 @@ body.has-now .sheet-screen { bottom: calc(var(--transport-bar) + var(--now-bar-s
 .catalog-row.saved {
   background: var(--accent);
   color: #000;
-  box-shadow: inset 0 0 0 3px var(--accent-alt);
+  background: var(--accent);
 }
 
 .catalog-row.saved .song-sub { color: rgba(0, 0, 0, 0.75); }
@@ -1182,12 +1282,15 @@ html.iphone .top-nav-row > .home:not(.search-clear) {
 
 
 html.iphone #home {
-  padding-left: 3px;
-  padding-right: 7px;
+  padding-left: 4px;
+  padding-right: 4px;
+  justify-content: center;
+  gap: 0;
 }
 
-html.iphone #home span {
-  padding-right: 3px;
+html.iphone #home svg {
+  width: 24px;
+  height: 24px;
 }
 
 html.iphone .search-clear {
@@ -1208,11 +1311,49 @@ html.iphone .search-clear {
   }
 
   html:not(.ipad) #home {
-    padding-left: 5px;
-    padding-right: 10px;
+    padding-left: 4px;
+    padding-right: 4px;
+    justify-content: center;
+    gap: 0;
   }
 
-  html:not(.ipad) #home span {
-    padding-right: 3px;
+  html:not(.ipad) #home svg {
+    width: 24px;
+    height: 24px;
   }
 }
+
+.transport #play-button {
+  box-shadow:
+    inset 0 0 0 3px #000,
+    inset 0 1px 0 rgba(255, 255, 255, 0.38),
+    inset 0 -5px 8px rgba(0, 0, 0, 0.34),
+    0 5px 0 rgba(0, 0, 0, 0.5),
+    0 10px 18px rgba(0, 0, 0, 0.58);
+}
+
+.transport #play-button:active:not(:disabled) {
+  box-shadow:
+    inset 0 0 0 3px #000,
+    inset 0 2px 6px rgba(0, 0, 0, 0.32),
+    0 1px 0 rgba(0, 0, 0, 0.4),
+    0 3px 9px rgba(0, 0, 0, 0.42);
+}
+
+html.iphone .transport #play-button {
+  box-shadow:
+    inset 0 0 0 2px #000,
+    inset 0 1px 0 rgba(255, 255, 255, 0.3),
+    inset 0 -4px 6px rgba(0, 0, 0, 0.3),
+    0 4px 0 rgba(0, 0, 0, 0.46),
+    0 7px 14px rgba(0, 0, 0, 0.52);
+}
+
+html.iphone .transport #play-button:active:not(:disabled) {
+  box-shadow:
+    inset 0 0 0 2px #000,
+    inset 0 2px 5px rgba(0, 0, 0, 0.3),
+    0 1px 0 rgba(0, 0, 0, 0.36),
+    0 2px 7px rgba(0, 0, 0, 0.4);
+}
+
