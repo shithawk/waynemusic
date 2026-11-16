@@ -50,7 +50,7 @@ const audio = () => document.getElementById("audio");
 
 document.addEventListener("DOMContentLoaded", init);
 
-const SW_BUILD = "26";
+const SW_BUILD = "27";
 
 const MARQUEE_PAUSE_S = 3;
 const MARQUEE_HOLD_END_S = 3;
@@ -190,7 +190,11 @@ async function init() {
     if (!appInBackground()) return;
     const track = currentTrack();
     if (!isStreamingTrack(track) || isAudiblyPlaying()) return;
-    skipStreamingTracksWhileBackground(1);
+    skipPastStreamingTracks(1);
+  });
+  window.addEventListener("offline", () => {
+    const track = currentTrack();
+    if (shouldSkipStreamingTrack(track)) skipPastStreamingTracks(1);
   });
   try {
     state.tracks = sortTracks(await allTracks());
@@ -1360,8 +1364,12 @@ function isStreamingTrack(track) {
   return Boolean(track && (track.source === "youtube" || track.source === "soundcloud"));
 }
 
-function skipStreamingTracksWhileBackground(direction) {
-  if (!appInBackground() || !state.tracks.length) return false;
+function shouldSkipStreamingTrack(track) {
+  return isStreamingTrack(track) && (streamingPlaybackUnavailable() || appInBackground());
+}
+
+function skipPastStreamingTracks(direction) {
+  if (!state.tracks.length) return false;
   const originId = state.currentId;
   let guard = state.tracks.length + 1;
   const stepDir = direction < 0 ? -1 : 1;
@@ -1390,12 +1398,16 @@ function skipStreamingTracksWhileBackground(direction) {
 function advancePastStreamingFailure() {
   if (!shouldAdvance()) return;
   const track = currentTrack();
-  if (!track || (track.source !== "youtube" && track.source !== "soundcloud")) return;
+  if (!track || !isStreamingTrack(track)) return;
   clearStreamingWatchdog();
   finishTrackChange();
   setPlaying(false);
   pauseYouTube();
   pauseSoundCloud();
+  if (streamingPlaybackUnavailable() || appInBackground()) {
+    skipPastStreamingTracks(1);
+    return;
+  }
   if (state.tracks.length < 2) {
     stopPlayback();
     state.currentId = null;
@@ -1409,17 +1421,17 @@ function advancePastStreamingFailure() {
 
 function armStreamingWatchdog() {
   clearStreamingWatchdog();
-  if (!streamingPlaybackUnavailable()) return;
   const track = currentTrack();
   if (!track || track.source === "local") return;
   const trackId = track.id;
   const source = track.source;
+  const ms = streamingPlaybackUnavailable() ? 4000 : 12000;
   streamingWatchdog = setTimeout(() => {
     streamingWatchdog = null;
     if (state.currentId !== trackId || !isSource(source)) return;
     if (isAudiblyPlaying()) return;
     advancePastStreamingFailure();
-  }, 10000);
+  }, ms);
 }
 
 function noticeYouTubePlaybackError() {
@@ -2112,8 +2124,8 @@ function shouldAdvance() {
 }
 
 async function playTrack(track, options) {
-  if (isStreamingTrack(track) && appInBackground()) {
-    skipStreamingTracksWhileBackground(1);
+  if (shouldSkipStreamingTrack(track)) {
+    skipPastStreamingTracks(1);
     return;
   }
   beginTrackChange();
@@ -2126,6 +2138,11 @@ async function playTrack(track, options) {
   const shuffleAt = state.shuffle ? state.shuffleOrder.indexOf(track.id) : -1;
   if (shuffleAt >= 0) state.shuffleIndex = shuffleAt;
   if (state.currentId === track.id) {
+    if (shouldSkipStreamingTrack(track)) {
+      finishTrackChange();
+      skipPastStreamingTracks(1);
+      return;
+    }
     if (!state.playing) {
       if (track.source === "local" && realSource(audio()) && !audio().paused) setPlaying(true);
       else await toggle();
@@ -2463,6 +2480,10 @@ function tryPlayYouTube() {
 }
 
 function playYouTube(track) {
+  if (streamingPlaybackUnavailable()) {
+    advancePastStreamingFailure();
+    return;
+  }
   audio().pause();
   pauseSoundCloud();
   pendingVideo = track.mediaRef;
@@ -2486,6 +2507,10 @@ function playYouTube(track) {
 }
 
 async function playSoundCloud(track) {
+  if (streamingPlaybackUnavailable()) {
+    advancePastStreamingFailure();
+    return;
+  }
   audio().pause();
   pauseYouTube();
   scWidget = null;
