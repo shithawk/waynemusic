@@ -33,6 +33,7 @@ let pendingVideo = "";
 let pendingYtPlay = false;
 let pendingYtVideo = "";
 let scWidget = null;
+let streamingWatchdog = null;
 let noticeTimer = 0;
 let noticeActionURL = "";
 let ignoreAdvance = false;
@@ -48,9 +49,9 @@ const audio = () => document.getElementById("audio");
 
 document.addEventListener("DOMContentLoaded", init);
 
-const SW_BUILD = "21";
+const SW_BUILD = "23";
 
-const MARQUEE_PAUSE_S = 5;
+const MARQUEE_PAUSE_S = 3;
 const MARQUEE_HOLD_END_S = 3;
 const MARQUEE_PX_PER_S = 40;
 const marqueeHosts = new WeakMap();
@@ -1254,6 +1255,7 @@ function showSongList() {
 }
 
 function setPlaying(playing) {
+  if (playing) clearStreamingWatchdog();
   state.playing = playing;
   document.getElementById("play-label").textContent = playing ? "Pause" : "Play";
   const playButton = document.getElementById("play-button");
@@ -1324,8 +1326,58 @@ function youtubePlaybackErrorMessage(code) {
   }
 }
 
+function clearStreamingWatchdog() {
+  if (streamingWatchdog !== null) {
+    clearTimeout(streamingWatchdog);
+    streamingWatchdog = null;
+  }
+}
+
+function streamingPlaybackUnavailable() {
+  return typeof navigator !== "undefined" && navigator.onLine === false;
+}
+
+function advancePastStreamingFailure() {
+  if (!shouldAdvance()) return;
+  const track = currentTrack();
+  if (!track || (track.source !== "youtube" && track.source !== "soundcloud")) return;
+  clearStreamingWatchdog();
+  finishTrackChange();
+  setPlaying(false);
+  pauseYouTube();
+  pauseSoundCloud();
+  if (state.tracks.length < 2) {
+    stopPlayback();
+    state.currentId = null;
+    closePlayer();
+    render();
+    setNotice("No connection — streaming songs need internet.");
+    return;
+  }
+  step(1);
+}
+
+function armStreamingWatchdog() {
+  clearStreamingWatchdog();
+  if (!streamingPlaybackUnavailable()) return;
+  const track = currentTrack();
+  if (!track || track.source === "local") return;
+  const trackId = track.id;
+  const source = track.source;
+  streamingWatchdog = setTimeout(() => {
+    streamingWatchdog = null;
+    if (state.currentId !== trackId || !isSource(source)) return;
+    if (isAudiblyPlaying()) return;
+    advancePastStreamingFailure();
+  }, 10000);
+}
+
 function noticeYouTubePlaybackError(code) {
   const track = currentTrack();
+  if (track && track.source === "youtube" && streamingPlaybackUnavailable()) {
+    advancePastStreamingFailure();
+    return;
+  }
   const url = track && track.source === "youtube" ? youtubeWatchURL(track.mediaRef) : "";
   setPlaying(false);
   setNotice(youtubePlaybackErrorMessage(code), {
@@ -1980,6 +2032,13 @@ async function playTrack(track, options) {
     else await playSoundCloud(track);
   } catch {
     finishTrackChange();
+    if (
+      (track.source === "youtube" || track.source === "soundcloud") &&
+      streamingPlaybackUnavailable()
+    ) {
+      advancePastStreamingFailure();
+      return;
+    }
     setNotice("That song could not be played.");
   }
 }
@@ -2290,7 +2349,10 @@ function playYouTube(track) {
   pendingYtVideo = track.mediaRef;
   pendingYtPlay = true;
   loadYouTubeAPI();
-  if (!ytReady || !ytPlayer || !ytPlayer.loadVideoById) return;
+  if (!ytReady || !ytPlayer || !ytPlayer.loadVideoById) {
+    armStreamingWatchdog();
+    return;
+  }
   const run = () => {
     if (!isSource("youtube")) return;
     const current = currentTrack();
@@ -2298,6 +2360,7 @@ function playYouTube(track) {
     fitYouTube();
     ytPlayer.loadVideoById(track.mediaRef);
     tryPlayYouTube();
+    armStreamingWatchdog();
   };
   requestAnimationFrame(() => requestAnimationFrame(run));
 }
@@ -2314,7 +2377,11 @@ async function playSoundCloud(track) {
   frame.setAttribute("scrolling", "no");
   frame.src = "https://w.soundcloud.com/player/?url=" + encodeURIComponent(track.mediaRef) + "&auto_play=true&hide_related=true&show_comments=false&show_user=true&show_reposts=false&visual=true&show_teaser=false";
   stage.append(frame);
-  if (!window.SC || !window.SC.Widget) return;
+  if (!window.SC || !window.SC.Widget) {
+    finishTrackChange();
+    if (streamingPlaybackUnavailable()) advancePastStreamingFailure();
+    return;
+  }
   scWidget = window.SC.Widget(frame);
   scWidget.bind(window.SC.Widget.Events.READY, () => {
     if (isSource("soundcloud")) scWidget.play();
@@ -2329,6 +2396,13 @@ async function playSoundCloud(track) {
   scWidget.bind(window.SC.Widget.Events.FINISH, () => {
     if (isSource("soundcloud") && shouldAdvance()) step(1);
   });
+  if (window.SC.Widget.Events.ERROR) {
+    scWidget.bind(window.SC.Widget.Events.ERROR, () => {
+      if (!isSource("soundcloud")) return;
+      if (streamingPlaybackUnavailable()) advancePastStreamingFailure();
+    });
+  }
+  armStreamingWatchdog();
 }
 
 function loadYouTubeAPI() {
@@ -2535,6 +2609,7 @@ function restart() {
 }
 
 function stopPlayback() {
+  clearStreamingWatchdog();
   const player = audio();
   player.pause();
   player.removeAttribute("src");
