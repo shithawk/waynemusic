@@ -1,0 +1,130 @@
+/* Family colour themes — accents and surfaces only (not images/icons). */
+html[data-family-theme="jori"] {
+  --bg: #121a32;
+  --card: rgba(144, 176, 208, 0.12);
+  --notice-surface: color-mix(in srgb, var(--bg) 82%, var(--accent) 18%);
+  --accent: #5ab0c4;
+  --accent-alt: #b43c6c;
+  --accent-orange: #ff8800;
+  --text: #f0eef8;
+}
+
+html[data-family-theme="wayne"] {
+  --bg: #0d0d0d;
+  --card: rgba(255, 255, 255, 0.08);
+  --notice-surface: color-mix(in srgb, var(--bg) 82%, var(--accent) 18%);
+  --accent: #ffd100;
+  --accent-alt: #db141a;
+  --accent-orange: #ff8800;
+  --text: #fff;
+}
+
+html[data-family-theme="jacob"] {
+  --bg: #2a3038;
+  --card: rgba(160, 168, 178, 0.14);
+  --notice-surface: color-mix(in srgb, var(--bg) 82%, var(--accent) 18%);
+  --accent: #e87830;
+  --accent-alt: #3d8fd4;
+  --accent-orange: #ff8800;
+  --text: #f0eef8;
+}
+
+html[data-family-theme="dan"] {
+  --bg: #1a2332;
+  --card: rgba(160, 168, 178, 0.14);
+  --notice-surface: color-mix(in srgb, var(--bg) 82%, var(--accent) 18%);
+  --accent: #f0b429;
+  --accent-alt: #5b9fd4;
+  --accent-orange: #ff8800;
+  --text: #f0eef8;
+}
+
+html[data-family-theme="steff"] {
+  --bg: #2d1f3d;
+  --card: rgba(160, 168, 178, 0.14);
+  --notice-surface: color-mix(in srgb, var(--bg) 82%, var(--accent) 18%);
+  --accent: #e8a0bf;
+  --accent-alt: #6ecfad;
+  --accent-orange: #ff8800;
+  --text: #f0eef8;
+}
+
+html[data-family-theme="dan"] .stripe,
+html[data-family-theme="dan"] .now-stripe {
+  background: linear-gradient(
+    90deg,
+    var(--accent) 0% 17.3%,
+    #e8a820 17.3% 28%,
+    var(--accent-orange) 28% 33.35%,
+    #d97810 33.35% 36.65%,
+    var(--accent-alt) 36.65% 42%,
+    var(--accent-alt) 42% 77.84%,
+    #4a8fc4 77.84% 100%
+  );
+}
+
+.theme-picker {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 6px;
+  width: 100%;
+  margin-top: 4px;
+}
+
+.theme-chip {
+  min-height: 44px;
+  padding: 6px 2px;
+  border: 2px solid #000;
+  border-radius: 12px;
+  font-size: 0.72rem;
+  font-weight: 800;
+  line-height: 1.1;
+  text-align: center;
+  cursor: pointer;
+  background: var(--card);
+  color: var(--text);
+}
+
+.theme-chip:active {
+  opacity: 0.75;
+}
+
+.theme-chip.is-active {
+  box-shadow: inset 0 0 0 2px #fff, 0 0 0 2px var(--accent-orange);
+}
+
+.theme-chip[data-theme="wayne"] {
+  background: #ffd100;
+  color: #000;
+}
+
+.theme-chip[data-theme="jori"] {
+  background: #5ab0c4;
+  color: #000;
+}
+
+.theme-chip[data-theme="jacob"] {
+  background: #e87830;
+  color: #000;
+}
+
+.theme-chip[data-theme="dan"] {
+  background: linear-gradient(135deg, #f0b429 0%, #5b9fd4 100%);
+  color: #000;
+}
+
+.theme-chip[data-theme="steff"] {
+  background: linear-gradient(135deg, #e8a0bf 0%, #6ecfad 100%);
+  color: #000;
+}
+
+html.iphone .theme-picker {
+  gap: 4px;
+  margin-top: 2px;
+}
+
+html.iphone .theme-chip {
+  min-height: 38px;
+  font-size: 0.66rem;
+  border-radius: 10px;
+}

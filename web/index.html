@@ -1,7 +1,20 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-family-theme="wayne">
 <head>
   <meta charset="utf-8">
+  <script>
+    (function () {
+      var key = "family-theme";
+      var def = "wayne";
+      var ok = { jori: 1, wayne: 1, jacob: 1, dan: 1, steff: 1 };
+      var t = null;
+      try {
+        t = localStorage.getItem(key);
+      } catch (_) {}
+      if (!t || !ok[t]) t = def;
+      document.documentElement.setAttribute("data-family-theme", t);
+    })();
+  </script>
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="mobile-web-app-capable" content="yes">
@@ -13,6 +26,7 @@
   <link rel="manifest" href="/manifest.webmanifest">
   <link rel="apple-touch-icon" sizes="180x180" href="/icon-180.png">
   <link rel="stylesheet" href="/styles.css?v=106">
+  <link rel="stylesheet" href="/themes.css?v=1">
 </head>
 <body>
   <div class="top-nav">
@@ -53,6 +67,13 @@
       <button id="play-favourites" class="big play-favourites" type="button" disabled>Select heart to add song to favourites</button>
       <button id="add-music" class="big white" type="button">+ Add music</button>
       <button id="manage-songs" class="big white" type="button" hidden>- Remove songs</button>
+      <div id="theme-picker" class="theme-picker home-only" role="group" aria-label="Colour theme">
+        <button type="button" class="theme-chip" data-theme="wayne">Wayne</button>
+        <button type="button" class="theme-chip" data-theme="jori">Jori</button>
+        <button type="button" class="theme-chip" data-theme="jacob">Jacob</button>
+        <button type="button" class="theme-chip" data-theme="dan">Dan</button>
+        <button type="button" class="theme-chip" data-theme="steff">Steff</button>
+      </div>
     </div>
 
     <p id="empty" class="empty home-only">Tap + Add music to put songs on this iPad.</p>
@@ -233,6 +254,6 @@
     <button id="notice-action" class="notice-action" type="button" hidden>Open in YouTube</button>
   </div>
   <audio id="audio" playsinline preload="none"></audio>
-  <script src="/app.js?v=77" defer></script>
+  <script src="/app.js?v=78" defer></script>
 </body>
 </html>

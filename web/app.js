@@ -1,3 +1,13 @@
+const DEFAULT_FAMILY_THEME = "wayne";
+const FAMILY_THEME_META = {
+  jori: "#121a32",
+  wayne: "#0d0d0d",
+  jacob: "#2a3038",
+  dan: "#1a2332",
+  steff: "#2d1f3d"
+};
+const FAMILY_THEME_STORAGE = "family-theme";
+
 const state = {
   tracks: [],
   catalog: [],
@@ -165,6 +175,7 @@ function registerServiceWorker() {
 }
 
 async function init() {
+  initFamilyTheme();
   document.getElementById("install-hint").hidden = standalone();
   state.shuffle = loadShuffle();
   bindEvents();
@@ -3093,6 +3104,35 @@ async function getBlob(id) {
     const request = tx.objectStore("files").get(id);
     request.onsuccess = () => resolve(request.result ? request.result.blob : null);
     request.onerror = () => reject(request.error);
+  });
+}
+
+function initFamilyTheme() {
+  const picker = document.getElementById("theme-picker");
+  if (!picker) return;
+  let theme = localStorage.getItem(FAMILY_THEME_STORAGE);
+  if (!FAMILY_THEME_META[theme]) theme = DEFAULT_FAMILY_THEME;
+  applyFamilyTheme(theme);
+  picker.querySelectorAll(".theme-chip").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const next = btn.dataset.theme;
+      if (!FAMILY_THEME_META[next]) return;
+      applyFamilyTheme(next);
+      try {
+        localStorage.setItem(FAMILY_THEME_STORAGE, next);
+      } catch (_) {}
+    });
+  });
+}
+
+function applyFamilyTheme(theme) {
+  document.documentElement.setAttribute("data-family-theme", theme);
+  const meta = document.querySelector('meta[name="theme-color"]');
+  if (meta) meta.setAttribute("content", FAMILY_THEME_META[theme]);
+  document.querySelectorAll(".theme-chip").forEach((btn) => {
+    const on = btn.dataset.theme === theme;
+    btn.classList.toggle("is-active", on);
+    btn.setAttribute("aria-pressed", on ? "true" : "false");
   });
 }
 
