@@ -48,12 +48,13 @@ const audio = () => document.getElementById("audio");
 
 document.addEventListener("DOMContentLoaded", init);
 
-const SW_BUILD = "19";
+const SW_BUILD = "20";
 
 const MARQUEE_PAUSE_S = 5;
 const MARQUEE_HOLD_END_S = 3;
 const MARQUEE_PX_PER_S = 40;
 const marqueeHosts = new WeakMap();
+const marqueeText = new WeakMap();
 
 function ensureMarqueeHost(host) {
   if (!host) return null;
@@ -82,6 +83,7 @@ function refreshMarquee(host) {
     inner.style.transform = "";
     return;
   }
+  void viewport.offsetWidth;
   const overflow = inner.scrollWidth - viewport.clientWidth;
   if (overflow <= 1) {
     inner.style.transform = "";
@@ -106,11 +108,16 @@ function refreshMarquee(host) {
 }
 
 function setMarqueeText(host, text) {
+  if (!host) return;
+  const next = text || "";
+  if (marqueeText.get(host) === next) return;
+  marqueeText.set(host, next);
   const inner = ensureMarqueeHost(host);
   if (!inner) return;
-  const next = text || "";
-  if (inner.textContent !== next) inner.textContent = next;
-  requestAnimationFrame(() => refreshMarquee(host));
+  inner.textContent = next;
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => refreshMarquee(host));
+  });
 }
 
 function registerServiceWorker() {
