@@ -156,28 +156,28 @@ html[data-family-theme="dan"] .now-stripe {
 }
 
 .theme-chip[data-theme="wayne"] {
-  background: #ffd100;
-  color: #000;
+  background: #db141a;
+  color: #fff;
 }
 
 .theme-chip[data-theme="jori"] {
-  background: #5ab0c4;
-  color: #000;
+  background: #9d8ec7;
+  color: #fff;
 }
 
 .theme-chip[data-theme="jacob"] {
   background: #e87830;
-  color: #000;
+  color: #fff;
 }
 
 .theme-chip[data-theme="dan"] {
   background: linear-gradient(135deg, #f0b429 0%, #5b9fd4 100%);
-  color: #000;
+  color: #fff;
 }
 
 .theme-chip[data-theme="steff"] {
   background: linear-gradient(135deg, #e8a0bf 0%, #6ecfad 100%);
-  color: #000;
+  color: #fff;
 }
 
 html.iphone .theme-picker-wrap {
