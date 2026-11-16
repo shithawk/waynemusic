@@ -6,6 +6,7 @@
   --notice-surface: color-mix(in srgb, var(--bg) 82%, var(--accent) 18%);
   --accent: #ffd100;
   --accent-alt: #db141a;
+  --accent-orange: #ff8800;
   --text: #fff;
   --transport-bar: calc(114px + env(safe-area-inset-bottom));
   --top-nav-offset: calc(84px + env(safe-area-inset-top));
@@ -286,10 +287,27 @@ body.has-now #songs { bottom: calc(var(--transport-bar) + var(--now-bar-space));
   text-shadow: 0 2px 2px #000;
 }
 
-.stripe { display: flex; height: 10px; }
-.stripe span { flex: 1; }
-.stripe .accent { background: var(--accent); }
-.stripe .accent-alt { background: var(--accent-alt); }
+.stripe,
+.now-stripe {
+  display: block;
+  background: linear-gradient(
+    90deg,
+    var(--accent) 0% 17.3%,
+    color-mix(in srgb, var(--accent) 70%, #fff) 17.3% 28%,
+    var(--accent-orange) 28% 33.35%,
+    color-mix(in srgb, var(--accent-orange) 72%, #000) 33.35% 36.65%,
+    var(--accent-alt) 36.65% 42%,
+    var(--accent-alt) 42% 77.84%,
+    color-mix(in srgb, var(--accent-alt) 75%, #fff) 77.84% 100%
+  );
+}
+
+.stripe {
+  height: 10px;
+}
+
+.stripe span,
+.now-stripe span { display: none; }
 
 .hint-card {
   margin: 16px 24px 0;
@@ -297,6 +315,7 @@ body.has-now #songs { bottom: calc(var(--transport-bar) + var(--now-bar-space));
   background: #fff;
   color: #000;
   border-radius: 16px;
+  box-shadow: inset 4px 0 0 var(--accent-orange);
   font-size: 1.25rem;
   font-weight: 600;
 }
@@ -678,30 +697,27 @@ input::placeholder { color: rgba(255, 255, 255, 0.72); }
 .now-dock {
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  padding: 0 0 8px;
+  gap: 2px;
+  padding: 2px 0 4px;
   border-radius: 20px;
   overflow: hidden;
-  background: #141414;
+  background: var(--bg);
   box-shadow:
     0 8px 32px rgba(0, 0, 0, 0.55),
-    inset 0 0 0 2px var(--accent);
+    inset 0 0 0 1px rgba(144, 176, 208, 0.28);
 }
 
 .now-stripe {
-  display: flex;
-  height: 6px;
+  height: 8px;
   flex: none;
 }
-
-.now-stripe .accent { background: var(--accent); }
-.now-stripe .accent-alt { background: var(--accent-alt); }
 
 .now-bar-row {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 4px 10px 0 8px;
+  gap: 6px;
+  padding: 2px 8px 3px 6px;
+  margin-top: 0;
 }
 
 .now-favorite {
