@@ -3,7 +3,7 @@ const SHELL = [
   "/",
   "/index.html",
   "/styles.css",
-  "/styles.css?v=106",
+  "/styles.css?v=107",
   "/themes.css",
   "/themes.css?v=11",
   "/app.js",

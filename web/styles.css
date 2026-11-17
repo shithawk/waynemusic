@@ -372,6 +372,15 @@ body.has-now #songs { bottom: calc(var(--transport-bar) + var(--now-bar-space));
 #manage-songs {
   background: var(--accent-alt);
   color: #fff;
+  text-shadow:
+    0 1px 0 rgba(0, 0, 0, 0.35),
+    0 2px 4px rgba(0, 0, 0, 0.55);
+}
+
+#manage-sheet .sheet h1 {
+  text-shadow:
+    0 1px 0 rgba(0, 0, 0, 0.35),
+    0 2px 4px rgba(0, 0, 0, 0.55);
 }
 
 .big svg { fill: currentColor; }
