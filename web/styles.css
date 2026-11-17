@@ -24,11 +24,74 @@
 * { box-sizing: border-box; }
 [hidden] { display: none !important; }
 
-html, body {
+html {
   margin: 0;
   min-height: 100%;
   background: var(--bg);
   color: var(--text);
+}
+
+body {
+  margin: 0;
+  min-height: 100%;
+  background: transparent;
+  color: inherit;
+}
+
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background: var(--section-page-bg, var(--bg));
+  background-attachment: fixed;
+  transition: background 0.4s ease;
+}
+
+body.section-home {
+  --section-page-bg: linear-gradient(
+    168deg,
+    color-mix(in srgb, var(--bg) 58%, var(--accent) 42%) 0%,
+    color-mix(in srgb, var(--bg) 74%, var(--accent-alt) 26%) 42%,
+    var(--bg) 100%
+  );
+}
+
+body.section-artists {
+  --section-page-bg: linear-gradient(
+    168deg,
+    color-mix(in srgb, var(--bg) 52%, var(--accent-alt) 48%) 0%,
+    color-mix(in srgb, var(--bg) 78%, var(--accent-alt) 22%) 48%,
+    var(--bg) 100%
+  );
+}
+
+body.section-songs {
+  --section-page-bg: linear-gradient(
+    168deg,
+    color-mix(in srgb, var(--bg) 50%, var(--accent) 50%) 0%,
+    color-mix(in srgb, var(--bg) 76%, var(--accent) 24%) 48%,
+    var(--bg) 100%
+  );
+}
+
+body.section-videos {
+  --section-page-bg: linear-gradient(
+    168deg,
+    color-mix(in srgb, var(--bg) 50%, var(--nav-glass) 50%) 0%,
+    color-mix(in srgb, var(--bg) 76%, var(--nav-glass) 24%) 48%,
+    var(--bg) 100%
+  );
+}
+
+body.section-search {
+  --section-page-bg: linear-gradient(
+    168deg,
+    color-mix(in srgb, var(--bg) 64%, var(--accent) 22%) 0%,
+    color-mix(in srgb, var(--bg) 80%, #fff 6%) 45%,
+    var(--bg) 100%
+  );
 }
 
 body {
@@ -87,8 +150,63 @@ h1, h2, p { margin: 0; }
 
 .top-nav-row > .home:not(.search-clear) {
   flex: 0 1 auto;
-  padding: 4px 12px;
+  padding: 6px 16px;
   font-size: 1.3rem;
+  color: var(--nav-glass-text);
+  border-radius: 999px;
+  background:
+    linear-gradient(
+      180deg,
+      rgba(255, 255, 255, 0.34) 0%,
+      rgba(255, 255, 255, 0.1) 16%,
+      rgba(255, 255, 255, 0) 40%
+    ),
+    linear-gradient(
+      165deg,
+      color-mix(in srgb, var(--nav-glass) 48%, transparent) 0%,
+      color-mix(in srgb, var(--bg) 58%, #000 42%) 44%,
+      color-mix(in srgb, var(--bg) 72%, #000 28%) 100%
+    );
+  -webkit-backdrop-filter: blur(16px) saturate(1.55);
+  backdrop-filter: blur(16px) saturate(1.55);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.62),
+    inset 0 -1px 0 color-mix(in srgb, var(--nav-glass) 32%, transparent),
+    inset 0 0 0 1px color-mix(in srgb, var(--nav-glass) 55%, #fff 25%),
+    0 0 14px color-mix(in srgb, var(--nav-glass) 36%, transparent),
+    0 6px 16px rgba(0, 0, 0, 0.42);
+  text-shadow: 0 1px 2px rgba(0, 8, 24, 0.55);
+}
+
+.top-nav-row > .home:not(.search-clear):active {
+  opacity: 1;
+  filter: brightness(0.92);
+  transform: translateY(1px);
+}
+
+.top-nav-row > .home.is-current:not(.search-clear) {
+  color: var(--nav-glass-current-text);
+  background:
+    linear-gradient(
+      180deg,
+      rgba(255, 255, 255, 0.42) 0%,
+      color-mix(in srgb, var(--nav-glass) 22%, transparent) 18%,
+      rgba(255, 255, 255, 0) 44%
+    ),
+    linear-gradient(
+      165deg,
+      color-mix(in srgb, var(--nav-glass) 72%, #fff 8%) 0%,
+      color-mix(in srgb, var(--nav-glass) 48%, var(--bg) 52%) 42%,
+      color-mix(in srgb, var(--bg) 70%, #000 30%) 100%
+    );
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.72),
+    inset 0 -1px 0 color-mix(in srgb, var(--nav-glass) 42%, transparent),
+    inset 0 0 0 1px color-mix(in srgb, var(--nav-glass) 70%, #fff 30%),
+    0 0 18px color-mix(in srgb, var(--nav-glass) 55%, transparent),
+    0 0 36px color-mix(in srgb, var(--nav-glass) 28%, transparent),
+    0 8px 18px rgba(0, 0, 0, 0.48);
+  text-shadow: var(--nav-glass-current-shadow);
 }
 
 .nav-search-wrap {
@@ -673,10 +791,10 @@ input::placeholder { color: rgba(255, 255, 255, 0.72); }
   margin-top: 12px;
   padding: 14px 14px 14px 18px;
   border-radius: 16px;
-  background: var(--card);
+  background: var(--song-box-gradient, var(--card));
   color: #fff;
   text-align: left;
-  box-shadow: inset 0 0 0 3px rgba(90, 176, 196, 0.35);
+  box-shadow: inset 0 0 0 3px var(--song-box-ring, rgba(90, 176, 196, 0.35));
 }
 
 .artist-row.open { box-shadow: inset 0 0 0 3px var(--accent); }
@@ -741,8 +859,8 @@ input::placeholder { color: rgba(255, 255, 255, 0.72); }
 .artist-songs { margin: 4px 0 8px 12px; }
 .artist-songs .song { margin-top: 8px; }
 
-.song-title { font-size: 1.7rem; font-weight: 700; }
-.song-sub { font-size: 1.25rem; }
+.song-title { font-size: calc(1.7rem - 1pt); font-weight: 700; }
+.song-sub { font-size: calc(1.25rem - 1pt); }
 .song.current .song-sub { color: rgba(0, 0, 0, 0.8); }
 
 .now-stack {
@@ -901,8 +1019,8 @@ input::placeholder { color: rgba(255, 255, 255, 0.72); }
 
 .seek {
   position: relative;
-  height: 62px;
-  border-radius: 16px;
+  height: 40px;
+  border-radius: 12px;
   background: rgba(8, 12, 24, 0.88);
   box-shadow: inset 0 0 0 2px rgba(90, 176, 196, 0.45);
   overflow: hidden;
@@ -910,7 +1028,7 @@ input::placeholder { color: rgba(255, 255, 255, 0.72); }
   cursor: pointer;
 }
 
-.dock-seek { height: 66px; }
+.dock-seek { height: 42px; }
 
 .seek-fill {
   position: absolute;
@@ -926,10 +1044,10 @@ input::placeholder { color: rgba(255, 255, 255, 0.72); }
   position: absolute;
   top: 50%;
   left: 0;
-  width: 34px;
-  height: 34px;
-  margin-left: -17px;
-  border: 3px solid var(--accent-alt);
+  width: 26px;
+  height: 26px;
+  margin-left: -13px;
+  border: 2px solid var(--accent-alt);
   border-radius: 50%;
   background: var(--text);
   transform: translateY(-50%);
@@ -943,14 +1061,14 @@ input::placeholder { color: rgba(255, 255, 255, 0.72); }
   z-index: 1;
   transform: translateY(-50%);
   color: var(--text);
-  font-size: 1.3rem;
+  font-size: 1.05rem;
   font-weight: 700;
   text-shadow: 0 1px 3px rgba(0, 0, 0, 0.85);
   pointer-events: none;
 }
 
-.seek-time.start { left: 58px; }
-.seek-time.end { right: 14px; }
+.seek-time.start { left: 44px; }
+.seek-time.end { right: 12px; }
 
 #player {
   position: fixed;
@@ -1028,6 +1146,24 @@ html.iphone #player-sub { font-size: 0.88rem; }
   width: 100%;
   height: 100%;
   border: 0;
+}
+
+#stage-yt .yt-stage-logo {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  z-index: 0;
+  width: min(42%, 9rem);
+  height: auto;
+  transform: translate(-50%, -50%);
+  opacity: 0.24;
+  pointer-events: none;
+  object-fit: contain;
+}
+
+#stage-yt #yt-player {
+  position: relative;
+  z-index: 1;
 }
 
 #stage-local img {
@@ -1172,8 +1308,15 @@ html.iphone #player-sub { font-size: 0.88rem; }
   left: 0;
   bottom: var(--transport-bar);
   z-index: 8;
-  background: var(--bg);
+  background: var(--section-page-bg, var(--bg));
+  background-attachment: fixed;
   color: #fff;
+}
+
+body.section-artists #songs,
+body.section-videos #songs {
+  visibility: hidden;
+  pointer-events: none;
 }
 
 body.has-now .sheet-screen { bottom: calc(var(--transport-bar) + var(--now-bar-space)); }
@@ -1419,13 +1562,28 @@ html.iphone .top-nav-row > .home:not(.search-clear) {
   width: 100%;
   min-width: 0;
   min-height: 36px;
-  padding: 2px 4px;
-  border-radius: 6px;
+  padding: 4px 6px;
+  border-radius: 999px;
   font-size: 0.78rem;
   line-height: 1.1;
   gap: 4px;
   white-space: nowrap;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.55),
+    inset 0 -1px 0 color-mix(in srgb, var(--nav-glass) 24%, transparent),
+    inset 0 0 0 1px color-mix(in srgb, var(--nav-glass) 48%, #fff 22%),
+    0 0 10px color-mix(in srgb, var(--nav-glass) 30%, transparent),
+    0 4px 10px rgba(0, 0, 0, 0.4);
+}
+
+html.iphone .top-nav-row > .home.is-current:not(.search-clear) {
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.68),
+    inset 0 -1px 0 color-mix(in srgb, var(--nav-glass) 35%, transparent),
+    inset 0 0 0 1px color-mix(in srgb, var(--nav-glass) 65%, #fff 28%),
+    0 0 14px color-mix(in srgb, var(--nav-glass) 48%, transparent),
+    0 0 24px color-mix(in srgb, var(--nav-glass) 22%, transparent),
+    0 4px 12px rgba(0, 0, 0, 0.42);
 }
 
 html.iphone .top-nav-row > .home:not(.search-clear) svg {
@@ -1560,12 +1718,12 @@ html.iphone .song {
 }
 
 html.iphone .song-title {
-  font-size: 1.1rem;
+  font-size: calc(1.1rem - 1pt);
   line-height: 1.2;
 }
 
 html.iphone .song-sub {
-  font-size: 0.88rem;
+  font-size: calc(0.88rem - 1pt);
 }
 
 html.iphone .song-favorite {
@@ -1711,22 +1869,22 @@ html.iphone .now-bar-song {
 }
 
 html.iphone .dock-seek {
-  height: 48px;
+  height: 32px;
 }
 
 html.iphone .seek-time {
-  font-size: 1rem;
+  font-size: 0.88rem;
 }
 
 html.iphone .seek-time.start {
-  left: 48px;
+  left: 36px;
 }
 
 html.iphone .seek-thumb {
-  width: 28px;
-  height: 28px;
-  margin-left: -14px;
-  border-width: 3px;
+  width: 22px;
+  height: 22px;
+  margin-left: -11px;
+  border-width: 2px;
 }
 
 html.iphone .sheet {

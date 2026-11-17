@@ -1,6 +1,10 @@
 /* Family colour themes — accents and surfaces only (not images/icons). */
 html {
   --nav-cream: #fff;
+  --nav-glass: #5a9fd4;
+  --nav-glass-text: #f5f9ff;
+  --nav-glass-current-text: #fff;
+  --nav-glass-current-shadow: 0 1px 2px rgba(0, 8, 24, 0.45);
 }
 html[data-family-theme="jori"] {
   --bg: #121a32;
@@ -10,12 +14,29 @@ html[data-family-theme="jori"] {
   --accent-alt: #b43c6c;
   --accent-orange: #ff8800;
   --text: #f0eef8;
+  --nav-glass: #5ab0c4;
   --song-box-gradient: linear-gradient(
     135deg,
     color-mix(in srgb, var(--bg) 72%, var(--accent) 28%) 0%,
     color-mix(in srgb, var(--bg) 76%, var(--accent-alt) 24%) 100%
   );
   --song-box-ring: var(--accent);
+}
+
+html[data-family-theme="jori"] body.section-songs,
+html[data-family-theme="jori"] body.songs-page,
+html[data-family-theme="jori"] body.section-videos {
+  --section-page-bg: linear-gradient(
+    168deg,
+    color-mix(in srgb, var(--bg) 52%, var(--accent-alt) 48%) 0%,
+    color-mix(in srgb, var(--bg) 78%, var(--accent-alt) 22%) 48%,
+    var(--bg) 100%
+  );
+}
+
+html[data-family-theme="jori"] body.songs-page #songs {
+  background: var(--section-page-bg, var(--bg));
+  background-attachment: fixed;
 }
 
 html[data-family-theme="wayne"] {
@@ -26,8 +47,32 @@ html[data-family-theme="wayne"] {
   --accent-alt: #db141a;
   --accent-orange: #ff8800;
   --text: #fff;
-  --song-box-gradient: var(--card);
-  --song-box-ring: rgba(255, 209, 0, 0.35);
+  --nav-glass: #ffd100;
+  --nav-glass-text: #fff;
+  --nav-glass-current-text: #fff;
+  --nav-glass-current-shadow: 0 1px 2px rgba(0, 0, 0, 0.55);
+  --song-box-gradient: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--bg) 88%, var(--accent) 12%) 0%,
+    color-mix(in srgb, var(--bg) 90%, var(--accent-alt) 10%) 100%
+  );
+  --song-box-ring: var(--accent);
+}
+
+html[data-family-theme="wayne"] body.section-songs,
+html[data-family-theme="wayne"] body.songs-page,
+html[data-family-theme="wayne"] body.section-videos {
+  --section-page-bg: linear-gradient(
+    168deg,
+    color-mix(in srgb, var(--bg) 52%, var(--accent-alt) 48%) 0%,
+    color-mix(in srgb, var(--bg) 78%, var(--accent-alt) 22%) 48%,
+    var(--bg) 100%
+  );
+}
+
+html[data-family-theme="wayne"] body.songs-page #songs {
+  background: var(--section-page-bg, var(--bg));
+  background-attachment: fixed;
 }
 
 html[data-family-theme="wayne"] .play-favourites:not(:disabled) {
@@ -36,47 +81,21 @@ html[data-family-theme="wayne"] .play-favourites:not(:disabled) {
   box-shadow: inset 0 0 0 3px #000;
 }
 
-html[data-family-theme="wayne"] .song:not(.current) {
-  background: var(--card);
-  color: #fff;
-  box-shadow: inset 0 0 0 3px rgba(255, 209, 0, 0.35);
+html[data-family-theme="wayne"] #artists-sheet .play-all,
+html[data-family-theme="wayne"] #search-results .play-all {
+  color: #000;
+  text-shadow: none;
+}
+
+html[data-family-theme="wayne"] #artists-sheet .play-all::before,
+html[data-family-theme="wayne"] #search-results .play-all::before {
+  opacity: 0.55;
+  background: center / contain no-repeat
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%23ffffff' d='M8 5v14l11-7z'/%3E%3C/svg%3E");
 }
 
 html.iphone[data-family-theme="wayne"] .play-favourites:not(:disabled) {
   box-shadow: inset 0 0 0 2px #000;
-}
-
-.top-nav-row > .home:not(.search-clear) {
-  box-shadow: inset 0 0 0 2px var(--accent), 0 2px 8px rgba(0, 0, 0, 0.45);
-}
-
-html.iphone .top-nav-row > .home:not(.search-clear) {
-  box-shadow: inset 0 0 0 2px var(--accent), 0 1px 4px rgba(0, 0, 0, 0.4);
-}
-
-.top-nav-row > .home.is-current {
-  background: var(--song-box-gradient, var(--card));
-  color: #fff;
-}
-
-html[data-family-theme="wayne"] .top-nav-row > .home.is-current {
-  background: var(--accent);
-  color: #000;
-  box-shadow: inset 0 0 0 2px #000, 0 2px 8px rgba(0, 0, 0, 0.45);
-}
-
-html.iphone[data-family-theme="wayne"] .top-nav-row > .home.is-current {
-  box-shadow: inset 0 0 0 2px #000, 0 1px 4px rgba(0, 0, 0, 0.4);
-}
-
-html[data-family-theme="zero"] .top-nav-row > .home.is-current:not(.search-clear) {
-  background: linear-gradient(165deg, #444 0%, var(--zero-trans-play) 100%);
-  color: #fff;
-  box-shadow: inset 0 0 0 2px var(--zero-outline), 0 2px 8px rgba(0, 0, 0, 0.45);
-}
-
-html.iphone[data-family-theme="zero"] .top-nav-row > .home.is-current:not(.search-clear) {
-  box-shadow: inset 0 0 0 2px var(--zero-outline), 0 1px 4px rgba(0, 0, 0, 0.4);
 }
 
 html[data-family-theme="jacob"] {
@@ -87,12 +106,29 @@ html[data-family-theme="jacob"] {
   --accent-alt: #035d7f;
   --accent-orange: #ff941d;
   --text: #f0eef8;
+  --nav-glass: #ff941d;
   --song-box-gradient: linear-gradient(
     135deg,
     color-mix(in srgb, var(--bg) 92%, var(--accent) 8%) 0%,
     color-mix(in srgb, var(--bg) 84%, var(--accent-alt) 16%) 100%
   );
   --song-box-ring: var(--accent);
+}
+
+html[data-family-theme="jacob"] body.section-songs,
+html[data-family-theme="jacob"] body.songs-page,
+html[data-family-theme="jacob"] body.section-videos {
+  --section-page-bg: linear-gradient(
+    168deg,
+    color-mix(in srgb, var(--bg) 52%, var(--accent-alt) 48%) 0%,
+    color-mix(in srgb, var(--bg) 78%, var(--accent-alt) 22%) 48%,
+    var(--bg) 100%
+  );
+}
+
+html[data-family-theme="jacob"] body.songs-page #songs {
+  background: var(--section-page-bg, var(--bg));
+  background-attachment: fixed;
 }
 
 html[data-family-theme="dan"] {
@@ -103,12 +139,23 @@ html[data-family-theme="dan"] {
   --accent-alt: #4f9599;
   --accent-orange: #ff8800;
   --text: #f0eef8;
+  --nav-glass: #4f9599;
   --song-box-gradient: linear-gradient(
     135deg,
-    color-mix(in srgb, var(--bg) 92%, var(--accent) 8%) 0%,
-    color-mix(in srgb, var(--bg) 84%, var(--accent-alt) 16%) 100%
+    color-mix(in srgb, var(--bg) 90%, var(--accent) 10%) 0%,
+    color-mix(in srgb, var(--bg) 92%, var(--accent-alt) 8%) 100%
   );
   --song-box-ring: var(--accent);
+}
+
+html[data-family-theme="dan"] body.section-artists,
+html[data-family-theme="dan"] body.section-videos {
+  --section-page-bg: linear-gradient(
+    168deg,
+    color-mix(in srgb, var(--bg) 50%, var(--accent) 50%) 0%,
+    color-mix(in srgb, var(--bg) 76%, var(--accent) 24%) 48%,
+    var(--bg) 100%
+  );
 }
 
 html[data-family-theme="steff"] {
@@ -119,12 +166,22 @@ html[data-family-theme="steff"] {
   --accent-alt: #6ecfad;
   --accent-orange: #ff8800;
   --text: #f0eef8;
+  --nav-glass: #e8a0bf;
   --song-box-gradient: linear-gradient(
     135deg,
     color-mix(in srgb, var(--bg) 90%, var(--accent) 10%) 0%,
     color-mix(in srgb, var(--bg) 93%, var(--accent-alt) 7%) 100%
   );
   --song-box-ring: var(--accent);
+}
+
+html[data-family-theme="steff"] body.section-artists {
+  --section-page-bg: linear-gradient(
+    168deg,
+    color-mix(in srgb, var(--bg) 50%, var(--accent) 50%) 0%,
+    color-mix(in srgb, var(--bg) 76%, var(--accent) 24%) 48%,
+    var(--bg) 100%
+  );
 }
 
 html[data-family-theme="zero"] {
@@ -135,6 +192,7 @@ html[data-family-theme="zero"] {
   --accent-alt: #5c5c5c;
   --accent-orange: #707070;
   --text: #f5f5f5;
+  --nav-glass: #5d6da8;
   --song-box-gradient: linear-gradient(
     135deg,
     color-mix(in srgb, var(--bg) 90%, #fff 10%) 0%,
@@ -146,12 +204,28 @@ html[data-family-theme="zero"] {
   --zero-trans-lit: #ececec;
   --zero-trans-play: #525252;
   --zero-trans-gap: 64px;
-  --zero-trans-pad: 10px;
+  --zero-trans-pad: 18px;
   --zero-btn-side: 72px;
   --zero-btn-play: 92px;
   --zero-side-lift: 10px;
-  --transport-bar: calc(96px + env(safe-area-inset-bottom));
+  --transport-bar: calc(104px + env(safe-area-inset-bottom));
   --nav-cream: #fff;
+}
+
+html[data-family-theme="zero"] body.section-artists,
+html[data-family-theme="zero"] body.section-songs,
+html[data-family-theme="zero"] body.songs-page {
+  --section-page-bg: linear-gradient(
+    168deg,
+    color-mix(in srgb, var(--bg) 50%, var(--nav-glass) 50%) 0%,
+    color-mix(in srgb, var(--bg) 76%, var(--nav-glass) 24%) 48%,
+    var(--bg) 100%
+  );
+}
+
+html[data-family-theme="zero"] body.songs-page #songs {
+  background: var(--section-page-bg, var(--bg));
+  background-attachment: fixed;
 }
 
 html[data-family-theme="zero"] .theme-picker-label-stripe {
@@ -404,9 +478,9 @@ html[data-family-theme="zero"] .transport #play-button.is-playing:active:not(:di
 }
 
 html.iphone[data-family-theme="zero"] {
-  --transport-bar: calc(74px + env(safe-area-inset-bottom));
+  --transport-bar: calc(82px + env(safe-area-inset-bottom));
   --zero-trans-gap: 32px;
-  --zero-trans-pad: 6px;
+  --zero-trans-pad: 12px;
   --zero-btn-side: 48px;
   --zero-btn-play: 62px;
   --zero-side-lift: 7px;
@@ -451,9 +525,9 @@ html.iphone[data-family-theme="zero"] .transport #play-button .icon-shuffle {
 
 @media (max-width: 540px) and (pointer: coarse) {
   html[data-family-theme="zero"]:not(.ipad) {
-    --transport-bar: calc(74px + env(safe-area-inset-bottom));
+    --transport-bar: calc(82px + env(safe-area-inset-bottom));
     --zero-trans-gap: 32px;
-    --zero-trans-pad: 6px;
+    --zero-trans-pad: 12px;
     --zero-btn-side: 48px;
     --zero-btn-play: 62px;
     --zero-side-lift: 7px;
@@ -545,8 +619,9 @@ html[data-family-theme="dan"] .transport #shuffle.is-on {
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.32),
     inset 0 -5px 8px rgba(0, 0, 0, 0.32),
-    0 0 10px color-mix(in srgb, #7E2A16 72%, transparent),
-    0 0 20px color-mix(in srgb, #7E2A16 38%, transparent),
+    0 0 12px color-mix(in srgb, var(--accent) 88%, transparent),
+    0 0 24px color-mix(in srgb, var(--accent) 62%, transparent),
+    0 0 40px color-mix(in srgb, var(--accent) 38%, transparent),
     0 5px 0 rgba(0, 0, 0, 0.46),
     0 8px 16px rgba(0, 0, 0, 0.52);
 }
@@ -555,8 +630,9 @@ html.iphone[data-family-theme="dan"] .transport #shuffle.is-on {
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.26),
     inset 0 -4px 6px rgba(0, 0, 0, 0.28),
-    0 0 8px color-mix(in srgb, #7E2A16 68%, transparent),
-    0 0 16px color-mix(in srgb, #7E2A16 34%, transparent),
+    0 0 10px color-mix(in srgb, var(--accent) 82%, transparent),
+    0 0 20px color-mix(in srgb, var(--accent) 55%, transparent),
+    0 0 32px color-mix(in srgb, var(--accent) 32%, transparent),
     0 4px 0 rgba(0, 0, 0, 0.4),
     0 6px 12px rgba(0, 0, 0, 0.46);
 }
@@ -637,7 +713,11 @@ html.iphone[data-family-theme="dan"] .transport #shuffle.is-on {
 }
 
 .theme-chip.is-active {
-  box-shadow: inset 0 0 0 2px #fff, 0 0 0 2px var(--accent-orange);
+  box-shadow:
+    inset 0 0 0 2px #fff,
+    0 0 8px color-mix(in srgb, var(--accent-orange) 75%, transparent),
+    0 0 18px color-mix(in srgb, var(--accent-orange) 55%, transparent),
+    0 0 32px color-mix(in srgb, var(--accent-orange) 32%, transparent);
 }
 
 .theme-chip[data-theme="wayne"] {

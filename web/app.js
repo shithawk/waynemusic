@@ -1618,6 +1618,23 @@ function syncNavCurrent() {
   const songsOpen = document.body.classList.contains("songs-page") && !artistsOpen && !videosOpen;
   const searching = document.body.classList.contains("search-page") && !artistsOpen && !videosOpen && !songsOpen;
   const current = artistsOpen ? "artists" : videosOpen ? "videos-nav" : songsOpen ? "songs-nav" : searching ? "" : "home";
+  const section = artistsOpen
+    ? "artists"
+    : videosOpen
+      ? "videos"
+      : songsOpen
+        ? "songs"
+        : searching
+          ? "search"
+          : "home";
+  document.body.classList.remove(
+    "section-home",
+    "section-artists",
+    "section-songs",
+    "section-videos",
+    "section-search"
+  );
+  document.body.classList.add("section-" + section);
   for (const id of ["home", "artists", "songs-nav", "videos-nav"]) {
     const button = document.getElementById(id);
     if (button) button.classList.toggle("is-current", id === current);
