@@ -155,6 +155,25 @@ html[data-family-theme="zero"] .now-art {
   box-shadow: inset 0 0 0 1px var(--zero-outline);
 }
 
+html[data-family-theme="zero"] .song.current {
+  background: linear-gradient(
+    135deg,
+    #f2f2f2 0%,
+    #e6e6e6 50%,
+    #dadada 100%
+  );
+  color: #000;
+  box-shadow: inset 0 0 0 1px var(--zero-outline);
+}
+
+html[data-family-theme="zero"] .song.current::before {
+  background: var(--zero-outline);
+}
+
+html[data-family-theme="zero"] .song.current .song-sub {
+  color: rgba(0, 0, 0, 0.72);
+}
+
 html[data-family-theme="zero"] .song-favorite,
 html[data-family-theme="zero"] .now-favorite {
   color: var(--zero-outline);
