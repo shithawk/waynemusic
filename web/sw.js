@@ -5,7 +5,7 @@ const SHELL = [
   "/styles.css",
   "/styles.css?v=106",
   "/themes.css",
-  "/themes.css?v=9",
+  "/themes.css?v=10",
   "/app.js",
   "/app.js?v=78",
   "/manifest.webmanifest",
