@@ -1713,14 +1713,19 @@ function renderCatalog(options) {
   const pending = state.catalog.filter((entry) => !savedOnIpad(entry));
   const entries = catalogEntriesForDisplay(onlyPending);
   if (state.macError) {
+    status.hidden = false;
     status.textContent = state.macError;
   } else if (state.catalog.length === 0) {
+    status.hidden = false;
     status.textContent = "No songs on the computer yet.";
   } else if (onlyPending && pending.length === 0) {
-    status.textContent = "Every song on the computer is already " + onThisDevice() + ".";
+    status.hidden = true;
+    status.textContent = "";
   } else if (!onlyPending && pending.length === 0 && entries.length > 0) {
+    status.hidden = false;
     status.textContent = "Tap Play on the songs you just downloaded.";
   } else {
+    status.hidden = false;
     status.textContent = onlyPending
       ? "Tap Download to put a song " + onThisDevice() + "."
       : "Download more, or tap Play on songs you just added.";

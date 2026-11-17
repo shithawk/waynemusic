@@ -757,6 +757,15 @@ html.iphone .theme-picker-wrap {
   margin-top: 4px;
 }
 
+html.iphone .home-songs-sign {
+  padding: 4px 12px 3px;
+}
+
+html.iphone .home-songs-sign-text {
+  font-size: clamp(2.1rem, 10vw, 2.8rem);
+  letter-spacing: 0.05em;
+}
+
 html.iphone .theme-picker-label {
   gap: 4px;
   margin-bottom: 6px;

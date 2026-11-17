@@ -14,6 +14,7 @@
     color-mix(in srgb, var(--bg) 76%, var(--accent-alt) 24%) 100%
   );
   --song-box-ring: var(--accent);
+  --song-box-ring-width: 3px;
   --transport-bar: calc(114px + env(safe-area-inset-bottom));
   --top-nav-offset: calc(76px + env(safe-area-inset-top));
   --nav-gap: 4px;
@@ -646,6 +647,74 @@ body.songs-page .finder {
   font-weight: 600;
 }
 
+.home-songs-sign {
+  position: relative;
+  margin: 0;
+  padding: 5px 18px 4px;
+  border-radius: 4px;
+  overflow: hidden;
+  isolation: isolate;
+  background-color: color-mix(in srgb, #050505 82%, transparent);
+  background-image:
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.045) 1px, transparent 1px),
+    linear-gradient(to right, rgba(255, 255, 255, 0.045) 1px, transparent 1px),
+    radial-gradient(circle, rgba(0, 0, 0, 0.85) 0.4px, transparent 0.4px),
+    radial-gradient(circle, rgba(255, 255, 255, 0.06) 0.45px, transparent 0.45px);
+  background-size: 3px 3px, 3px 3px, 3px 3px, 3px 3px;
+  background-position: 0 0, 0 0, 0 0, 1.5px 1.5px;
+  box-shadow:
+    inset 0 0 0 2px #000,
+    inset 0 3px 14px rgba(0, 0, 0, 0.85),
+    0 4px 14px rgba(0, 0, 0, 0.5);
+  border: 2px solid #1c1c1c;
+}
+
+.home-songs-sign::before,
+.home-songs-sign::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image: radial-gradient(
+    circle at center,
+    #2a2a2a 0.2px,
+    #121212 0.45px,
+    #080808 0.52px,
+    transparent 0.52px
+  );
+  background-size: 3px 3px;
+}
+
+.home-songs-sign::before {
+  opacity: 0.82;
+}
+
+.home-songs-sign::after {
+  background-image: radial-gradient(
+    circle at center,
+    #1f1f1f 0.18px,
+    #0e0e0e 0.42px,
+    transparent 0.42px
+  );
+  background-position: 1.5px 1.5px;
+  opacity: 0.72;
+}
+
+.home-songs-sign-text {
+  position: relative;
+  z-index: 1;
+  margin: 0;
+  font-family: "Micro 5", "VT323", monospace;
+  font-size: clamp(2.5rem, 11vw, 3.6rem);
+  font-weight: 400;
+  line-height: 1;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  text-align: center;
+  color: var(--accent);
+  text-shadow: none;
+}
+
 .search-empty {
   padding-top: 4px;
   font-size: 1.5rem;
@@ -690,7 +759,7 @@ input::placeholder { color: rgba(255, 255, 255, 0.72); }
   background: var(--song-box-gradient, var(--card));
   color: #fff;
   text-align: left;
-  box-shadow: inset 0 0 0 3px var(--song-box-ring, rgba(90, 176, 196, 0.35));
+  box-shadow: inset 0 0 0 var(--song-box-ring-width, 3px) var(--song-box-ring, rgba(90, 176, 196, 0.35));
   cursor: pointer;
 }
 
@@ -794,10 +863,12 @@ input::placeholder { color: rgba(255, 255, 255, 0.72); }
   background: var(--song-box-gradient, var(--card));
   color: #fff;
   text-align: left;
-  box-shadow: inset 0 0 0 3px var(--song-box-ring, rgba(90, 176, 196, 0.35));
+  box-shadow: inset 0 0 0 var(--song-box-ring-width, 3px) var(--song-box-ring, rgba(90, 176, 196, 0.35));
 }
 
-.artist-row.open { box-shadow: inset 0 0 0 3px var(--accent); }
+.artist-row.open {
+  box-shadow: inset 0 0 0 var(--song-box-ring-width, 3px) var(--accent);
+}
 
 .artist-toggle {
   flex: 1;
@@ -1527,6 +1598,7 @@ html.iphone .sheet .youtube-clear-results {
 
 /* iPhone — compact tap targets (~44px min), tighter rhythm, more list on screen */
 html.iphone {
+  --song-box-ring-width: 2px;
   --transport-bar: calc(72px + env(safe-area-inset-bottom));
   --top-nav-offset: calc(92px + env(safe-area-inset-top));
   --nav-clearance: calc(var(--top-nav-offset) + var(--nav-gap));
@@ -1714,7 +1786,6 @@ html.iphone .song {
   margin-top: 8px;
   padding: 10px 10px 10px 22px;
   border-radius: 12px;
-  box-shadow: inset 0 0 0 2px rgba(90, 176, 196, 0.35);
 }
 
 html.iphone .song-title {

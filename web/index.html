@@ -43,8 +43,9 @@
   <link rel="icon" href="/favicon.ico?v=play1">
   <link rel="manifest" href="/manifest.webmanifest">
   <link rel="apple-touch-icon" sizes="180x180" href="/icon-180.png?v=go1">
-  <link rel="stylesheet" href="/styles.css?v=151">
-  <link rel="stylesheet" href="/themes.css?v=104">
+  <link rel="stylesheet" href="/styles.css?v=163">
+  <link rel="stylesheet" href="/themes.css?v=111">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Micro+5&display=swap">
 </head>
 <body>
   <div class="top-nav">
@@ -112,7 +113,9 @@
     </div>
 
     <div id="finder" class="finder" hidden>
-      <p id="song-list-hint" class="finder-hint">0 Songs</p>
+      <div class="home-songs-sign" aria-label="Songs in library">
+        <p id="song-list-hint" class="finder-hint home-songs-sign-text">0 Songs</p>
+      </div>
       <div id="song-list"></div>
     </div>
   </div>
@@ -283,6 +286,6 @@
     <button id="notice-action" class="notice-action" type="button" hidden>Open in YouTube</button>
   </div>
   <audio id="audio" playsinline preload="none"></audio>
-  <script src="/app.js?v=105" defer></script>
+  <script src="/app.js?v=106" defer></script>
 </body>
 </html>
