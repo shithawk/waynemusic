@@ -62,7 +62,7 @@ const audio = () => document.getElementById("audio");
 
 document.addEventListener("DOMContentLoaded", init);
 
-const SW_BUILD = "30";
+const SW_BUILD = "31";
 
 const MARQUEE_PAUSE_S = 3;
 const MARQUEE_HOLD_END_S = 3;
@@ -3160,6 +3160,11 @@ function initFamilyTheme() {
       if (!FAMILY_THEME_META[next]) return;
       const current = document.documentElement.getAttribute("data-family-theme");
       const target = current === next ? "zero" : next;
+      if (target === "zero") {
+        try {
+          localStorage.setItem(ZERO_HERO_FOR_KEY, next);
+        } catch (_) {}
+      }
       applyFamilyTheme(target);
       try {
         localStorage.setItem(FAMILY_THEME_STORAGE, target);
@@ -3168,12 +3173,53 @@ function initFamilyTheme() {
   });
 }
 
+const ZERO_HERO_FOR_KEY = "family-theme-zero-for";
+
+const FAMILY_HEROES = {
+  jori: "/heroes/jori.jpg",
+  wayne: "/heroes/wayne.jpeg",
+  jacob: "/heroes/jacob.jpg",
+  dan: "/heroes/dan.jpg",
+  steff: "/heroes/steff.jpg"
+};
+
+const FAMILY_HEROES_BW = {
+  jori: "/heroes/joriBW.jpg",
+  wayne: "/heroes/wayneBW.jpg",
+  jacob: "/heroes/jacobBW.jpg",
+  dan: "/heroes/danBW.jpg",
+  steff: "/heroes/steffBW.jpg"
+};
+
+function zeroHeroFor() {
+  try {
+    const stored = localStorage.getItem(ZERO_HERO_FOR_KEY);
+    if (stored && FAMILY_HEROES_BW[stored]) return stored;
+  } catch (_) {}
+  return DEFAULT_FAMILY_THEME;
+}
+
+function applyHomeHero(theme) {
+  const img = document.getElementById("home-hero");
+  if (!img) return;
+  let src;
+  if (theme === "zero") {
+    const key = zeroHeroFor();
+    src = FAMILY_HEROES_BW[key] || FAMILY_HEROES_BW[DEFAULT_FAMILY_THEME];
+  } else {
+    src = FAMILY_HEROES[theme] || FAMILY_HEROES[DEFAULT_FAMILY_THEME];
+  }
+  if (src && img.getAttribute("src") !== src) img.src = src;
+}
+
 function applyFamilyTheme(theme) {
   document.documentElement.setAttribute("data-family-theme", theme);
+  applyHomeHero(theme);
   const meta = document.querySelector('meta[name="theme-color"]');
   if (meta) meta.setAttribute("content", FAMILY_THEME_META[theme]);
+  const zeroFor = zeroHeroFor();
   document.querySelectorAll(".theme-chip").forEach((btn) => {
-    const on = btn.dataset.theme === theme;
+    const on = theme === "zero" ? btn.dataset.theme === zeroFor : btn.dataset.theme === theme;
     btn.classList.toggle("is-active", on);
     btn.setAttribute("aria-pressed", on ? "true" : "false");
   });

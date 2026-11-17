@@ -127,8 +127,8 @@ html[data-family-theme="zero"] {
     color-mix(in srgb, var(--bg) 90%, #fff 10%) 0%,
     color-mix(in srgb, var(--bg) 88%, #2e2e2e 12%) 100%
   );
-  --song-box-ring: #3a4e96;
-  --zero-outline: #3a4e96;
+  --song-box-ring: #4a5884;
+  --zero-outline: #4a5884;
   --zero-trans-lit-0: #ffffff;
   --zero-trans-lit-1: #e4e4e4;
   --zero-trans-lit-2: #b0b0b0;
@@ -158,7 +158,7 @@ html[data-family-theme="zero"] .now-art {
 html[data-family-theme="zero"] .song-favorite,
 html[data-family-theme="zero"] .now-favorite {
   color: var(--zero-outline);
-  background: rgba(58, 78, 150, 0.12);
+  background: rgba(74, 88, 132, 0.12);
   box-shadow: inset 0 0 0 1px var(--zero-outline);
 }
 
@@ -351,6 +351,32 @@ html.iphone[data-family-theme="zero"] .transport #shuffle.is-on:active:not(:disa
     0 2px 7px rgba(0, 0, 0, 0.44);
 }
 
+html[data-family-theme="zero"] .search-box {
+  background: var(--notice-surface);
+  color: #fff;
+  box-shadow: inset 0 0 0 1px var(--zero-outline);
+}
+
+html[data-family-theme="zero"] .search-box input {
+  color: #fff;
+}
+
+html[data-family-theme="zero"] .search-box input::placeholder {
+  color: rgba(255, 255, 255, 0.78);
+}
+
+html[data-family-theme="zero"] .search-box .search-icon,
+html[data-family-theme="zero"] .search-box .search-box-icon {
+  color: #fff;
+}
+
+html[data-family-theme="zero"] #youtube-search-go,
+html[data-family-theme="zero"] #clear-search,
+html[data-family-theme="zero"] #clear-artist-search {
+  background: #686868;
+  color: #fff;
+}
+
 html[data-family-theme="dan"] .stripe,
 html[data-family-theme="dan"] .now-stripe {
   background: linear-gradient(
@@ -474,9 +500,6 @@ html.iphone[data-family-theme="dan"] .transport #shuffle.is-on {
 .theme-chip[data-theme="wayne"] {
   background: #ffd100;
   color: #db141a;
-  text-shadow:
-    0 1px 0 rgba(255, 255, 255, 0.85),
-    0 1px 2px rgba(255, 255, 255, 0.7);
 }
 
 .theme-chip[data-theme="jori"] {
