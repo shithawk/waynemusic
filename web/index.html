@@ -1,11 +1,18 @@
 <!DOCTYPE html>
-<html lang="en" data-family-theme="wayne">
+<html lang="en" data-family-theme="jori">
 <head>
   <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black">
+  <meta name="apple-mobile-web-app-title" content="Jori's Music">
+  <title>Jori's Music</title>
+  <meta name="theme-color" content="#121a32">
   <script>
     (function () {
       var key = "family-theme";
-      var def = "wayne";
+      var def = "jori";
       var ok = { jori: 1, wayne: 1, jacob: 1, dan: 1, steff: 1, zero: 1 };
       var t = null;
       try {
@@ -14,19 +21,30 @@
       if (!t || !ok[t]) t = def;
       document.documentElement.setAttribute("data-family-theme", t);
     })();
+    (function () {
+      var h = location.hostname;
+      var local = h === "localhost" || h === "127.0.0.1" || h === "[::1]";
+      var force =
+        local &&
+        (location.search.indexOf("iphone=1") !== -1 || location.search.indexOf("phone=1") !== -1);
+      var ua = navigator.userAgent;
+      var androidPhone = /Android/i.test(ua) && /Mobile/i.test(ua);
+      if (
+        force ||
+        /iPhone|iPod/.test(ua) ||
+        androidPhone ||
+        (window.matchMedia &&
+          window.matchMedia("(max-width: 540px) and (pointer: coarse)").matches)
+      ) {
+        document.documentElement.classList.add("iphone");
+      }
+    })();
   </script>
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black">
-  <meta name="apple-mobile-web-app-title" content="Wayne's Music">
-  <title>Wayne's Music</title>
-  <meta name="theme-color" content="#0d0d0d">
-  <link rel="icon" href="/favicon.ico">
+  <link rel="icon" href="/favicon.ico?v=play1">
   <link rel="manifest" href="/manifest.webmanifest">
-  <link rel="apple-touch-icon" sizes="180x180" href="/icon-180.png">
-  <link rel="stylesheet" href="/styles.css?v=121">
-  <link rel="stylesheet" href="/themes.css?v=52">
+  <link rel="apple-touch-icon" sizes="180x180" href="/icon-180.png?v=go1">
+  <link rel="stylesheet" href="/styles.css?v=138">
+  <link rel="stylesheet" href="/themes.css?v=83">
 </head>
 <body>
   <div class="top-nav">
@@ -54,13 +72,14 @@
   </div>
   <div id="songs" class="screen">
     <header class="banner home-only">
-      <img id="home-hero" src="/heroes/wayne.jpeg" alt="">
-      <h1>Wayne's Music</h1>
+      <img id="home-hero" src="/heroes/jori.jpg" alt="">
+      <h1>Jori's Music</h1>
     </header>
     <div class="stripe home-only" aria-hidden="true"><span class="accent"></span><span class="accent-alt"></span></div>
 
     <section id="install-hint" class="hint-card home-only" hidden>
-      <p>To install this app, tap Share, then Add to Home Screen.</p>
+      <p id="install-hint-text">Install Jori's Music: tap Share, then Add to Home Screen.</p>
+      <p class="hint-sub">On iPhone, open this link in Safari while Tailscale is on, then add to the Home Screen.</p>
     </section>
 
     <div class="actions home-only">
@@ -82,7 +101,7 @@
       </div>
     </div>
 
-    <p id="empty" class="empty home-only">Tap + Add music to put songs on this iPad.</p>
+    <p id="empty" class="empty home-only">Tap + Add music to put songs on this device.</p>
 
     <h1 id="songs-title" class="songs-title">Songs</h1>
     <h1 id="search-title" class="search-title">Search results</h1>
@@ -130,14 +149,13 @@
       <p id="player-sub"></p>
       <div class="stage">
         <div id="stage-local" hidden>
-          <img src="/car.jpeg" alt="">
+          <img src="/go.jpg" alt="">
         </div>
         <div id="stage-yt" hidden>
           <div id="yt-player"></div>
         </div>
         <div id="stage-sc" hidden></div>
       </div>
-<p id="mirror-hint" class="mirror">To listen to this on the TV, swipe down from the top-right corner of the iPad, tap Screen Mirroring, then choose the TV.</p>
     </div>
   </div>
 
@@ -146,16 +164,15 @@
       <div class="sheet-body stack">
         <h1>+ Add music</h1>
         <button id="download-all" class="big prominent" type="button">Download all</button>
-        <button id="from-ipad" class="big plain" type="button">Choose a song saved on this iPad</button>
+        <button id="from-ipad" class="big plain" type="button">Add a song saved on this device</button>
         <input id="file-input" type="file" accept="audio/*,.mp3,.m4a,.aac,.wav" multiple hidden>
-        <button id="paste-link" class="big plain" type="button">Paste a copied link from clipboard</button>
+        <button id="paste-link" class="big plain" type="button">Paste a copied link</button>
         <div id="link-box" class="stack">
           <label for="link-input">YouTube or SoundCloud link</label>
           <input id="link-input" type="url" inputmode="url" placeholder="https://" autocapitalize="none" autocorrect="off" spellcheck="false" autocomplete="off">
           <button id="add-link" class="big prominent" type="button" disabled>Add this link</button>
         </div>
         <p id="add-error" class="error" hidden></p>
-        <h2>On the computer</h2>
         <p id="mac-status" class="lede"></p>
         <div id="catalog-list"></div>
       </div>
@@ -175,7 +192,7 @@
     <div class="sheet">
       <div class="sheet-body">
         <h1>- Remove songs</h1>
-        <p class="lede">This takes a song off this iPad.</p>
+        <p id="manage-lede" class="lede">This takes a song off this device.</p>
         <p id="manage-empty" class="empty" hidden>No songs to remove.</p>
         <div id="manage-list"></div>
         <div id="confirm" class="confirm" hidden>
@@ -195,7 +212,7 @@
     <div class="sheet">
       <div class="sheet-body">
         <h1>Artists</h1>
-        <p id="artists-empty" class="empty" hidden>No songs on this iPad yet.</p>
+        <p id="artists-empty" class="empty" hidden>No songs on this device yet.</p>
         <div id="artist-list"></div>
       </div>
     </div>
@@ -217,13 +234,13 @@
               <path d="M21.5 21.5 L31 31" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"></path>
             </svg>
           </button>
-          <input id="youtube-search" type="search" placeholder="Song or artist on YouTube" aria-label="Search YouTube" enterkeyhint="search" autocomplete="off" autocapitalize="none" autocorrect="off" spellcheck="false">
+          <input id="youtube-search" type="search" placeholder="Search songs on YouTube" aria-label="Search songs on YouTube" enterkeyhint="search" autocomplete="off" autocapitalize="none" autocorrect="off" spellcheck="false">
           <button id="youtube-search-go" type="submit">Search</button>
         </form>
         <p id="youtube-search-status" class="finder-hint" hidden></p>
         <div id="youtube-results"></div>
-        <h2 class="on-ipad">On this iPad</h2>
-        <p id="videos-empty" class="empty" hidden>No videos on this iPad yet.</p>
+        <h2 id="videos-local-heading" class="on-device">Stream</h2>
+        <p id="videos-empty" class="empty" hidden>No videos on this device yet.</p>
         <div id="video-list"></div>
       </div>
     </div>
@@ -237,6 +254,12 @@
     <button id="play-button" class="big prominent" type="button" aria-label="Play">
       <svg id="icon-play" class="icon-play" viewBox="0 0 36 36" width="36" height="36" aria-hidden="true"><path fill="currentColor" d="M11 5 L31 18 L11 31 Z"></path></svg>
       <svg id="icon-pause" class="icon-pause" viewBox="0 0 36 36" width="36" height="36" aria-hidden="true"><rect fill="currentColor" x="8" y="5" width="7" height="26" rx="1"></rect><rect fill="currentColor" x="21" y="5" width="7" height="26" rx="1"></rect></svg>
+      <svg id="icon-shuffle" class="icon-shuffle" viewBox="0 0 36 36" width="36" height="36" aria-hidden="true">
+        <path d="M4 11 H12 L24 25 H32" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"></path>
+        <path d="M26 21 L32 25 L26 29" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"></path>
+        <path d="M4 25 H12 L24 11 H32" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"></path>
+        <path d="M26 7 L32 11 L26 15" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"></path>
+      </svg>
       <span id="play-label">Play</span>
     </button>
     <button id="next" class="big plain" type="button">
@@ -259,6 +282,6 @@
     <button id="notice-action" class="notice-action" type="button" hidden>Open in YouTube</button>
   </div>
   <audio id="audio" playsinline preload="none"></audio>
-  <script src="/app.js?v=92" defer></script>
+  <script src="/app.js?v=104" defer></script>
 </body>
 </html>

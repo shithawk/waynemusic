@@ -1,9 +1,9 @@
-const DEFAULT_FAMILY_THEME = "wayne";
+const DEFAULT_FAMILY_THEME = "jori";
 const FAMILY_THEME_META = {
   jori: "#121a32",
   wayne: "#0d0d0d",
   jacob: "#1e2329",
-  dan: "#1a2332",
+  dan: "#1c2a34",
   steff: "#2d1f3d",
   zero: "#0a0a0a"
 };
@@ -32,12 +32,93 @@ const state = {
   catalogSessionDownloads: new Set()
 };
 
+let zeroPlayPhase = 0;
+
 let dbPromise = null;
 const fileBlobs = new Map();
 const fileURLs = new Map();
 const artBlobs = new Map();
 const artURLs = new Map();
 const SILENT_WAV = "data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQAAAAA=";
+
+function localPreviewIPhone() {
+  const h = location.hostname;
+  const local = h === "localhost" || h === "127.0.0.1" || h === "[::1]";
+  if (!local) return false;
+  const q = new URLSearchParams(location.search);
+  return q.get("iphone") === "1" || q.get("phone") === "1";
+}
+
+function isAndroidPhone() {
+  const ua = navigator.userAgent;
+  return /Android/i.test(ua) && /Mobile/i.test(ua);
+}
+
+function isIPadLike() {
+  const ua = navigator.userAgent;
+  return /iPad/.test(ua) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+}
+
+/** Compact phone UI (html.iphone) — not the same as deviceLabel / install copy. */
+function compactPhoneLayout() {
+  if (localPreviewIPhone()) return true;
+  const ua = navigator.userAgent;
+  if (/iPhone|iPod/.test(ua)) return true;
+  if (isAndroidPhone()) return true;
+  if (isIPadLike()) return false;
+  if (typeof matchMedia !== "undefined" && matchMedia("(max-width: 540px) and (pointer: coarse)").matches) {
+    return true;
+  }
+  return false;
+}
+
+function deviceKind() {
+  if (localPreviewIPhone()) return "iphone";
+  const ua = navigator.userAgent;
+  if (/iPhone|iPod/.test(ua)) return "iphone";
+  if (isIPadLike()) return "ipad";
+  return "other";
+}
+
+function deviceLabel() {
+  const k = deviceKind();
+  if (k === "iphone") return "iPhone";
+  if (k === "ipad") return "iPad";
+  return "device";
+}
+
+function onThisDevice() {
+  const k = deviceKind();
+  if (k === "other") return "on this device";
+  return "on this " + deviceLabel();
+}
+
+function applyDeviceCopy() {
+  const on = onThisDevice();
+  const set = (id, text) => {
+    const el = document.getElementById(id);
+    if (el) el.textContent = text;
+  };
+  set(
+    "install-hint-text",
+    deviceKind() === "iphone"
+      ? "Install Jori's Music: in Safari, tap Share at the bottom of the screen, then Add to Home Screen."
+      : "Install Jori's Music: tap Share, then Add to Home Screen."
+  );
+  set("empty", "Tap + Add music to put songs " + on + ".");
+  set("from-ipad", "Add a song saved on this device");
+  set("manage-lede", "This takes a song off this " + deviceLabel() + ".");
+  set("confirm-title", "Remove from this " + deviceLabel() + "?");
+  set("artists-empty", "No songs " + on + " yet.");
+  set("videos-local-heading", "Stream");
+  set("videos-empty", "No videos " + on + " yet.");
+  const hintSub = document.querySelector("#install-hint .hint-sub");
+  if (hintSub) hintSub.hidden = deviceKind() !== "iphone";
+  document.documentElement.classList.toggle("iphone", compactPhoneLayout());
+  document.documentElement.classList.toggle("ipad", deviceKind() === "ipad");
+  updateShuffleButton();
+  updateZeroPlayButton();
+}
 let ytPlayer = null;
 let ytReady = false;
 let pendingVideo = "";
@@ -58,11 +139,7 @@ let youtubeHasSearched = false;
 let linkConfirmId = "";
 const downloading = new Set();
 
-const audio = () => document.getElementById("audio");
-
-document.addEventListener("DOMContentLoaded", init);
-
-const SW_BUILD = "39";
+const SW_BUILD = "41";
 
 const MARQUEE_PAUSE_S = 3;
 const MARQUEE_HOLD_END_S = 3;
@@ -176,10 +253,21 @@ function registerServiceWorker() {
     .catch(() => {});
 }
 
+const audio = () => document.getElementById("audio");
+
+document.addEventListener("DOMContentLoaded", init);
+
 async function init() {
   initFamilyTheme();
+  applyDeviceCopy();
+  window.addEventListener("resize", applyDeviceCopy);
   document.getElementById("install-hint").hidden = standalone();
   state.shuffle = loadShuffle();
+  if (isZeroTheme()) {
+    state.shuffle = false;
+    saveShuffle();
+    zeroPlayPhase = 0;
+  }
   bindEvents();
   bindMediaSession();
   audio().addEventListener("play", () => { if (isSource("local")) setPlaying(true); });
@@ -211,7 +299,11 @@ async function init() {
     state.tracks = sortTracks(await allTracks());
     await fixSavedYouTubeArtists();
   } catch {
-    setNotice("This iPad could not open saved songs. Leave private browsing, then add Wayne's Music to the Home Screen.");
+    setNotice(
+      "This " +
+        deviceLabel() +
+        " could not open saved songs. Leave private browsing, then add Jori's Music to the Home Screen."
+    );
   }
   if (state.shuffle) startShuffle(state.currentId);
   render();
@@ -270,8 +362,8 @@ function bindEvents() {
       toggleFavorite(fav.dataset.favorite);
       return;
     }
-    const button = event.target.closest(".song[data-play]");
-    if (button) playListed(button.dataset.play);
+    const row = event.target.closest(".song[data-play]");
+    if (row) playListed(row.dataset.play);
   });
   document.getElementById("nav-search").addEventListener("submit", (event) => {
     event.preventDefault();
@@ -351,9 +443,9 @@ function bindEvents() {
       toggleFavorite(fav.dataset.favorite);
       return;
     }
-    const button = event.target.closest(".song[data-play]");
-    if (button) {
-      playListed(button.dataset.play);
+    const songRow = event.target.closest(".song[data-play]");
+    if (songRow) {
+      playListed(songRow.dataset.play);
       return;
     }
     const row = event.target.closest("[data-artist]");
@@ -391,9 +483,9 @@ function bindEvents() {
       toggleFavorite(fav.dataset.favorite);
       return;
     }
-    const button = event.target.closest(".song[data-play]");
-    if (!button) return;
-    playListed(button.dataset.play);
+    const row = event.target.closest(".song[data-play]");
+    if (!row) return;
+    playListed(row.dataset.play);
   });
   document.getElementById("catalog-list").addEventListener("click", (event) => {
     const saved = event.target.closest("[data-play-saved]");
@@ -431,6 +523,10 @@ function bindEvents() {
   document.getElementById("previous").addEventListener("click", () => skip(-1));
   document.getElementById("next").addEventListener("click", () => skip(1));
   document.getElementById("play-button").addEventListener("click", () => {
+    if (isZeroTheme()) {
+      zeroPlayButtonClick();
+      return;
+    }
     if (isAudiblyPlaying()) userPause();
     else userPlay(currentTrack() || songToStart(), playerIsOpen());
   });
@@ -460,6 +556,7 @@ function render() {
   renderSearchResults();
   renderPlayer();
   updateShuffleButton();
+  updateZeroPlayButton();
   renderCatalog();
   renderArtists();
   renderVideos();
@@ -940,10 +1037,10 @@ function showSearch(options) {
     hideConfirm();
     closePlayer();
     document.body.classList.remove("songs-page");
-    document.body.classList.add("search-page");
-    document.getElementById("songs").scrollTop = 0;
-    syncNavCurrent();
-  }
+  document.body.classList.add("search-page");
+  document.getElementById("songs").scrollTop = 0;
+  syncNavCurrent();
+}
   if (!typing) input.blur();
   updateSearchClearButton();
   renderSearchResults();
@@ -1046,7 +1143,7 @@ function renderVideos() {
   list.replaceChildren();
   document.getElementById("videos-empty").hidden = videos.length > 0;
   for (const track of videos) list.append(songBox(track));
-  if (scroller) scroller.scrollTop = resetScroll ? 0 : scrollTop;
+  if (scroller) scroller.scrollTop = scrollTop;
 }
 
 function setVideoSearchStatus(text) {
@@ -1100,8 +1197,6 @@ async function searchYouTube() {
     setVideoSearchStatus("YouTube search did not work. Try again.");
   }
 }
-
-
 
 function renderYouTubeResults(results) {
   const list = document.getElementById("youtube-results");
@@ -1327,9 +1422,12 @@ function setPlaying(playing) {
   state.playing = playing;
   if (playing) streamingHold = isStreamingTrack(currentTrack());
   else if (!appInBackground()) streamingHold = false;
-  document.getElementById("play-label").textContent = playing ? "Pause" : "Play";
   const playButton = document.getElementById("play-button");
-  playButton.setAttribute("aria-label", playing ? "Pause" : "Play");
+  if (isZeroTheme()) updateZeroPlayButton();
+  else {
+    document.getElementById("play-label").textContent = playing ? "Pause" : "Play";
+    playButton.setAttribute("aria-label", playing ? "Pause" : "Play");
+  }
   playButton.classList.toggle("is-playing", playing);
   if ("mediaSession" in navigator) {
     navigator.mediaSession.playbackState = playing ? "playing" : "paused";
@@ -1573,7 +1671,7 @@ async function loadCatalog() {
     state.macError = "";
   } catch {
     state.catalog = [];
-    state.macError = "The computer is off or asleep. Songs already on this iPad still play.";
+    state.macError = "The computer is off or asleep. Songs already on this " + deviceLabel() + " still play.";
   }
 }
 
@@ -1700,7 +1798,9 @@ async function downloadAll() {
   renderCatalog();
   if (count > 0) {
     setNotice(
-      count === 1 ? "1 song is ready on this iPad. Tap Play." : count + " songs are ready on this iPad. Tap Play."
+      count === 1
+        ? "1 song is ready " + onThisDevice() + ". Tap Play."
+        : count + " songs are ready " + onThisDevice() + ". Tap Play."
     );
   }
 }
@@ -1754,7 +1854,7 @@ async function downloadEntry(entry, announce) {
     render();
     renderCatalog();
   }
-  if (saved && announce) setNotice(savedTitle + " is ready on this iPad. Tap Play.");
+  if (saved && announce) setNotice(savedTitle + " is ready " + onThisDevice() + ". Tap Play.");
   return saved;
 }
 
@@ -1868,7 +1968,9 @@ async function addPastedLink(text) {
 }
 
 function showLinkConfirm(status, track) {
-  document.getElementById("link-confirm-status").textContent = status;
+  const statusEl = document.getElementById("link-confirm-status");
+  statusEl.textContent = status;
+  statusEl.classList.toggle("link-confirm-hint", !track);
   const name = document.getElementById("link-confirm-name");
   const detail = document.getElementById("link-confirm-detail");
   const play = document.getElementById("link-confirm-play");
@@ -2005,8 +2107,6 @@ async function fetchOEmbed(parsed) {
     return { title: fallback, artist: "", streamRef: "" };
   }
 }
-
-
 
 function youtubeNames(videoTitle, channel) {
   const raw = String(videoTitle || "").replace(/\s+/g, " ").trim();
@@ -2158,7 +2258,7 @@ async function confirmRemove() {
   }
   render();
   renderManage();
-  setNotice(removedTitle + " removed from this device.");
+  setNotice(removedTitle + " removed " + onThisDevice() + ".");
 }
 
 function youtubeActuallyEnded(event) {
@@ -2477,6 +2577,59 @@ function shuffleIds(ids) {
   return copy;
 }
 
+function isZeroTheme() {
+  return document.documentElement.getAttribute("data-family-theme") === "zero";
+}
+
+function zeroPlayButtonClick() {
+  const track = currentTrack() || songToStart();
+
+  if (isAudiblyPlaying()) {
+    if (!state.shuffle) {
+      setShuffle(true);
+      zeroPlayPhase = 2;
+    } else {
+      setShuffle(false);
+      userPause();
+      zeroPlayPhase = 0;
+    }
+    updateZeroPlayButton();
+    return;
+  }
+
+  if (zeroPlayPhase === 0) {
+    setShuffle(false);
+    if (track) userPlay(track, playerIsOpen());
+    zeroPlayPhase = 1;
+  } else if (zeroPlayPhase === 1) {
+    setShuffle(true);
+    if (track) userPlay(track, playerIsOpen());
+    zeroPlayPhase = 2;
+  } else {
+    setShuffle(false);
+    zeroPlayPhase = 0;
+  }
+  updateZeroPlayButton();
+}
+
+function updateZeroPlayButton() {
+  const playButton = document.getElementById("play-button");
+  if (!playButton) return;
+  if (!isZeroTheme()) {
+    playButton.classList.remove("is-shuffle-on");
+    return;
+  }
+  const playing = isAudiblyPlaying();
+  const shuffleVisual = state.shuffle && (playing || zeroPlayPhase >= 2);
+  playButton.classList.toggle("is-shuffle-on", shuffleVisual);
+  let label = "Play";
+  if (playing && state.shuffle) label = "Stop";
+  else if (playing) label = "Shuffle";
+  else if (zeroPlayPhase === 1) label = "Shuffle";
+  else if (zeroPlayPhase === 2) label = "Stop";
+  playButton.setAttribute("aria-label", label);
+}
+
 function setShuffle(on) {
   state.shuffle = on;
   state.shuffleHistory = [];
@@ -2484,6 +2637,7 @@ function setShuffle(on) {
   if (on) startShuffle(state.currentId);
   saveShuffle();
   updateShuffleButton();
+  updateZeroPlayButton();
 }
 
 function updateShuffleButton() {
@@ -2522,7 +2676,7 @@ async function playLocal(track) {
     const blob = await playableBlob(track);
     if (!blob) {
       finishTrackChange();
-      setNotice("That song is not on this iPad.");
+      setNotice("That song is not " + onThisDevice() + ".");
       return;
     }
     url = prepareURL(track.id, blob);
@@ -3328,6 +3482,19 @@ function applyFamilyTheme(theme) {
     btn.classList.toggle("is-active", on);
     btn.setAttribute("aria-pressed", on ? "true" : "false");
   });
+  if (theme === "zero") {
+    zeroPlayPhase = 0;
+    if (state.shuffle) {
+      state.shuffle = false;
+      state.shuffleHistory = [];
+      state.shuffleRewind = false;
+      saveShuffle();
+    }
+  } else {
+    zeroPlayPhase = 0;
+  }
+  updateShuffleButton();
+  updateZeroPlayButton();
 }
 
 async function deleteTrack(id) {

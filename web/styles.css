@@ -1,18 +1,23 @@
 :root {
   color-scheme: dark;
-  /* Wayne's — NASCAR yellow / red */
-  --bg: #0d0d0d;
-  --card: rgba(255, 255, 255, 0.08);
+  /* Palette from header art (Lake George Reflection) */
+  --bg: #121a32;
+  --card: rgba(144, 176, 208, 0.12);
   --notice-surface: color-mix(in srgb, var(--bg) 82%, var(--accent) 18%);
-  --accent: #ffd100;
-  --accent-alt: #db141a;
+  --accent: #5ab0c4;
+  --accent-alt: #b43c6c;
   --accent-orange: #ff8800;
-  --text: #fff;
-  --song-box-gradient: var(--card);
-  --song-box-ring: rgba(255, 209, 0, 0.35);
+  --text: #f0eef8;
+  --song-box-gradient: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--bg) 72%, var(--accent) 28%) 0%,
+    color-mix(in srgb, var(--bg) 76%, var(--accent-alt) 24%) 100%
+  );
+  --song-box-ring: var(--accent);
   --transport-bar: calc(114px + env(safe-area-inset-bottom));
   --top-nav-offset: calc(76px + env(safe-area-inset-top));
   --nav-gap: 4px;
+  --nav-cream: #fff;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 }
 
@@ -33,7 +38,7 @@ body {
 }
 
 body.has-now {
-  --now-bar-space: 178px;
+  --now-bar-space: 168px;
   --transport-space: calc(var(--transport-bar) + var(--now-bar-space));
 }
 
@@ -103,7 +108,7 @@ h1, h2, p { margin: 0; }
   padding: 0 12px;
   font-size: calc(1.43rem - 1pt);
   font-weight: 700;
-  background: #fff;
+  background: var(--nav-cream);
   color: #000;
 }
 .search-clear.is-empty {
@@ -126,7 +131,7 @@ h1, h2, p { margin: 0; }
   min-height: 40px;
   padding: 0 10px;
   border-radius: 8px;
-  background: #fff;
+  background: var(--nav-cream);
   color: #000;
   box-shadow: inset 0 0 0 4px var(--accent);
 }
@@ -189,12 +194,15 @@ body:not(.search-page) #search-page { display: none !important; }
 
 body.search-page .search-title {
   display: block;
-  margin: var(--top-nav-offset) 24px 0;
+  margin: 0;
+  padding: calc(var(--top-nav-offset) + var(--nav-gap)) 24px 8px;
   font-size: 2.1rem;
   font-weight: 700;
 }
 
-body.search-page #search-page { padding-top: 16px; }
+body.search-page #search-page {
+  padding-top: 4px;
+}
 
 .search-results-label {
   font-size: 1.35rem;
@@ -217,7 +225,7 @@ body.search-page #search-page { padding-top: 16px; }
   min-height: 64px;
   padding: 10px 18px;
   border-radius: 8px;
-  background: #fff;
+  background: var(--nav-cream);
   color: #000;
   font-size: 1.43rem;
   font-weight: 700;
@@ -225,7 +233,6 @@ body.search-page #search-page { padding-top: 16px; }
 }
 
 .home:active { opacity: 0.65; }
-
 
 #home {
   justify-content: center;
@@ -276,21 +283,26 @@ body.has-now #songs { bottom: calc(var(--transport-bar) + var(--now-bar-space));
   position: relative;
   height: clamp(200px, 36vw, 280px);
   overflow: hidden;
-  background: #000;
+  background: #0a1020;
 }
 
 .banner img {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  object-position: center 35%;
+  object-position: center 22%;
 }
 
 .banner::after {
   content: "";
   position: absolute;
   inset: 0;
-  background: linear-gradient(to bottom, transparent 45%, rgba(0, 0, 0, 0.82));
+  background: linear-gradient(
+    to bottom,
+    rgba(18, 26, 50, 0.15) 0%,
+    transparent 35%,
+    rgba(18, 26, 50, 0.88) 100%
+  );
 }
 
 .banner h1 {
@@ -303,6 +315,7 @@ body.has-now #songs { bottom: calc(var(--transport-bar) + var(--now-bar-space));
   text-shadow: 0 2px 2px #000;
 }
 
+/* φ stripe: accent left | orange steps | accent-alt to right edge */
 .stripe,
 .now-stripe {
   display: block;
@@ -334,6 +347,14 @@ body.has-now #songs { bottom: calc(var(--transport-bar) + var(--now-bar-space));
   box-shadow: inset 4px 0 0 var(--accent-orange);
   font-size: 1.25rem;
   font-weight: 600;
+}
+
+.hint-card .hint-sub {
+  margin-top: 10px;
+  font-size: 1.05rem;
+  font-weight: 500;
+  line-height: 1.35;
+  color: rgba(0, 0, 0, 0.72);
 }
 
 .actions {
@@ -381,9 +402,12 @@ body.has-now #songs { bottom: calc(var(--transport-bar) + var(--now-bar-space));
 }
 
 .big svg { fill: currentColor; }
-#play-button .icon-pause { display: none; }
+#play-button .icon-pause,
+#play-button .icon-shuffle { display: none; }
 #play-button.is-playing .icon-play { display: none; }
 #play-button.is-playing .icon-pause { display: block; }
+#play-button.is-playing.is-shuffle-on .icon-pause { display: none; }
+#play-button.is-playing.is-shuffle-on .icon-shuffle { display: block; }
 
 .empty {
   padding: 8px 24px 0;
@@ -404,7 +428,8 @@ body.songs-page .home-only { display: none !important; }
 
 body.songs-page .songs-title {
   display: block;
-  margin: var(--top-nav-offset) 24px 0;
+  margin: 0;
+  padding: calc(var(--top-nav-offset) + var(--nav-gap)) 24px 8px;
   font-size: 2.1rem;
   font-weight: 700;
 }
@@ -547,7 +572,8 @@ input::placeholder { color: rgba(255, 255, 255, 0.72); }
   background: var(--song-box-gradient, var(--card));
   color: #fff;
   text-align: left;
-  box-shadow: inset 0 0 0 3px var(--song-box-ring, rgba(255, 209, 0, 0.35));
+  box-shadow: inset 0 0 0 3px var(--song-box-ring, rgba(90, 176, 196, 0.35));
+  cursor: pointer;
 }
 
 .song-copy {
@@ -570,9 +596,9 @@ input::placeholder { color: rgba(255, 255, 255, 0.72); }
   padding: 0;
   border: 0;
   border-radius: 16px;
-  background: rgba(255, 209, 0, 0.12);
+  background: rgba(144, 176, 208, 0.12);
   color: var(--accent);
-  box-shadow: inset 0 0 0 2px var(--accent);
+  box-shadow: inset 0 0 0 2px rgba(90, 176, 196, 0.5);
   cursor: pointer;
 }
 
@@ -580,8 +606,8 @@ input::placeholder { color: rgba(255, 255, 255, 0.72); }
 
 .song-favorite.is-on {
   color: var(--accent-alt);
-  background: rgba(219, 20, 26, 0.2);
-  box-shadow: inset 0 0 0 2px var(--accent-alt);
+  background: rgba(180, 60, 108, 0.18);
+  box-shadow: inset 0 0 0 2px rgba(180, 60, 108, 0.55);
 }
 
 .song-favorite .heart-solid { display: none; }
@@ -631,7 +657,7 @@ input::placeholder { color: rgba(255, 255, 255, 0.72); }
 .song.current {
   background: var(--accent);
   color: #000;
-  background: var(--accent);
+  box-shadow: inset 0 0 0 3px var(--accent-alt);
 }
 
 .song.current::before { background: var(--accent-alt); }
@@ -650,7 +676,7 @@ input::placeholder { color: rgba(255, 255, 255, 0.72); }
   background: var(--card);
   color: #fff;
   text-align: left;
-  box-shadow: inset 0 0 0 3px rgba(255, 209, 0, 0.35);
+  box-shadow: inset 0 0 0 3px rgba(90, 176, 196, 0.35);
 }
 
 .artist-row.open { box-shadow: inset 0 0 0 3px var(--accent); }
@@ -759,15 +785,15 @@ input::placeholder { color: rgba(255, 255, 255, 0.72); }
   align-items: center;
   justify-content: center;
   align-self: center;
+  margin: 0;
   width: 42px;
   height: 42px;
-  margin: 0;
   padding: 0;
   border: 0;
   border-radius: 14px;
-  background: rgba(255, 209, 0, 0.12);
+  background: rgba(144, 176, 208, 0.12);
   color: var(--accent);
-  box-shadow: inset 0 0 0 2px var(--accent);
+  box-shadow: inset 0 0 0 2px rgba(90, 176, 196, 0.5);
   cursor: pointer;
 }
 
@@ -779,14 +805,14 @@ input::placeholder { color: rgba(255, 255, 255, 0.72); }
   height: 56px;
   border-radius: 12px;
   object-fit: cover;
-  background: rgba(255, 255, 255, 0.12);
-  box-shadow: inset 0 0 0 2px var(--accent);
+  background: rgba(144, 176, 208, 0.12);
+  box-shadow: inset 0 0 0 2px rgba(90, 176, 196, 0.5);
 }
 
 .now-favorite.is-on {
   color: var(--accent-alt);
-  background: rgba(219, 20, 26, 0.2);
-  box-shadow: inset 0 0 0 2px var(--accent-alt);
+  background: rgba(180, 60, 108, 0.18);
+  box-shadow: inset 0 0 0 2px rgba(180, 60, 108, 0.55);
 }
 
 .now-favorite .heart-solid { display: none; }
@@ -800,7 +826,7 @@ input::placeholder { color: rgba(255, 255, 255, 0.72); }
   min-width: 0;
   min-height: 0;
   margin: 0;
-  padding: 0 2px;
+  padding: 1px 2px 0;
   border: 0;
   border-radius: 0;
   background: transparent;
@@ -812,16 +838,14 @@ input::placeholder { color: rgba(255, 255, 255, 0.72); }
 .now-bar:active { opacity: 0.72; }
 
 .play-favourites {
-  background: var(--accent);
-  color: #000;
-  box-shadow: inset 0 0 0 3px #000;
+  background: var(--song-box-gradient, var(--card));
+  color: #fff;
+  box-shadow: inset 0 0 0 3px var(--song-box-ring, var(--accent));
   min-height: 64px;
-  font-size: 1.2rem;
-  line-height: 1.2;
 }
 
 .play-favourites:disabled {
-  opacity: 0.85;
+  opacity: 0.45;
   cursor: default;
 }
 
@@ -877,16 +901,16 @@ input::placeholder { color: rgba(255, 255, 255, 0.72); }
 
 .seek {
   position: relative;
-  height: 72px;
+  height: 62px;
   border-radius: 16px;
   background: rgba(8, 12, 24, 0.88);
-  box-shadow: inset 0 0 0 3px var(--accent);
+  box-shadow: inset 0 0 0 2px rgba(90, 176, 196, 0.45);
   overflow: hidden;
   touch-action: none;
   cursor: pointer;
 }
 
-.dock-seek { height: 76px; }
+.dock-seek { height: 66px; }
 
 .seek-fill {
   position: absolute;
@@ -894,19 +918,20 @@ input::placeholder { color: rgba(255, 255, 255, 0.72); }
   top: 0;
   bottom: 0;
   width: 0;
-  background: var(--accent);
+  background: linear-gradient(90deg, var(--accent) 0%, var(--accent-alt) 100%);
+  opacity: 0.92;
 }
 
 .seek-thumb {
   position: absolute;
   top: 50%;
   left: 0;
-  width: 40px;
-  height: 40px;
-  margin-left: -20px;
-  border: 4px solid #000;
+  width: 34px;
+  height: 34px;
+  margin-left: -17px;
+  border: 3px solid var(--accent-alt);
   border-radius: 50%;
-  background: #fff;
+  background: var(--text);
   transform: translateY(-50%);
   pointer-events: none;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.45);
@@ -1024,7 +1049,8 @@ html.iphone #player-sub { font-size: 0.88rem; }
   grid-template-columns: repeat(4, 1fr);
   gap: 8px;
   padding: 8px 16px calc(12px + env(safe-area-inset-bottom));
-  background: var(--bg);
+  background: linear-gradient(to top, var(--bg) 70%, rgba(18, 26, 50, 0.92));
+  box-shadow: 0 -1px 0 rgba(144, 176, 208, 0.12);
 }
 
 .transport .big {
@@ -1034,6 +1060,7 @@ html.iphone #player-sub { font-size: 0.88rem; }
   line-height: 1.12;
   border-radius: 14px;
   overflow: visible;
+  transition: transform 0.1s ease, box-shadow 0.1s ease;
   color: #fff;
 }
 
@@ -1134,7 +1161,6 @@ html.iphone #player-sub { font-size: 0.88rem; }
     0 3px 9px rgba(0, 0, 0, 0.42);
 }
 
-
 #shuffle.is-on {
   background: var(--accent);
 }
@@ -1185,7 +1211,24 @@ body.has-now .sheet-screen { bottom: calc(var(--transport-bar) + var(--now-bar-s
   width: auto;
   display: block;
 }
-.sheet .on-ipad { margin-top: 28px; }
+.sheet .youtube-clear-results {
+  font-size: 0.95rem;
+  font-weight: 600;
+  padding: 6px 12px;
+  border: 2px solid var(--accent-alt);
+  border-radius: 10px;
+  background: rgba(144, 176, 208, 0.1);
+  color: var(--text);
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.35);
+  cursor: pointer;
+  white-space: nowrap;
+}
+.sheet .youtube-clear-results:active { opacity: 0.72; }
+html.iphone .sheet .youtube-clear-results {
+  font-size: 0.85rem;
+  padding: 5px 10px;
+}
+.sheet .on-device { margin-top: 28px; }
 
 .catalog-row,
 .manage-row {
@@ -1219,7 +1262,7 @@ body.has-now .sheet-screen { bottom: calc(var(--transport-bar) + var(--now-bar-s
 .catalog-row.saved {
   background: var(--accent);
   color: #000;
-  background: var(--accent);
+  box-shadow: inset 0 0 0 3px var(--accent-alt);
 }
 
 .catalog-row.saved .song-sub { color: rgba(0, 0, 0, 0.75); }
@@ -1289,6 +1332,11 @@ body.has-now .sheet-screen { bottom: calc(var(--transport-bar) + var(--now-bar-s
 }
 
 .confirm-card h2 { font-size: 2rem; }
+.confirm-card h2.link-confirm-hint {
+  font-size: 1.15rem;
+  font-weight: 600;
+  line-height: 1.35;
+}
 .confirm-card p { font-size: 1.35rem; }
 #link-confirm-name { font-size: 1.7rem; font-weight: 700; }
 
@@ -1323,8 +1371,8 @@ body.has-now .sheet-screen { bottom: calc(var(--transport-bar) + var(--now-bar-s
   padding: 10px 16px;
   border: 0;
   border-radius: 14px;
-  background: var(--accent-alt);
-  color: #fff;
+  background: var(--accent);
+  color: #0a1020;
   font-size: 1.15rem;
   font-weight: 700;
   cursor: pointer;
@@ -1333,35 +1381,58 @@ body.has-now .sheet-screen { bottom: calc(var(--transport-bar) + var(--now-bar-s
 .notice-action:active { opacity: 0.72; }
 
 #audio { display: none; }
-.sheet .youtube-clear-results {
-  font-size: 0.95rem;
-  font-weight: 600;
-  padding: 6px 12px;
-  border: 2px solid var(--accent-alt);
-  border-radius: 10px;
-  background: rgba(144, 176, 208, 0.1);
-  color: var(--text);
-  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.35);
-  cursor: pointer;
-  white-space: nowrap;
+
+/* iPhone — compact tap targets (~44px min), tighter rhythm, more list on screen */
+html.iphone {
+  --transport-bar: calc(72px + env(safe-area-inset-bottom));
+  --top-nav-offset: calc(92px + env(safe-area-inset-top));
+  --nav-clearance: calc(var(--top-nav-offset) + var(--nav-gap));
 }
-.sheet .youtube-clear-results:active { opacity: 0.72; }
-html.iphone .sheet .youtube-clear-results {
-  font-size: 0.85rem;
-  padding: 5px 10px;
+
+/* Home: banner/title were scrolling under the fixed nav + search row */
+html.iphone body:not(.search-page):not(.songs-page) #songs {
+  padding-top: var(--top-nav-offset);
+}
+
+html.iphone body.has-now {
+  --now-bar-space: 90px;
+}
+
+html.iphone .top-nav {
+  gap: 6px;
+  padding: calc(6px + env(safe-area-inset-top)) 10px 6px;
+}
+
+html.iphone .top-nav-row {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 6px;
+  width: 100%;
 }
 
 html.iphone .top-nav-row > .home:not(.search-clear) {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-width: 0;
   min-height: 36px;
   padding: 2px 4px;
   border-radius: 6px;
   font-size: 0.78rem;
-  flex-direction: row;
-  flex-wrap: nowrap;
-  white-space: nowrap;
+  line-height: 1.1;
   gap: 4px;
+  white-space: nowrap;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
 }
 
+html.iphone .top-nav-row > .home:not(.search-clear) svg {
+  flex: none;
+  width: 18px;
+  height: 18px;
+}
 
 html.iphone #home {
   padding-left: 4px;
@@ -1375,34 +1446,403 @@ html.iphone #home svg {
   height: 24px;
 }
 
+html.iphone .nav-search-wrap {
+  grid-column: 1 / -1;
+  display: flex;
+  width: 100%;
+  min-width: 0;
+}
+
+html.iphone .nav-search {
+  min-height: 36px;
+  padding: 0 8px;
+  border-radius: 6px;
+  box-shadow: inset 0 0 0 3px var(--accent);
+}
+
+html.iphone .nav-search input {
+  min-height: 30px;
+  height: 30px;
+  font-size: 1rem;
+}
+
+html.iphone .nav-search:focus-within input {
+  min-height: 30px;
+  height: 30px;
+}
+
 html.iphone .search-clear {
+  min-width: 58px;
   min-height: 36px;
   padding: 0 8px;
   font-size: calc(0.95rem - 1pt);
 }
 
-@media (max-width: 430px) and (pointer: coarse) {
-  html:not(.ipad) .top-nav-row > .home:not(.search-clear) {
-    min-height: 36px;
-    padding: 2px 9px;
-    font-size: 0.92rem;
-    flex-direction: row;
-    flex-wrap: nowrap;
-    white-space: nowrap;
-    gap: 4px;
-  }
+html.iphone .banner {
+  height: clamp(140px, 38vw, 200px);
+}
 
-  html:not(.ipad) #home {
-    padding-left: 4px;
-    padding-right: 4px;
-    justify-content: center;
-    gap: 0;
-  }
+html.iphone .banner h1 {
+  font-size: 1.6rem;
+}
 
-  html:not(.ipad) #home svg {
-    width: 24px;
-    height: 24px;
-  }
+html.iphone .hint-card {
+  margin: 10px 12px 0;
+  padding: 10px 12px;
+  border-radius: 12px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+html.iphone .hint-card .hint-sub {
+  margin-top: 6px;
+  font-size: 0.88rem;
+}
+
+html.iphone .actions {
+  gap: 8px;
+  padding: 10px 12px 0;
+}
+
+html.iphone .big {
+  min-height: 44px;
+  padding: 8px 10px;
+  border-radius: 12px;
+  font-size: 1.06rem;
+  font-weight: 700;
+  gap: 3px;
+  line-height: 1.2;
+}
+
+html.iphone .actions .big,
+html.iphone .big.white,
+html.iphone .big.prominent,
+html.iphone .big.plain {
+  min-height: 44px;
+}
+
+html.iphone .play-favourites {
+  min-height: 44px;
+  font-size: 1rem;
+  box-shadow: inset 0 0 0 2px var(--song-box-ring, var(--accent));
+}
+
+html.iphone .big.prominent:not(#play-button),
+html.iphone .big.plain {
+  box-shadow: inset 0 0 0 2px #000;
+}
+
+html.iphone .big.plain {
+  box-shadow: inset 0 0 0 2px var(--accent);
+}
+
+html.iphone .empty {
+  padding: 6px 12px 0;
+  font-size: 1.1rem;
+}
+
+html.iphone .finder {
+  gap: 8px;
+  padding: 10px 12px 8px;
+}
+
+html.iphone .finder-hint {
+  font-size: 1rem;
+}
+
+html.iphone .song {
+  gap: 8px;
+  margin-top: 8px;
+  padding: 10px 10px 10px 22px;
+  border-radius: 12px;
+  box-shadow: inset 0 0 0 2px rgba(90, 176, 196, 0.35);
+}
+
+html.iphone .song-title {
+  font-size: 1.1rem;
+  line-height: 1.2;
+}
+
+html.iphone .song-sub {
+  font-size: 0.88rem;
+}
+
+html.iphone .song-favorite {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+}
+
+html.iphone .song-favorite svg {
+  width: 22px;
+  height: 22px;
+}
+
+html.iphone .song-play {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+}
+
+html.iphone .song-play svg {
+  width: 26px;
+  height: 26px;
+}
+
+html.iphone .transport {
+  gap: 5px;
+  padding: 6px 10px calc(8px + env(safe-area-inset-bottom));
+}
+
+html.iphone .transport .big:active:not(:disabled) {
+  transform: translateY(2px);
+}
+
+html.iphone .transport .big.plain:active:not(:disabled) {
+  border: 2px solid #000;
+  box-shadow:
+    inset 0 2px 5px rgba(0, 0, 0, 0.34),
+    0 0 6px color-mix(in srgb, var(--accent-alt) 48%, transparent),
+    0 1px 0 rgba(0, 0, 0, 0.32),
+    0 2px 6px rgba(0, 0, 0, 0.38);
+}
+
+html.iphone .transport .big.prominent:active:not(:disabled) {
+  border: 2px solid #000;
+  box-shadow:
+    inset 0 2px 5px rgba(0, 0, 0, 0.3),
+    0 1px 0 rgba(0, 0, 0, 0.36),
+    0 2px 7px rgba(0, 0, 0, 0.4);
+}
+
+html.iphone .transport .big {
+  min-height: 56px;
+  padding: 5px 2px 8px;
+  border-radius: 14px;
+  font-size: 0.8rem;
+  gap: 2px;
+  line-height: 1.12;
+  overflow: visible;
+}
+
+html.iphone .transport .big.plain {
+  border: 2px solid #000;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.22),
+    inset 0 -4px 6px rgba(0, 0, 0, 0.34),
+    0 0 8px color-mix(in srgb, var(--accent-alt) 66%, transparent),
+    0 0 16px color-mix(in srgb, var(--accent-alt) 32%, transparent),
+    0 4px 0 rgba(0, 0, 0, 0.42),
+    0 6px 12px rgba(0, 0, 0, 0.48);
+}
+
+html.iphone .transport .big.prominent {
+  border: 2px solid #000;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.3),
+    inset 0 -4px 6px rgba(0, 0, 0, 0.3),
+    0 4px 0 rgba(0, 0, 0, 0.46),
+    0 7px 14px rgba(0, 0, 0, 0.52);
+}
+
+html.iphone .transport #shuffle.is-on {
+  border: 2px solid #000;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.26),
+    inset 0 -4px 6px rgba(0, 0, 0, 0.28),
+    0 0 8px color-mix(in srgb, var(--accent) 68%, transparent),
+    0 0 16px color-mix(in srgb, var(--accent) 34%, transparent),
+    0 4px 0 rgba(0, 0, 0, 0.4),
+    0 6px 12px rgba(0, 0, 0, 0.46);
+}
+
+html.iphone .transport .big svg {
+  width: 24px;
+  height: 24px;
+}
+
+html.iphone .transport .big > span {
+  white-space: nowrap;
+  line-height: 1.05;
+  max-width: 100%;
+}
+
+html.iphone .now-stack {
+  left: 8px;
+  right: 8px;
+  bottom: calc(var(--transport-bar) + 6px);
+}
+
+html.iphone .now-dock {
+  gap: 1px;
+  padding: 2px 0 3px;
+  border-radius: 14px;
+}
+
+html.iphone .now-bar-row {
+  padding: 2px 8px 4px 6px;
+  margin-top: 0;
+}
+
+html.iphone .now-favorite {
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  margin-top: 0;
+}
+
+html.iphone .now-art {
+  width: 52px;
+  height: 52px;
+  border-radius: 11px;
+}
+
+html.iphone .now-bar {
+  padding-top: 0;
+}
+
+html.iphone .now-bar-status {
+  font-size: 0.68rem;
+}
+
+html.iphone .now-bar-song {
+  font-size: 0.95rem;
+}
+
+html.iphone .dock-seek {
+  height: 48px;
+}
+
+html.iphone .seek-time {
+  font-size: 1rem;
+}
+
+html.iphone .seek-time.start {
+  left: 48px;
+}
+
+html.iphone .seek-thumb {
+  width: 28px;
+  height: 28px;
+  margin-left: -14px;
+  border-width: 3px;
+}
+
+html.iphone .sheet {
+  padding: var(--nav-clearance) 12px 8px;
+}
+
+html.iphone .stack {
+  gap: 12px;
+}
+
+html.iphone .sheet h1 {
+  font-size: 1.5rem;
+}
+
+html.iphone .sheet h2 {
+  font-size: 1.2rem;
+}
+
+html.iphone .search-box {
+  min-height: 52px;
+  padding: 6px 8px 6px 12px;
+  border-radius: 14px;
+  box-shadow: inset 0 0 0 3px var(--accent);
+}
+
+html.iphone .search-box input {
+  font-size: 1.05rem;
+  padding: 4px 0;
+}
+
+html.iphone #clear-search,
+html.iphone #clear-artist-search,
+html.iphone #youtube-search-go {
+  min-height: 44px;
+  padding: 6px 10px;
+  font-size: 0.95rem;
+  border-radius: 10px;
+}
+
+html.iphone input {
+  padding: 10px 12px;
+  font-size: 1.05rem;
+}
+
+html.iphone .catalog-row,
+html.iphone .manage-row {
+  margin-top: 8px;
+  padding: 10px 12px;
+  border-radius: 12px;
+}
+
+html.iphone .download,
+html.iphone .remove {
+  min-height: 44px;
+  padding: 6px 12px;
+  font-size: 0.95rem;
+}
+
+html.iphone .artist-row {
+  min-height: 52px;
+  padding: 8px 10px 8px 14px;
+}
+
+html.iphone .play-all {
+  min-height: 44px;
+  padding: 8px 10px;
+  font-size: 0.95rem;
+  border-radius: 12px;
+}
+
+html.iphone #artists-sheet .play-all::before,
+html.iphone #search-results .play-all::before {
+  width: min(95%, 5.5rem);
+  height: 145%;
+  opacity: 0.3;
+}
+
+html.iphone .notice {
+  left: 10px;
+  right: 10px;
+  padding: 12px 14px;
+  font-size: 1rem;
+  gap: 8px;
+}
+
+html.iphone .notice-action {
+  padding: 8px 12px;
+  font-size: 0.95rem;
+  border-radius: 10px;
+}
+
+html.iphone .confirm-card {
+  padding: 16px;
+  gap: 12px;
+}
+
+html.iphone .confirm-card h2.link-confirm-hint {
+  font-size: 1rem;
+}
+
+html.iphone body.search-page .search-title {
+  padding: var(--nav-clearance) 12px 6px;
+  font-size: 1.5rem;
+}
+
+html.iphone body.songs-page .songs-title {
+  padding: var(--nav-clearance) 12px 6px;
+  font-size: 1.5rem;
+}
+
+html.iphone body.search-page #search-page {
+  padding-top: 0;
+}
+
+html.iphone #search-results > .search-results-label:first-of-type {
+  margin-top: 2px;
 }
 
 .transport #play-button:not(.is-playing) {
@@ -1503,3 +1943,27 @@ html.iphone .transport #play-button.is-playing:active:not(:disabled) {
   filter: brightness(0.82);
 }
 
+/* Fallback before JS: narrow coarse-pointer phones */
+@media (max-width: 430px) and (pointer: coarse) {
+  html:not(.ipad) .top-nav-row > .home:not(.search-clear) {
+    min-height: 36px;
+    padding: 2px 9px;
+    font-size: 0.92rem;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    white-space: nowrap;
+    gap: 4px;
+  }
+
+  html:not(.ipad) #home {
+    padding-left: 4px;
+    padding-right: 4px;
+    justify-content: center;
+    gap: 0;
+  }
+
+  html:not(.ipad) #home svg {
+    width: 24px;
+    height: 24px;
+  }
+}

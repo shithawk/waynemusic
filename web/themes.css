@@ -1,4 +1,7 @@
 /* Family colour themes — accents and surfaces only (not images/icons). */
+html {
+  --nav-cream: #fff;
+}
 html[data-family-theme="jori"] {
   --bg: #121a32;
   --card: rgba(144, 176, 208, 0.12);
@@ -66,13 +69,23 @@ html.iphone[data-family-theme="wayne"] .top-nav-row > .home.is-current {
   box-shadow: inset 0 0 0 2px #000, 0 1px 4px rgba(0, 0, 0, 0.4);
 }
 
+html[data-family-theme="zero"] .top-nav-row > .home.is-current:not(.search-clear) {
+  background: linear-gradient(165deg, #444 0%, var(--zero-trans-play) 100%);
+  color: #fff;
+  box-shadow: inset 0 0 0 2px var(--zero-outline), 0 2px 8px rgba(0, 0, 0, 0.45);
+}
+
+html.iphone[data-family-theme="zero"] .top-nav-row > .home.is-current:not(.search-clear) {
+  box-shadow: inset 0 0 0 2px var(--zero-outline), 0 1px 4px rgba(0, 0, 0, 0.4);
+}
+
 html[data-family-theme="jacob"] {
   --bg: #1e2329;
   --card: rgba(160, 168, 178, 0.14);
   --notice-surface: color-mix(in srgb, var(--bg) 82%, var(--accent) 18%);
-  --accent: #ff6f1a;
-  --accent-alt: #2a73b8;
-  --accent-orange: #ff8800;
+  --accent: #ff941d;
+  --accent-alt: #035d7f;
+  --accent-orange: #ff941d;
   --text: #f0eef8;
   --song-box-gradient: linear-gradient(
     135deg,
@@ -83,11 +96,11 @@ html[data-family-theme="jacob"] {
 }
 
 html[data-family-theme="dan"] {
-  --bg: #1a2332;
+  --bg: #1c2a34;
   --card: rgba(160, 168, 178, 0.14);
   --notice-surface: color-mix(in srgb, var(--bg) 82%, var(--accent) 18%);
   --accent: #f0b429;
-  --accent-alt: #5b9fd4;
+  --accent-alt: #4f9599;
   --accent-orange: #ff8800;
   --text: #f0eef8;
   --song-box-gradient: linear-gradient(
@@ -127,20 +140,18 @@ html[data-family-theme="zero"] {
     color-mix(in srgb, var(--bg) 90%, #fff 10%) 0%,
     color-mix(in srgb, var(--bg) 88%, #2e2e2e 12%) 100%
   );
-  --song-box-ring: #4a5884;
-  --zero-outline: #4a5884;
-  --zero-trans-lit-0: #ffffff;
-  --zero-trans-lit-1: #e4e4e4;
-  --zero-trans-lit-2: #b0b0b0;
-  --zero-trans-lit-3: #848484;
-  --zero-trans-play-0: #cdcdcd;
-  --zero-trans-play-1: #a9a9a9;
-  --zero-trans-play-2: #7d7d7d;
-  --zero-trans-play-3: #595959;
-  --zero-trans-press-0: #f2f2f2;
-  --zero-trans-press-1: #c8c8c8;
-  --zero-trans-press-2: #8e8e8e;
-  --zero-trans-press-3: #6a6a6a;
+  --song-box-ring: #5d6da8;
+  --zero-outline: #5d6da8;
+  --zero-trans-fill: #7a7a7a;
+  --zero-trans-lit: #ececec;
+  --zero-trans-play: #525252;
+  --zero-trans-gap: 64px;
+  --zero-trans-pad: 10px;
+  --zero-btn-side: 72px;
+  --zero-btn-play: 92px;
+  --zero-side-lift: 10px;
+  --transport-bar: calc(96px + env(safe-area-inset-bottom));
+  --nav-cream: #fff;
 }
 
 html[data-family-theme="zero"] .theme-picker-label-stripe {
@@ -205,169 +216,282 @@ html[data-family-theme="zero"] #add-music {
     0 5px 9px rgba(0, 0, 0, 0.26);
 }
 
-html[data-family-theme="zero"] .transport #play-button:not(.is-playing):not(:active) {
-  color: #000;
-  filter: none;
-  transform: translateY(0);
+html[data-family-theme="zero"] #download-all.big.prominent {
   background: linear-gradient(
     180deg,
-    var(--zero-trans-lit-0) 0%,
-    var(--zero-trans-lit-1) 44%,
-    var(--zero-trans-lit-2) 74%,
-    var(--zero-trans-lit-3) 100%
+    #ffffff 0%,
+    #f4f4f4 42%,
+    #e8e8e8 100%
   );
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.95),
-    inset 0 -4px 8px rgba(0, 0, 0, 0.14),
-    0 5px 0 rgba(0, 0, 0, 0.46),
-    0 9px 16px rgba(0, 0, 0, 0.52);
+  color: #000;
+  box-shadow: inset 0 0 0 1px var(--zero-outline);
 }
 
-html[data-family-theme="zero"] .transport #play-button:not(.is-playing):active:not(:disabled) {
-  color: #000;
+html.iphone[data-family-theme="zero"] #download-all.big.prominent {
+  box-shadow: inset 0 0 0 2px var(--zero-outline);
+}
+
+html[data-family-theme="zero"] .now-stack {
+  bottom: calc(var(--transport-bar) + 3px);
+}
+
+html[data-family-theme="zero"] .transport {
+  display: block;
+  width: 100%;
+  min-height: calc(var(--zero-btn-play) + var(--zero-trans-pad) + 2px + env(safe-area-inset-bottom));
+  padding: 2px 0 calc(var(--zero-trans-pad) + env(safe-area-inset-bottom));
+  background: var(--bg);
+  box-shadow: none;
+}
+
+html[data-family-theme="zero"] .transport #shuffle {
+  display: none;
+}
+
+html[data-family-theme="zero"] .transport #previous,
+html[data-family-theme="zero"] .transport #next {
+  position: absolute;
+  bottom: calc(var(--zero-trans-pad) + env(safe-area-inset-bottom) + var(--zero-side-lift));
+}
+
+html[data-family-theme="zero"] .transport #previous {
+  right: calc(50% + (var(--zero-btn-play) / 2) + var(--zero-trans-gap));
+  left: auto;
+}
+
+html[data-family-theme="zero"] .transport #next {
+  left: calc(50% + (var(--zero-btn-play) / 2) + var(--zero-trans-gap));
+}
+
+html[data-family-theme="zero"] .transport .big {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  width: var(--zero-btn-side);
+  height: var(--zero-btn-side);
+  min-width: var(--zero-btn-side);
+  max-width: var(--zero-btn-side);
+  min-height: 0;
+  max-height: var(--zero-btn-side);
+  aspect-ratio: 1;
+  padding: 0;
+  border-radius: 50%;
+  border: 2px solid var(--zero-outline);
+  background: var(--zero-trans-fill);
+  color: #fff;
+  box-shadow: none;
   filter: none;
-  transform: translateY(3px);
-  background: linear-gradient(
-    180deg,
-    var(--zero-trans-press-0) 0%,
-    var(--zero-trans-press-1) 44%,
-    var(--zero-trans-press-2) 74%,
-    var(--zero-trans-press-3) 100%
-  );
-  box-shadow:
-    inset 0 2px 6px rgba(0, 0, 0, 0.22),
-    inset 0 -2px 4px rgba(0, 0, 0, 0.12),
-    0 0 6px color-mix(in srgb, var(--accent-alt) 28%, transparent),
-    0 1px 0 rgba(0, 0, 0, 0.44),
-    0 3px 9px rgba(0, 0, 0, 0.46);
+  font-size: 0;
+  line-height: 0;
+  transition: transform 0.1s ease;
+}
+
+html[data-family-theme="zero"] .transport .big > span {
+  display: none;
+}
+
+html[data-family-theme="zero"] .transport .big svg {
+  width: 40px;
+  height: 40px;
+  filter: none;
+}
+
+html[data-family-theme="zero"] .transport .big.plain,
+html[data-family-theme="zero"] .transport .big.prominent {
+  background: var(--zero-trans-fill);
+  color: #fff;
+  border: 2px solid var(--zero-outline);
+  box-shadow: none;
+}
+
+html[data-family-theme="zero"] .transport #play-button {
+  position: absolute;
+  left: 50%;
+  bottom: calc(var(--zero-trans-pad) + env(safe-area-inset-bottom));
+  width: var(--zero-btn-play);
+  height: var(--zero-btn-play);
+  min-width: var(--zero-btn-play);
+  max-width: var(--zero-btn-play);
+  max-height: var(--zero-btn-play);
+}
+
+html[data-family-theme="zero"] .transport #play-button svg {
+  width: 48px;
+  height: 48px;
+}
+
+html[data-family-theme="zero"] .transport #play-button:not(.is-playing) {
+  background: var(--zero-trans-lit);
+  color: #000;
+  transform: translateX(-50%);
 }
 
 html[data-family-theme="zero"] .transport #play-button.is-playing {
+  background: var(--zero-trans-play);
   color: #fff;
-  filter: none;
-  transform: translateY(3px);
-  background: linear-gradient(
-    180deg,
-    var(--zero-trans-play-0) 0%,
-    var(--zero-trans-play-1) 40%,
-    var(--zero-trans-play-2) 72%,
-    var(--zero-trans-play-3) 100%
-  );
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.28),
-    inset 0 -4px 8px rgba(0, 0, 0, 0.36),
-    0 1px 0 rgba(0, 0, 0, 0.5),
-    0 3px 9px rgba(0, 0, 0, 0.5);
+  transform: translateX(-50%) translateY(3px);
 }
 
-html[data-family-theme="zero"] .transport #play-button.is-playing:active:not(:disabled) {
-  color: #fff;
-  filter: none;
-  transform: translateY(5px);
-  background: linear-gradient(
-    180deg,
-    var(--zero-trans-press-0) 0%,
-    var(--zero-trans-press-1) 44%,
-    var(--zero-trans-press-2) 74%,
-    var(--zero-trans-press-3) 100%
-  );
+html[data-family-theme="zero"] .transport #play-button.is-shuffle-on:not(.is-playing) {
+  background: var(--zero-trans-lit);
+  color: #000;
+  transform: translateX(-50%);
+}
+
+html[data-family-theme="zero"] .transport #play-button.is-playing.is-shuffle-on {
+  background: var(--zero-trans-lit);
+  color: #000;
   box-shadow:
-    inset 0 3px 8px rgba(0, 0, 0, 0.46),
-    inset 0 -2px 3px rgba(0, 0, 0, 0.26),
-    0 0 6px color-mix(in srgb, var(--accent-alt) 46%, transparent),
-    0 1px 0 rgba(0, 0, 0, 0.42),
-    0 2px 7px rgba(0, 0, 0, 0.44);
+    0 0 8px rgba(255, 255, 255, 0.72),
+    0 0 18px rgba(255, 255, 255, 0.42),
+    0 0 32px color-mix(in srgb, var(--zero-outline) 55%, transparent),
+    0 0 48px color-mix(in srgb, var(--zero-outline) 28%, transparent);
+}
+
+html[data-family-theme="zero"] .transport #play-button.is-shuffle-on:not(.is-playing) .icon-play {
+  display: none;
+}
+
+html[data-family-theme="zero"] .transport #play-button.is-shuffle-on:not(.is-playing) .icon-shuffle {
+  display: block;
+}
+
+html[data-family-theme="zero"] .transport #play-button .icon-shuffle {
+  width: 40px;
+  height: 40px;
 }
 
 html[data-family-theme="zero"] .transport #shuffle.is-on:not(:active),
 html[data-family-theme="zero"] #shuffle.is-on:not(:active) {
+  background: var(--zero-trans-lit);
   color: #000;
-  background: linear-gradient(
-    180deg,
-    var(--zero-trans-lit-0) 0%,
-    var(--zero-trans-lit-1) 44%,
-    var(--zero-trans-lit-2) 74%,
-    var(--zero-trans-lit-3) 100%
-  );
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.95),
-    inset 0 -4px 8px rgba(0, 0, 0, 0.14),
-    0 5px 0 rgba(0, 0, 0, 0.46),
-    0 9px 16px rgba(0, 0, 0, 0.52);
+    0 0 8px rgba(255, 255, 255, 0.72),
+    0 0 18px rgba(255, 255, 255, 0.42),
+    0 0 32px color-mix(in srgb, var(--zero-outline) 55%, transparent),
+    0 0 48px color-mix(in srgb, var(--zero-outline) 28%, transparent);
 }
 
-html[data-family-theme="zero"] .transport #shuffle.is-on #shuffle-label {
-  color: inherit;
+html[data-family-theme="zero"] .transport .big:active:not(:disabled),
+html[data-family-theme="zero"] .transport .big.plain:active:not(:disabled),
+html[data-family-theme="zero"] .transport .big.prominent:active:not(:disabled) {
+  opacity: 1;
+  border: 2px solid var(--zero-outline);
+  filter: none;
+}
+
+html[data-family-theme="zero"] .transport #previous:active:not(:disabled),
+html[data-family-theme="zero"] .transport #next:active:not(:disabled),
+html[data-family-theme="zero"] .transport #shuffle:active:not(:disabled) {
+  transform: translateY(3px);
+}
+
+html[data-family-theme="zero"] .transport #play-button:active:not(:disabled) {
+  transform: translateX(-50%) translateY(3px);
 }
 
 html[data-family-theme="zero"] .transport #shuffle.is-on:active:not(:disabled),
 html[data-family-theme="zero"] #shuffle.is-on:active:not(:disabled) {
-  color: #000;
-  background: linear-gradient(
-    180deg,
-    var(--zero-trans-press-0) 0%,
-    var(--zero-trans-press-1) 44%,
-    var(--zero-trans-press-2) 74%,
-    var(--zero-trans-press-3) 100%
-  );
   box-shadow:
-    inset 0 2px 6px rgba(0, 0, 0, 0.22),
-    inset 0 -2px 4px rgba(0, 0, 0, 0.12),
-    0 0 6px color-mix(in srgb, var(--accent-alt) 28%, transparent),
-    0 1px 0 rgba(0, 0, 0, 0.44),
-    0 3px 9px rgba(0, 0, 0, 0.46);
+    0 0 6px rgba(255, 255, 255, 0.55),
+    0 0 14px rgba(255, 255, 255, 0.32),
+    0 0 26px color-mix(in srgb, var(--zero-outline) 40%, transparent);
 }
 
-html.iphone[data-family-theme="zero"] .transport #play-button:not(.is-playing):not(:active) {
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.9),
-    inset 0 -3px 6px rgba(0, 0, 0, 0.12),
-    0 4px 0 rgba(0, 0, 0, 0.44),
-    0 7px 12px rgba(0, 0, 0, 0.48);
+html[data-family-theme="zero"] .transport #play-button.is-playing:active:not(:disabled) {
+  transform: translateX(-50%) translateY(5px);
 }
 
-html.iphone[data-family-theme="zero"] .transport #play-button:not(.is-playing):active:not(:disabled) {
-  box-shadow:
-    inset 0 2px 5px rgba(0, 0, 0, 0.2),
-    inset 0 -2px 3px rgba(0, 0, 0, 0.1),
-    0 0 5px color-mix(in srgb, var(--accent-alt) 24%, transparent),
-    0 1px 0 rgba(0, 0, 0, 0.42),
-    0 2px 7px rgba(0, 0, 0, 0.44);
+html.iphone[data-family-theme="zero"] {
+  --transport-bar: calc(74px + env(safe-area-inset-bottom));
+  --zero-trans-gap: 32px;
+  --zero-trans-pad: 6px;
+  --zero-btn-side: 48px;
+  --zero-btn-play: 62px;
+  --zero-side-lift: 7px;
 }
 
-html.iphone[data-family-theme="zero"] .transport #play-button.is-playing {
-  box-shadow:
-    inset 0 2px 6px rgba(0, 0, 0, 0.38),
-    inset 0 -2px 3px rgba(0, 0, 0, 0.26),
-    0 0 7px color-mix(in srgb, var(--accent-alt) 52%, transparent),
-    0 1px 0 rgba(0, 0, 0, 0.46),
-    0 2px 8px rgba(0, 0, 0, 0.48);
+html.iphone[data-family-theme="zero"] .now-stack {
+  bottom: calc(var(--transport-bar) + 2px);
+}
+
+html.iphone[data-family-theme="zero"] .transport {
+  padding-left: 0;
+  padding-right: 0;
+}
+
+html.iphone[data-family-theme="zero"] .transport .big {
+  flex: 0 0 auto;
+  width: var(--zero-btn-side);
+  height: var(--zero-btn-side);
+  min-width: var(--zero-btn-side);
+  max-width: var(--zero-btn-side);
+  max-height: var(--zero-btn-side);
+  min-height: 0;
+  border-radius: 50%;
+  aspect-ratio: 1;
+}
+
+html.iphone[data-family-theme="zero"] .transport .big svg {
+  width: 26px;
+  height: 26px;
+}
+
+html.iphone[data-family-theme="zero"] .transport #play-button .icon-play,
+html.iphone[data-family-theme="zero"] .transport #play-button .icon-pause {
+  width: 34px;
+  height: 34px;
+}
+
+html.iphone[data-family-theme="zero"] .transport #play-button .icon-shuffle {
+  width: 28px;
+  height: 28px;
+}
+
+@media (max-width: 540px) and (pointer: coarse) {
+  html[data-family-theme="zero"]:not(.ipad) {
+    --transport-bar: calc(74px + env(safe-area-inset-bottom));
+    --zero-trans-gap: 32px;
+    --zero-trans-pad: 6px;
+    --zero-btn-side: 48px;
+    --zero-btn-play: 62px;
+    --zero-side-lift: 7px;
+  }
+
+  html[data-family-theme="zero"]:not(.ipad) .transport .big svg {
+    width: 26px;
+    height: 26px;
+  }
+
+  html[data-family-theme="zero"]:not(.ipad) .transport #play-button .icon-play,
+  html[data-family-theme="zero"]:not(.ipad) .transport #play-button .icon-pause {
+    width: 34px;
+    height: 34px;
+  }
+
+  html[data-family-theme="zero"]:not(.ipad) .transport #play-button .icon-shuffle {
+    width: 28px;
+    height: 28px;
+  }
+}
+
+html.iphone[data-family-theme="zero"] .transport .big:active:not(:disabled) {
+  transform: translateY(2px);
+}
+
+html.iphone[data-family-theme="zero"] .transport #previous:active:not(:disabled),
+html.iphone[data-family-theme="zero"] .transport #next:active:not(:disabled),
+html.iphone[data-family-theme="zero"] .transport #shuffle:active:not(:disabled) {
+  transform: translateY(2px);
+}
+
+html.iphone[data-family-theme="zero"] .transport #play-button:active:not(:disabled) {
+  transform: translateX(-50%) translateY(2px);
 }
 
 html.iphone[data-family-theme="zero"] .transport #play-button.is-playing:active:not(:disabled) {
-  box-shadow:
-    inset 0 3px 7px rgba(0, 0, 0, 0.42),
-    inset 0 -2px 3px rgba(0, 0, 0, 0.24),
-    0 0 5px color-mix(in srgb, var(--accent-alt) 42%, transparent),
-    0 1px 0 rgba(0, 0, 0, 0.4),
-    0 2px 6px rgba(0, 0, 0, 0.42);
-}
-
-html.iphone[data-family-theme="zero"] .transport #shuffle.is-on:not(:active) {
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.9),
-    inset 0 -3px 6px rgba(0, 0, 0, 0.12),
-    0 4px 0 rgba(0, 0, 0, 0.44),
-    0 7px 12px rgba(0, 0, 0, 0.48);
-}
-
-html.iphone[data-family-theme="zero"] .transport #shuffle.is-on:active:not(:disabled) {
-  box-shadow:
-    inset 0 2px 5px rgba(0, 0, 0, 0.2),
-    inset 0 -2px 3px rgba(0, 0, 0, 0.1),
-    0 0 5px color-mix(in srgb, var(--accent-alt) 24%, transparent),
-    0 1px 0 rgba(0, 0, 0, 0.42),
-    0 2px 7px rgba(0, 0, 0, 0.44);
+  transform: translateX(-50%) translateY(4px);
 }
 
 html[data-family-theme="zero"] .search-box {
@@ -406,7 +530,7 @@ html[data-family-theme="dan"] .now-stripe {
     #d97810 33.35% 36.65%,
     var(--accent-alt) 36.65% 42%,
     var(--accent-alt) 42% 77.84%,
-    #4a8fc4 77.84% 100%
+    color-mix(in srgb, var(--accent-alt) 78%, #fff) 77.84% 100%
   );
 }
 
@@ -522,23 +646,31 @@ html.iphone[data-family-theme="dan"] .transport #shuffle.is-on {
 }
 
 .theme-chip[data-theme="jori"] {
-  background: #9d8ec7;
+  background: #b43c6c;
   color: #fff;
 }
 
 .theme-chip[data-theme="jacob"] {
-  background: #2a73b8;
+  background: #035d7f;
   color: #fff;
 }
 
 .theme-chip[data-theme="dan"] {
-  background: linear-gradient(135deg, #f0b429 0%, #5b9fd4 100%);
+  background: #4f9599;
   color: #fff;
 }
 
 .theme-chip[data-theme="steff"] {
-  background: linear-gradient(135deg, #e8a0bf 0%, #6ecfad 100%);
+  background: #c978b8;
   color: #fff;
+}
+
+/* Zero mode: only the anchored family chip is grey; others stay full colour */
+html[data-family-theme="zero"] .theme-chip.is-active {
+  background: linear-gradient(180deg, var(--zero-trans-lit) 0%, var(--zero-trans-fill) 100%);
+  color: #101010;
+  text-shadow: none;
+  box-shadow: inset 0 0 0 2px var(--zero-outline), 0 0 14px rgba(255, 255, 255, 0.22);
 }
 
 html.iphone .theme-picker-wrap {
@@ -579,6 +711,6 @@ html[data-family-theme="dan"] .theme-picker-label-stripe {
     #d97810 33.35% 36.65%,
     var(--accent-alt) 36.65% 42%,
     var(--accent-alt) 42% 77.84%,
-    #4a8fc4 77.84% 100%
+    color-mix(in srgb, var(--accent-alt) 78%, #fff) 77.84% 100%
   );
 }
