@@ -634,7 +634,7 @@ function refreshPlayFavouritesButton() {
   const count = favoriteTracks().length;
   button.disabled = count === 0;
   if (count === 0) {
-    button.textContent = "Select heart to add song to favourites";
+    button.textContent = "♥ Favourites";
   } else if (count === 1) {
     button.textContent = "♥ Play favourite";
   } else {
