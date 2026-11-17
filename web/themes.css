@@ -23,7 +23,7 @@ html[data-family-theme="jacob"] {
   --bg: #2a3038;
   --card: rgba(160, 168, 178, 0.14);
   --notice-surface: color-mix(in srgb, var(--bg) 82%, var(--accent) 18%);
-  --accent: #e87830;
+  --accent: #ff6f1a;
   --accent-alt: #3d8fd4;
   --accent-orange: #ff8800;
   --text: #f0eef8;
@@ -156,8 +156,8 @@ html[data-family-theme="dan"] .now-stripe {
 }
 
 .theme-chip[data-theme="wayne"] {
-  background: #db141a;
-  color: #fff;
+  background: #ffd100;
+  color: #db141a;
 }
 
 .theme-chip[data-theme="jori"] {
@@ -166,7 +166,7 @@ html[data-family-theme="dan"] .now-stripe {
 }
 
 .theme-chip[data-theme="jacob"] {
-  background: #e87830;
+  background: #ff6f1a;
   color: #fff;
 }
 
