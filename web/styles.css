@@ -8,7 +8,11 @@
   --accent-alt: #db141a;
   --accent-orange: #ff8800;
   --text: #fff;
-  --song-box-gradient: var(--accent);
+  --song-box-gradient: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--bg) 72%, var(--accent) 28%) 0%,
+    color-mix(in srgb, var(--bg) 76%, var(--accent-alt) 24%) 100%
+  );
   --song-box-ring: #000;
   --transport-bar: calc(114px + env(safe-area-inset-bottom));
   --top-nav-offset: calc(84px + env(safe-area-inset-top));
