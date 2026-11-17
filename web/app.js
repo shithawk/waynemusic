@@ -62,7 +62,7 @@ const audio = () => document.getElementById("audio");
 
 document.addEventListener("DOMContentLoaded", init);
 
-const SW_BUILD = "37";
+const SW_BUILD = "38";
 
 const MARQUEE_PAUSE_S = 3;
 const MARQUEE_HOLD_END_S = 3;
@@ -2338,22 +2338,68 @@ function prepareArtURL(id, blob) {
   return url;
 }
 
+const ART_EDGE = 400;
+const ART_KEEP = 96 * 1024;
+
+async function fitArtwork(blob) {
+  if (!blob || blob.size <= ART_KEEP) return blob;
+  let bitmap = null;
+  try {
+    bitmap = await createImageBitmap(blob);
+    const scale = Math.min(1, ART_EDGE / Math.max(bitmap.width, bitmap.height));
+    const canvas = document.createElement("canvas");
+    canvas.width = Math.max(1, Math.round(bitmap.width * scale));
+    canvas.height = Math.max(1, Math.round(bitmap.height * scale));
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return blob;
+    ctx.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+    const fitted = await new Promise((resolve) => canvas.toBlob(resolve, "image/jpeg", 0.82));
+    if (!fitted || fitted.size >= blob.size) return blob;
+    return fitted;
+  } catch {
+    return blob;
+  } finally {
+    if (bitmap && bitmap.close) bitmap.close();
+  }
+}
+
+function blobToDataURL(blob) {
+  return new Promise((resolve) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(typeof reader.result === "string" ? reader.result : "");
+    reader.onerror = () => resolve("");
+    reader.readAsDataURL(blob);
+  });
+}
+
 async function artURLForTrack(track) {
   if (!track || track.source !== "local") return null;
-  if (artURLs.has(track.id)) return artURLs.get(track.id);
   let blob = artBlobs.get(track.id);
-  if (!blob) blob = await getArtworkBlob(track.id);
-  if (blob) {
-    artBlobs.set(track.id, blob);
-    return prepareArtURL(track.id, blob);
+  let stored = Boolean(blob);
+  if (!blob) {
+    blob = await getArtworkBlob(track.id);
+    stored = Boolean(blob);
   }
-  const audio = await playableBlob(track);
-  if (!audio) return null;
-  const tags = await readID3(audio);
-  if (!tags.artwork) return null;
-  await saveArtwork(track.id, tags.artwork);
-  artBlobs.set(track.id, tags.artwork);
-  return prepareArtURL(track.id, tags.artwork);
+  if (!blob) {
+    const audio = await playableBlob(track);
+    if (!audio) return null;
+    const tags = await readID3(audio);
+    if (!tags.artwork) return null;
+    blob = tags.artwork;
+    stored = false;
+  }
+  const fitted = await fitArtwork(blob);
+  if (!stored || fitted !== blob) {
+    await saveArtwork(track.id, fitted);
+    blob = artBlobs.get(track.id) || fitted;
+    const existing = artURLs.get(track.id);
+    if (existing) URL.revokeObjectURL(existing);
+    artURLs.delete(track.id);
+  } else if (!artBlobs.has(track.id)) {
+    artBlobs.set(track.id, blob);
+  }
+  if (artURLs.has(track.id)) return artURLs.get(track.id);
+  return prepareArtURL(track.id, blob);
 }
 
 function songToStart() {
@@ -2870,11 +2916,29 @@ function pauseSoundCloud() {
   } catch { /* The widget may not be ready yet. */ }
 }
 
+let sessionArtToken = 0;
+
 function publishSession(track) {
-  if (!("mediaSession" in navigator) || !("MediaMetadata" in window)) return;
-  navigator.mediaSession.metadata = new MediaMetadata({
-    title: track.title,
-    artist: track.artist || ""
+  if (!("mediaSession" in navigator) || !("MediaMetadata" in window) || !track) return;
+  const token = ++sessionArtToken;
+  const meta = { title: track.title || "Song", artist: track.artist || "" };
+  try {
+    navigator.mediaSession.metadata = new MediaMetadata(meta);
+  } catch { /* Some browsers reject metadata until playback starts. */ }
+  if (track.source !== "local") return;
+  void artURLForTrack(track).then(async () => {
+    if (token !== sessionArtToken || currentTrack()?.id !== track.id) return;
+    const blob = artBlobs.get(track.id);
+    if (!blob) return;
+    const src = await blobToDataURL(blob);
+    if (!src || token !== sessionArtToken || currentTrack()?.id !== track.id) return;
+    try {
+      navigator.mediaSession.metadata = new MediaMetadata({
+        title: meta.title,
+        artist: meta.artist,
+        artwork: [{ src, sizes: "400x400", type: blob.type || "image/jpeg" }]
+      });
+    } catch { /* Ignore artwork the browser will not attach. */ }
   });
 }
 
@@ -2992,11 +3056,30 @@ function parsePictureFrame(frame, v22) {
   return new Blob([data], { type: mime.split(";")[0].trim() || "image/jpeg" });
 }
 
+
+const ID3_READ_MIN = 256 * 1024;
+const ID3_READ_MAX = 2 * 1024 * 1024;
+
+async function id3HeadBytes(file) {
+  const size = file.size || 0;
+  if (!size) return new Uint8Array(0);
+  let readLen = Math.min(size, ID3_READ_MIN);
+  if (size >= 10) {
+    const probe = new Uint8Array(await file.slice(0, 10).arrayBuffer());
+    if (probe[0] === 0x49 && probe[1] === 0x44 && probe[2] === 0x33) {
+      const tagSize = syncsafe(probe, 6);
+      readLen = Math.min(size, Math.max(readLen, 10 + tagSize));
+      readLen = Math.min(readLen, ID3_READ_MAX);
+    }
+  }
+  return new Uint8Array(await file.slice(0, readLen).arrayBuffer());
+}
+
 async function readID3(file) {
   const empty = { title: "", artist: "", artwork: null };
   try {
     const size = file.size || 0;
-    const head = new Uint8Array(await file.slice(0, Math.min(size, 256 * 1024)).arrayBuffer());
+    const head = await id3HeadBytes(file);
     let title = "";
     let artist = "";
     let artwork = null;
@@ -3129,22 +3212,24 @@ async function saveLocal(track, blob, artwork) {
   fileBlobs.set(track.id, stored);
   prepareURL(track.id, stored);
   const db = await openDB();
-  const stores = artwork ? ["tracks", "files", "artwork"] : ["tracks", "files"];
+  const fitted = artwork ? await fitArtwork(artwork) : null;
+  const stores = fitted ? ["tracks", "files", "artwork"] : ["tracks", "files"];
   const tx = db.transaction(stores, "readwrite");
   tx.objectStore("tracks").put(track);
   tx.objectStore("files").put({ id: track.id, blob: stored });
-  if (artwork) {
-    artBlobs.set(track.id, artwork);
-    tx.objectStore("artwork").put({ id: track.id, blob: artwork });
+  if (fitted) {
+    artBlobs.set(track.id, fitted);
+    tx.objectStore("artwork").put({ id: track.id, blob: fitted });
   }
   await transactionDone(tx);
 }
 
 async function saveArtwork(id, artwork) {
-  artBlobs.set(id, artwork);
+  const fitted = await fitArtwork(artwork);
+  artBlobs.set(id, fitted);
   const db = await openDB();
   const tx = db.transaction("artwork", "readwrite");
-  tx.objectStore("artwork").put({ id, blob: artwork });
+  tx.objectStore("artwork").put({ id, blob: fitted });
   await transactionDone(tx);
 }
 
