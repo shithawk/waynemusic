@@ -45,6 +45,10 @@ let pendingYtVideo = "";
 let scWidget = null;
 let streamingWatchdog = null;
 let streamingHold = false;
+let streamingWakeLock = null;
+let streamingKeepalive = null;
+let documentPiPAnchor = null;
+let documentPiPMoved = null;
 let noticeTimer = 0;
 let noticeActionURL = "";
 let ignoreAdvance = false;
@@ -61,7 +65,7 @@ const audio = () => document.getElementById("audio");
 
 document.addEventListener("DOMContentLoaded", init);
 
-const SW_BUILD = "29";
+const SW_BUILD = "30";
 
 const MARQUEE_PAUSE_S = 3;
 const MARQUEE_HOLD_END_S = 3;
@@ -200,7 +204,11 @@ async function init() {
   });
   document.addEventListener("visibilitychange", () => {
     if (!streamingHold) return;
-    resumeStreaming();
+    if (document.hidden) onStreamingBackground();
+    else onStreamingForeground();
+  });
+  window.addEventListener("pagehide", () => {
+    if (streamingHold) onStreamingBackground();
   });
   window.addEventListener("offline", () => {
     const track = currentTrack();
@@ -424,6 +432,9 @@ function bindEvents() {
     else showSongList();
   });
   document.getElementById("play-favourites").addEventListener("click", playFavourites);
+  document.getElementById("float-video").addEventListener("click", () => {
+    void enterFloatVideo();
+  });
   document.getElementById("previous").addEventListener("click", () => skip(-1));
   document.getElementById("next").addEventListener("click", () => skip(1));
   document.getElementById("play-button").addEventListener("click", () => {
@@ -583,6 +594,7 @@ function renderPlayer() {
   document.getElementById("stage-local").hidden = !track || track.source !== "local";
   document.getElementById("stage-yt").hidden = !track || track.source !== "youtube";
   document.getElementById("stage-sc").hidden = !track || track.source !== "soundcloud";
+  updateStreamingPlayerChrome(track);
   setPlaying(state.playing);
 }
 
@@ -1389,6 +1401,165 @@ function resumeStreaming() {
     try { ytPlayer.playVideo(); } catch { /* The player may not be ready yet. */ }
   } else if (track.source === "soundcloud" && scWidget && scWidget.play) {
     try { scWidget.play(); } catch { /* The widget may not be ready yet. */ }
+  }
+}
+
+function defaultMirrorHint() {
+  return "To listen to this on the TV, swipe down from the top-right corner of the iPad, tap Screen Mirroring, then choose the TV.";
+}
+
+function updateStreamingPlayerChrome(track) {
+  const floatBtn = document.getElementById("float-video");
+  const streamHint = document.getElementById("stream-bg-hint");
+  const mirror = document.getElementById("mirror-hint");
+  const streaming = Boolean(track && isStreamingTrack(track));
+  if (floatBtn) floatBtn.hidden = !streaming;
+  if (!streamHint || !mirror) return;
+  if (streaming) {
+    mirror.hidden = true;
+    streamHint.hidden = false;
+    if (androidInstallHints()) {
+      streamHint.textContent =
+        "YouTube in this app cannot auto-float on Android. Tap Float video before you switch apps, or use the PiP control on the video. Screen stays awake while video plays.";
+    } else {
+      streamHint.textContent =
+        "Tap Float video before switching apps so playback can continue in a small window.";
+    }
+  } else {
+    mirror.hidden = false;
+    streamHint.hidden = true;
+    mirror.textContent = defaultMirrorHint();
+  }
+}
+
+function supportsDocumentPiP() {
+  return (
+    "documentPictureInPicture" in window &&
+    window.documentPictureInPicture &&
+    typeof window.documentPictureInPicture.requestWindow === "function"
+  );
+}
+
+function streamingStageId(source) {
+  return source === "youtube" ? "stage-yt" : source === "soundcloud" ? "stage-sc" : "";
+}
+
+async function tryEnterDocumentPiP(source) {
+  if (!supportsDocumentPiP() || documentPiPMoved) return false;
+  const stageId = streamingStageId(source);
+  if (!stageId || !isSource(source)) return false;
+  const stage = document.getElementById(stageId);
+  if (!stage || stage.hidden) return false;
+  try {
+    const w = Math.max(320, stage.clientWidth || 480);
+    const h = Math.max(180, stage.clientHeight || 270);
+    const pipWindow = await documentPictureInPicture.requestWindow({ width: w, height: h });
+    documentPiPAnchor = document.createElement("div");
+    documentPiPAnchor.id = "document-pip-anchor";
+    documentPiPAnchor.hidden = true;
+    stage.parentNode.insertBefore(documentPiPAnchor, stage);
+    documentPiPMoved = stage;
+    const doc = pipWindow.document;
+    doc.body.style.margin = "0";
+    doc.body.style.background = "#000";
+    doc.body.appendChild(stage);
+    pipWindow.addEventListener("pagehide", restoreDocumentPiP, { once: true });
+    if (source === "youtube") fitYouTube();
+    return true;
+  } catch {
+    restoreDocumentPiP();
+    return false;
+  }
+}
+
+function restoreDocumentPiP() {
+  if (!documentPiPMoved || !documentPiPAnchor || !documentPiPAnchor.parentNode) {
+    documentPiPAnchor = null;
+    documentPiPMoved = null;
+    return;
+  }
+  documentPiPAnchor.parentNode.insertBefore(documentPiPMoved, documentPiPAnchor);
+  documentPiPAnchor.remove();
+  documentPiPAnchor = null;
+  documentPiPMoved = null;
+  if (isSource("youtube")) fitYouTube();
+}
+
+async function enterFloatVideo() {
+  const track = currentTrack();
+  if (!track || !isStreamingTrack(track)) return;
+  const source = track.source;
+  if (await tryEnterDocumentPiP(source)) return;
+  const stage = document.getElementById(streamingStageId(source));
+  if (!stage) return;
+  try {
+    if (stage.requestFullscreen) await stage.requestFullscreen();
+    else if (stage.webkitRequestFullscreen) stage.webkitRequestFullscreen();
+    setNotice(
+      androidInstallHints()
+        ? "Now leave the app — use the PiP icon on the video if it keeps playing."
+        : "Leave this app to use picture-in-picture from the video controls.",
+      { duration: 5500 }
+    );
+  } catch {
+    setNotice("Could not float the video. Use the PiP button on the video player.");
+  }
+}
+
+function startStreamingKeepalive() {
+  stopStreamingKeepalive();
+  let ticks = 0;
+  streamingKeepalive = setInterval(() => {
+    if (!streamingHold || !appInBackground()) {
+      stopStreamingKeepalive();
+      return;
+    }
+    if (++ticks > 90) {
+      stopStreamingKeepalive();
+      return;
+    }
+    resumeStreaming();
+  }, 1000);
+}
+
+function stopStreamingKeepalive() {
+  if (streamingKeepalive !== null) {
+    clearInterval(streamingKeepalive);
+    streamingKeepalive = null;
+  }
+}
+
+function onStreamingBackground() {
+  resumeStreaming();
+  startStreamingKeepalive();
+  void acquireStreamingWakeLock();
+  const track = currentTrack();
+  if (!track || !isStreamingTrack(track)) return;
+  void tryEnterDocumentPiP(track.source);
+}
+
+function onStreamingForeground() {
+  stopStreamingKeepalive();
+  restoreDocumentPiP();
+  resumeStreaming();
+}
+
+async function acquireStreamingWakeLock() {
+  if (!navigator.wakeLock || streamingWakeLock || !streamingHold) return;
+  const track = currentTrack();
+  if (!track || !isStreamingTrack(track) || !state.playing) return;
+  try {
+    streamingWakeLock = await navigator.wakeLock.request("screen");
+    streamingWakeLock.addEventListener("release", () => {
+      streamingWakeLock = null;
+    });
+  } catch { /* Screen wake lock was denied or is unavailable. */ }
+}
+
+function releaseStreamingWakeLock() {
+  if (streamingWakeLock) {
+    try { streamingWakeLock.release(); } catch { /* ignore */ }
+    streamingWakeLock = null;
   }
 }
 
@@ -2828,6 +2999,8 @@ function restart() {
 
 function stopPlayback() {
   clearStreamingWatchdog();
+  stopStreamingKeepalive();
+  releaseStreamingWakeLock();
   const player = audio();
   player.pause();
   player.removeAttribute("src");

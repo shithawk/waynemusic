@@ -734,6 +734,31 @@ input::placeholder { color: rgba(255, 255, 255, 0.72); }
   text-align: center;
 }
 
+#artists-sheet .play-all {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  color: #fff;
+  text-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.72),
+    0 2px 12px rgba(0, 0, 0, 0.55);
+}
+
+#artists-sheet .play-all::before {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  right: -10%;
+  top: 50%;
+  width: min(92%, 8.5rem);
+  height: 155%;
+  transform: translateY(-50%);
+  opacity: 0.32;
+  background: center / contain no-repeat
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%23ffffff' d='M8 5v14l11-7z'/%3E%3C/svg%3E");
+  pointer-events: none;
+}
+
 .artist-songs { margin: 4px 0 8px 12px; }
 .artist-songs .song { margin-top: 8px; }
 
@@ -1034,6 +1059,25 @@ html.iphone #player-sub { font-size: 0.88rem; }
 #stage-sc iframe { border: 0; }
 
 .mirror { font-size: 1.25rem; }
+
+.float-video {
+  width: 100%;
+  margin-top: 4px;
+}
+
+.stream-bg-hint {
+  margin-top: 6px;
+  font-size: 1rem;
+  line-height: 1.35;
+  opacity: 0.92;
+}
+
+html.iphone .stream-bg-hint { font-size: 0.9rem; }
+
+html.iphone .float-video {
+  min-height: 44px;
+  font-size: 0.95rem;
+}
 
 .transport {
   position: fixed;
