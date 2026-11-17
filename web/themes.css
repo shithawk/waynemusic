@@ -20,7 +20,7 @@ html[data-family-theme="wayne"] {
 }
 
 html[data-family-theme="jacob"] {
-  --bg: #2a3038;
+  --bg: #1e2329;
   --card: rgba(160, 168, 178, 0.14);
   --notice-surface: color-mix(in srgb, var(--bg) 82%, var(--accent) 18%);
   --accent: #ff6f1a;

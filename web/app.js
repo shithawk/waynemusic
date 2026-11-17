@@ -2,7 +2,7 @@ const DEFAULT_FAMILY_THEME = "wayne";
 const FAMILY_THEME_META = {
   jori: "#121a32",
   wayne: "#0d0d0d",
-  jacob: "#2a3038",
+  jacob: "#1e2329",
   dan: "#1a2332",
   steff: "#2d1f3d"
 };
