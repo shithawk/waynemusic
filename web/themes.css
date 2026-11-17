@@ -30,36 +30,30 @@ html[data-family-theme="jacob"] {
 }
 
 html[data-family-theme="dan"] {
-  --bg: #0f1719;
-  --card: rgba(94, 140, 120, 0.14);
+  --bg: #1a2332;
+  --card: rgba(160, 168, 178, 0.14);
   --notice-surface: color-mix(in srgb, var(--bg) 82%, var(--accent) 18%);
-  --accent: #6fa882;
-  --accent-alt: #2eb8b8;
-  --accent-orange: #c46140;
-  --text: #eef4f0;
-  --dan-plaid-base: #0f1719;
-  --dan-plaid-moss: #6fa882;
-  --dan-plaid-moss-band: #4d7a62;
-  --dan-plaid-teal: #2eb8b8;
-  --dan-plaid-teal-deep: #1a6b74;
-  --dan-plaid-terra: #c46140;
-  --dan-plaid-terra-deep: #8a4530;
+  --accent: #f0b429;
+  --accent-alt: #5b9fd4;
+  --accent-orange: #ff8800;
+  --text: #f0eef8;
+  --dan-plaid-base: #1a2332;
   --dan-plaid-weave: repeating-linear-gradient(
       90deg,
       var(--dan-plaid-base) 0 10px,
-      var(--dan-plaid-moss-band) 10px 11px,
+      #b88418 10px 11px,
       var(--dan-plaid-base) 11px 22px,
-      var(--dan-plaid-terra-deep) 22px 23px,
-      var(--dan-plaid-moss) 23px 25px,
-      var(--dan-plaid-terra) 25px 26px,
+      #d97810 22px 23px,
+      #f0b429 23px 25px,
+      #ff8800 25px 26px,
       var(--dan-plaid-base) 26px 36px
     ),
     repeating-linear-gradient(
       0deg,
       var(--dan-plaid-base) 0 10px,
-      var(--dan-plaid-teal-deep) 10px 11px,
+      #3a6f9a 10px 11px,
       var(--dan-plaid-base) 11px 22px,
-      var(--dan-plaid-teal) 22px 24px,
+      #5b9fd4 22px 24px,
       var(--dan-plaid-base) 24px 36px
     );
 }
@@ -197,23 +191,23 @@ html[data-family-theme="dan"] .now-stripe {
 .theme-chip[data-theme="dan"] {
   --dan-plaid-weave: repeating-linear-gradient(
       90deg,
-      #0f1719 0 10px,
-      #4d7a62 10px 11px,
-      #0f1719 11px 22px,
-      #8a4530 22px 23px,
-      #6fa882 23px 25px,
-      #c46140 25px 26px,
-      #0f1719 26px 36px
+      #1a2332 0 10px,
+      #b88418 10px 11px,
+      #1a2332 11px 22px,
+      #d97810 22px 23px,
+      #f0b429 23px 25px,
+      #ff8800 25px 26px,
+      #1a2332 26px 36px
     ),
     repeating-linear-gradient(
       0deg,
-      #0f1719 0 10px,
-      #1a6b74 10px 11px,
-      #0f1719 11px 22px,
-      #2eb8b8 22px 24px,
-      #0f1719 24px 36px
+      #1a2332 0 10px,
+      #3a6f9a 10px 11px,
+      #1a2332 11px 22px,
+      #5b9fd4 22px 24px,
+      #1a2332 24px 36px
     );
-  background-color: #0f1719;
+  background-color: #1a2332;
   background-image: var(--dan-plaid-weave);
   background-size: 14px 14px;
   color: #fff;
