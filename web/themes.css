@@ -41,7 +41,7 @@ html[data-family-theme="dan"] {
 
 html[data-family-theme="steff"] {
   --bg: #2d1f3d;
-  --card: rgba(160, 168, 178, 0.14);
+  --card: color-mix(in srgb, var(--bg) 86%, #000 14%);
   --notice-surface: color-mix(in srgb, var(--bg) 82%, var(--accent) 18%);
   --accent: #e8a0bf;
   --accent-alt: #6ecfad;
