@@ -108,8 +108,8 @@ html[data-family-theme="steff"] {
   --text: #f0eef8;
   --song-box-gradient: linear-gradient(
     135deg,
-    color-mix(in srgb, var(--bg) 84%, var(--accent) 16%) 0%,
-    color-mix(in srgb, var(--bg) 87%, var(--accent-alt) 13%) 100%
+    color-mix(in srgb, var(--bg) 90%, var(--accent) 10%) 0%,
+    color-mix(in srgb, var(--bg) 93%, var(--accent-alt) 7%) 100%
   );
   --song-box-ring: var(--accent);
 }
