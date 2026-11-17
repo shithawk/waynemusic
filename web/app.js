@@ -62,7 +62,7 @@ const audio = () => document.getElementById("audio");
 
 document.addEventListener("DOMContentLoaded", init);
 
-const SW_BUILD = "38";
+const SW_BUILD = "39";
 
 const MARQUEE_PAUSE_S = 3;
 const MARQUEE_HOLD_END_S = 3;
