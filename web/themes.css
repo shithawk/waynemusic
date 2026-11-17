@@ -53,8 +53,8 @@ html[data-family-theme="jacob"] {
   --text: #f0eef8;
   --song-box-gradient: linear-gradient(
     135deg,
-    color-mix(in srgb, var(--bg) 72%, var(--accent) 28%) 0%,
-    color-mix(in srgb, var(--bg) 76%, var(--accent-alt) 24%) 100%
+    color-mix(in srgb, var(--bg) 84%, var(--accent) 16%) 0%,
+    color-mix(in srgb, var(--bg) 87%, var(--accent-alt) 13%) 100%
   );
   --song-box-ring: var(--accent);
 }
