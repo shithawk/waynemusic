@@ -7,6 +7,12 @@ html[data-family-theme="jori"] {
   --accent-alt: #b43c6c;
   --accent-orange: #ff8800;
   --text: #f0eef8;
+  --song-box-gradient: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--accent) 35%, transparent) 0%,
+    color-mix(in srgb, var(--accent-alt) 28%, transparent) 100%
+  );
+  --song-box-ring: var(--accent);
 }
 
 html[data-family-theme="wayne"] {
@@ -17,6 +23,8 @@ html[data-family-theme="wayne"] {
   --accent-alt: #db141a;
   --accent-orange: #ff8800;
   --text: #fff;
+  --song-box-gradient: var(--accent);
+  --song-box-ring: #000;
 }
 
 html[data-family-theme="jacob"] {
@@ -27,6 +35,12 @@ html[data-family-theme="jacob"] {
   --accent-alt: #2a73b8;
   --accent-orange: #ff8800;
   --text: #f0eef8;
+  --song-box-gradient: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--accent) 35%, transparent) 0%,
+    color-mix(in srgb, var(--accent-alt) 28%, transparent) 100%
+  );
+  --song-box-ring: var(--accent);
 }
 
 html[data-family-theme="dan"] {
@@ -37,6 +51,12 @@ html[data-family-theme="dan"] {
   --accent-alt: #5b9fd4;
   --accent-orange: #ff8800;
   --text: #f0eef8;
+  --song-box-gradient: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--accent) 35%, transparent) 0%,
+    color-mix(in srgb, var(--accent-alt) 28%, transparent) 100%
+  );
+  --song-box-ring: var(--accent);
 }
 
 html[data-family-theme="steff"] {
@@ -47,6 +67,17 @@ html[data-family-theme="steff"] {
   --accent-alt: #6ecfad;
   --accent-orange: #ff8800;
   --text: #f0eef8;
+  --song-box-gradient: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--accent) 35%, transparent) 0%,
+    color-mix(in srgb, var(--accent-alt) 28%, transparent) 100%
+  );
+  --song-box-ring: var(--accent);
+}
+
+html[data-family-theme="wayne"] .song:not(.current),
+html[data-family-theme="wayne"] .play-favourites:not(:disabled) {
+  color: #000;
 }
 
 html[data-family-theme="dan"] .stripe,
