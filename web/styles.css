@@ -1060,24 +1060,6 @@ html.iphone #player-sub { font-size: 0.88rem; }
 
 .mirror { font-size: 1.25rem; }
 
-.float-video {
-  width: 100%;
-  margin-top: 4px;
-}
-
-.stream-bg-hint {
-  margin-top: 6px;
-  font-size: 1rem;
-  line-height: 1.35;
-  opacity: 0.92;
-}
-
-html.iphone .stream-bg-hint { font-size: 0.9rem; }
-
-html.iphone .float-video {
-  min-height: 44px;
-  font-size: 0.95rem;
-}
 
 .transport {
   position: fixed;
