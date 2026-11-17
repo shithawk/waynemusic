@@ -114,6 +114,243 @@ html[data-family-theme="steff"] {
   --song-box-ring: var(--accent);
 }
 
+html[data-family-theme="zero"] {
+  --bg: #0a0a0a;
+  --card: rgba(255, 255, 255, 0.07);
+  --notice-surface: color-mix(in srgb, var(--bg) 90%, #fff 10%);
+  --accent: #9a9a9a;
+  --accent-alt: #5c5c5c;
+  --accent-orange: #707070;
+  --text: #f5f5f5;
+  --song-box-gradient: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--bg) 90%, #fff 10%) 0%,
+    color-mix(in srgb, var(--bg) 88%, #2e2e2e 12%) 100%
+  );
+  --song-box-ring: #3a4e96;
+  --zero-outline: #3a4e96;
+  --zero-trans-lit-0: #ffffff;
+  --zero-trans-lit-1: #e4e4e4;
+  --zero-trans-lit-2: #b0b0b0;
+  --zero-trans-lit-3: #848484;
+  --zero-trans-play-0: #cdcdcd;
+  --zero-trans-play-1: #a9a9a9;
+  --zero-trans-play-2: #7d7d7d;
+  --zero-trans-play-3: #595959;
+  --zero-trans-press-0: #f2f2f2;
+  --zero-trans-press-1: #c8c8c8;
+  --zero-trans-press-2: #8e8e8e;
+  --zero-trans-press-3: #6a6a6a;
+}
+
+html[data-family-theme="zero"] .theme-picker-label-stripe {
+  background: linear-gradient(90deg, #2a2a2a 0% 48%, #7a7a7a 48% 100%);
+}
+
+html[data-family-theme="zero"] .song,
+html.iphone[data-family-theme="zero"] .song,
+html[data-family-theme="zero"] .artist-row,
+html[data-family-theme="zero"] .seek,
+html[data-family-theme="zero"] .now-art {
+  box-shadow: inset 0 0 0 1px var(--zero-outline);
+}
+
+html[data-family-theme="zero"] .song-favorite,
+html[data-family-theme="zero"] .now-favorite {
+  color: var(--zero-outline);
+  background: rgba(58, 78, 150, 0.12);
+  box-shadow: inset 0 0 0 1px var(--zero-outline);
+}
+
+html[data-family-theme="zero"] .heart-outline {
+  stroke-width: 1.5px;
+}
+
+html[data-family-theme="zero"] .song-favorite.is-on,
+html[data-family-theme="zero"] .now-favorite.is-on {
+  color: var(--zero-outline);
+}
+
+html[data-family-theme="zero"] #add-music {
+  color: #000;
+  background: linear-gradient(
+    180deg,
+    #ffffff 0%,
+    #f4f4f4 42%,
+    #e2e2e2 100%
+  );
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.95),
+    inset 0 -2px 4px rgba(0, 0, 0, 0.08),
+    0 2px 0 rgba(0, 0, 0, 0.2),
+    0 5px 9px rgba(0, 0, 0, 0.26);
+}
+
+html[data-family-theme="zero"] .transport #play-button:not(.is-playing):not(:active) {
+  color: #000;
+  filter: none;
+  transform: translateY(0);
+  background: linear-gradient(
+    180deg,
+    var(--zero-trans-lit-0) 0%,
+    var(--zero-trans-lit-1) 44%,
+    var(--zero-trans-lit-2) 74%,
+    var(--zero-trans-lit-3) 100%
+  );
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.95),
+    inset 0 -4px 8px rgba(0, 0, 0, 0.14),
+    0 5px 0 rgba(0, 0, 0, 0.46),
+    0 9px 16px rgba(0, 0, 0, 0.52);
+}
+
+html[data-family-theme="zero"] .transport #play-button:not(.is-playing):active:not(:disabled) {
+  color: #000;
+  filter: none;
+  transform: translateY(3px);
+  background: linear-gradient(
+    180deg,
+    var(--zero-trans-press-0) 0%,
+    var(--zero-trans-press-1) 44%,
+    var(--zero-trans-press-2) 74%,
+    var(--zero-trans-press-3) 100%
+  );
+  box-shadow:
+    inset 0 2px 6px rgba(0, 0, 0, 0.22),
+    inset 0 -2px 4px rgba(0, 0, 0, 0.12),
+    0 0 6px color-mix(in srgb, var(--accent-alt) 28%, transparent),
+    0 1px 0 rgba(0, 0, 0, 0.44),
+    0 3px 9px rgba(0, 0, 0, 0.46);
+}
+
+html[data-family-theme="zero"] .transport #play-button.is-playing {
+  color: #fff;
+  filter: none;
+  transform: translateY(3px);
+  background: linear-gradient(
+    180deg,
+    var(--zero-trans-play-0) 0%,
+    var(--zero-trans-play-1) 40%,
+    var(--zero-trans-play-2) 72%,
+    var(--zero-trans-play-3) 100%
+  );
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.28),
+    inset 0 -4px 8px rgba(0, 0, 0, 0.36),
+    0 1px 0 rgba(0, 0, 0, 0.5),
+    0 3px 9px rgba(0, 0, 0, 0.5);
+}
+
+html[data-family-theme="zero"] .transport #play-button.is-playing:active:not(:disabled) {
+  color: #fff;
+  filter: none;
+  transform: translateY(5px);
+  background: linear-gradient(
+    180deg,
+    var(--zero-trans-press-0) 0%,
+    var(--zero-trans-press-1) 44%,
+    var(--zero-trans-press-2) 74%,
+    var(--zero-trans-press-3) 100%
+  );
+  box-shadow:
+    inset 0 3px 8px rgba(0, 0, 0, 0.46),
+    inset 0 -2px 3px rgba(0, 0, 0, 0.26),
+    0 0 6px color-mix(in srgb, var(--accent-alt) 46%, transparent),
+    0 1px 0 rgba(0, 0, 0, 0.42),
+    0 2px 7px rgba(0, 0, 0, 0.44);
+}
+
+html[data-family-theme="zero"] .transport #shuffle.is-on:not(:active),
+html[data-family-theme="zero"] #shuffle.is-on:not(:active) {
+  color: #000;
+  background: linear-gradient(
+    180deg,
+    var(--zero-trans-lit-0) 0%,
+    var(--zero-trans-lit-1) 44%,
+    var(--zero-trans-lit-2) 74%,
+    var(--zero-trans-lit-3) 100%
+  );
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.95),
+    inset 0 -4px 8px rgba(0, 0, 0, 0.14),
+    0 5px 0 rgba(0, 0, 0, 0.46),
+    0 9px 16px rgba(0, 0, 0, 0.52);
+}
+
+html[data-family-theme="zero"] .transport #shuffle.is-on #shuffle-label {
+  color: inherit;
+}
+
+html[data-family-theme="zero"] .transport #shuffle.is-on:active:not(:disabled),
+html[data-family-theme="zero"] #shuffle.is-on:active:not(:disabled) {
+  color: #000;
+  background: linear-gradient(
+    180deg,
+    var(--zero-trans-press-0) 0%,
+    var(--zero-trans-press-1) 44%,
+    var(--zero-trans-press-2) 74%,
+    var(--zero-trans-press-3) 100%
+  );
+  box-shadow:
+    inset 0 2px 6px rgba(0, 0, 0, 0.22),
+    inset 0 -2px 4px rgba(0, 0, 0, 0.12),
+    0 0 6px color-mix(in srgb, var(--accent-alt) 28%, transparent),
+    0 1px 0 rgba(0, 0, 0, 0.44),
+    0 3px 9px rgba(0, 0, 0, 0.46);
+}
+
+html.iphone[data-family-theme="zero"] .transport #play-button:not(.is-playing):not(:active) {
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.9),
+    inset 0 -3px 6px rgba(0, 0, 0, 0.12),
+    0 4px 0 rgba(0, 0, 0, 0.44),
+    0 7px 12px rgba(0, 0, 0, 0.48);
+}
+
+html.iphone[data-family-theme="zero"] .transport #play-button:not(.is-playing):active:not(:disabled) {
+  box-shadow:
+    inset 0 2px 5px rgba(0, 0, 0, 0.2),
+    inset 0 -2px 3px rgba(0, 0, 0, 0.1),
+    0 0 5px color-mix(in srgb, var(--accent-alt) 24%, transparent),
+    0 1px 0 rgba(0, 0, 0, 0.42),
+    0 2px 7px rgba(0, 0, 0, 0.44);
+}
+
+html.iphone[data-family-theme="zero"] .transport #play-button.is-playing {
+  box-shadow:
+    inset 0 2px 6px rgba(0, 0, 0, 0.38),
+    inset 0 -2px 3px rgba(0, 0, 0, 0.26),
+    0 0 7px color-mix(in srgb, var(--accent-alt) 52%, transparent),
+    0 1px 0 rgba(0, 0, 0, 0.46),
+    0 2px 8px rgba(0, 0, 0, 0.48);
+}
+
+html.iphone[data-family-theme="zero"] .transport #play-button.is-playing:active:not(:disabled) {
+  box-shadow:
+    inset 0 3px 7px rgba(0, 0, 0, 0.42),
+    inset 0 -2px 3px rgba(0, 0, 0, 0.24),
+    0 0 5px color-mix(in srgb, var(--accent-alt) 42%, transparent),
+    0 1px 0 rgba(0, 0, 0, 0.4),
+    0 2px 6px rgba(0, 0, 0, 0.42);
+}
+
+html.iphone[data-family-theme="zero"] .transport #shuffle.is-on:not(:active) {
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.9),
+    inset 0 -3px 6px rgba(0, 0, 0, 0.12),
+    0 4px 0 rgba(0, 0, 0, 0.44),
+    0 7px 12px rgba(0, 0, 0, 0.48);
+}
+
+html.iphone[data-family-theme="zero"] .transport #shuffle.is-on:active:not(:disabled) {
+  box-shadow:
+    inset 0 2px 5px rgba(0, 0, 0, 0.2),
+    inset 0 -2px 3px rgba(0, 0, 0, 0.1),
+    0 0 5px color-mix(in srgb, var(--accent-alt) 24%, transparent),
+    0 1px 0 rgba(0, 0, 0, 0.42),
+    0 2px 7px rgba(0, 0, 0, 0.44);
+}
+
 html[data-family-theme="dan"] .stripe,
 html[data-family-theme="dan"] .now-stripe {
   background: linear-gradient(
@@ -198,22 +435,6 @@ html.iphone[data-family-theme="dan"] .transport #shuffle.is-on {
     0 0 0 1px #000,
     0 1px 0 #000,
     0 0 14px color-mix(in srgb, var(--accent) 50%, transparent);
-}
-
-.theme-picker-label-text::before {
-  content: "◆ ";
-  font-size: 0.55em;
-  letter-spacing: 0;
-  color: var(--accent-orange);
-  vertical-align: middle;
-}
-
-.theme-picker-label-text::after {
-  content: " ◆";
-  font-size: 0.55em;
-  letter-spacing: 0;
-  color: var(--accent-alt);
-  vertical-align: middle;
 }
 
 .theme-picker {

@@ -4,7 +4,8 @@ const FAMILY_THEME_META = {
   wayne: "#0d0d0d",
   jacob: "#1e2329",
   dan: "#1a2332",
-  steff: "#2d1f3d"
+  steff: "#2d1f3d",
+  zero: "#0a0a0a"
 };
 const FAMILY_THEME_STORAGE = "family-theme";
 
@@ -3157,9 +3158,11 @@ function initFamilyTheme() {
     btn.addEventListener("click", () => {
       const next = btn.dataset.theme;
       if (!FAMILY_THEME_META[next]) return;
-      applyFamilyTheme(next);
+      const current = document.documentElement.getAttribute("data-family-theme");
+      const target = current === next ? "zero" : next;
+      applyFamilyTheme(target);
       try {
-        localStorage.setItem(FAMILY_THEME_STORAGE, next);
+        localStorage.setItem(FAMILY_THEME_STORAGE, target);
       } catch (_) {}
     });
   });
