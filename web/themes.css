@@ -37,6 +37,37 @@ html[data-family-theme="dan"] {
   --accent-alt: #2eb8b8;
   --accent-orange: #c46140;
   --text: #eef4f0;
+  --dan-plaid-base: #0f1719;
+  --dan-plaid-moss: #6fa882;
+  --dan-plaid-moss-band: #4d7a62;
+  --dan-plaid-teal: #2eb8b8;
+  --dan-plaid-teal-deep: #1a6b74;
+  --dan-plaid-terra: #c46140;
+  --dan-plaid-terra-deep: #8a4530;
+  --dan-plaid-weave: repeating-linear-gradient(
+      90deg,
+      var(--dan-plaid-base) 0 10px,
+      var(--dan-plaid-moss-band) 10px 11px,
+      var(--dan-plaid-base) 11px 22px,
+      var(--dan-plaid-terra-deep) 22px 23px,
+      var(--dan-plaid-moss) 23px 25px,
+      var(--dan-plaid-terra) 25px 26px,
+      var(--dan-plaid-base) 26px 36px
+    ),
+    repeating-linear-gradient(
+      0deg,
+      var(--dan-plaid-base) 0 10px,
+      var(--dan-plaid-teal-deep) 10px 11px,
+      var(--dan-plaid-base) 11px 22px,
+      var(--dan-plaid-teal) 22px 24px,
+      var(--dan-plaid-base) 24px 36px
+    );
+}
+
+html[data-family-theme="dan"] body {
+  background-color: var(--bg);
+  background-image: var(--dan-plaid-weave);
+  background-size: 36px 36px;
 }
 
 html[data-family-theme="steff"] {
@@ -51,16 +82,9 @@ html[data-family-theme="steff"] {
 
 html[data-family-theme="dan"] .stripe,
 html[data-family-theme="dan"] .now-stripe {
-  background: linear-gradient(
-    90deg,
-    var(--accent) 0% 17.3%,
-    #7db892 17.3% 28%,
-    var(--accent-orange) 28% 33.35%,
-    #a85438 33.35% 36.65%,
-    var(--accent-alt) 36.65% 42%,
-    #1a6b74 42% 77.84%,
-    #35d4d0 77.84% 100%
-  );
+  background-color: var(--dan-plaid-base);
+  background-image: var(--dan-plaid-weave);
+  background-size: 18px 18px;
 }
 
 .theme-picker-wrap {
@@ -171,8 +195,29 @@ html[data-family-theme="dan"] .now-stripe {
 }
 
 .theme-chip[data-theme="dan"] {
-  background: linear-gradient(135deg, #6fa882 0%, #2eb8b8 55%, #c46140 100%);
+  --dan-plaid-weave: repeating-linear-gradient(
+      90deg,
+      #0f1719 0 10px,
+      #4d7a62 10px 11px,
+      #0f1719 11px 22px,
+      #8a4530 22px 23px,
+      #6fa882 23px 25px,
+      #c46140 25px 26px,
+      #0f1719 26px 36px
+    ),
+    repeating-linear-gradient(
+      0deg,
+      #0f1719 0 10px,
+      #1a6b74 10px 11px,
+      #0f1719 11px 22px,
+      #2eb8b8 22px 24px,
+      #0f1719 24px 36px
+    );
+  background-color: #0f1719;
+  background-image: var(--dan-plaid-weave);
+  background-size: 14px 14px;
   color: #fff;
+  text-shadow: 0 0 0 1px #000, 0 1px 2px #000;
 }
 
 .theme-chip[data-theme="steff"] {
@@ -210,14 +255,7 @@ html.iphone .theme-chip {
 }
 
 html[data-family-theme="dan"] .theme-picker-label-stripe {
-  background: linear-gradient(
-    90deg,
-    var(--accent) 0% 17.3%,
-    #7db892 17.3% 28%,
-    var(--accent-orange) 28% 33.35%,
-    #a85438 33.35% 36.65%,
-    var(--accent-alt) 36.65% 42%,
-    #1a6b74 42% 77.84%,
-    #35d4d0 77.84% 100%
-  );
+  background-color: var(--dan-plaid-base);
+  background-image: var(--dan-plaid-weave);
+  background-size: 12px 12px;
 }
