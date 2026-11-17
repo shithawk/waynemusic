@@ -24,7 +24,7 @@ html[data-family-theme="jacob"] {
   --card: rgba(160, 168, 178, 0.14);
   --notice-surface: color-mix(in srgb, var(--bg) 82%, var(--accent) 18%);
   --accent: #ff6f1a;
-  --accent-alt: #3d8fd4;
+  --accent-alt: #2a73b8;
   --accent-orange: #ff8800;
   --text: #f0eef8;
 }
