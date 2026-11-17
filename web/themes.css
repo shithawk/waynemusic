@@ -30,13 +30,13 @@ html[data-family-theme="jacob"] {
 }
 
 html[data-family-theme="dan"] {
-  --bg: #1a2332;
-  --card: rgba(160, 168, 178, 0.14);
+  --bg: #0f1719;
+  --card: rgba(94, 140, 120, 0.14);
   --notice-surface: color-mix(in srgb, var(--bg) 82%, var(--accent) 18%);
-  --accent: #f0b429;
-  --accent-alt: #5b9fd4;
-  --accent-orange: #ff8800;
-  --text: #f0eef8;
+  --accent: #6fa882;
+  --accent-alt: #2eb8b8;
+  --accent-orange: #c46140;
+  --text: #eef4f0;
 }
 
 html[data-family-theme="steff"] {
@@ -54,12 +54,12 @@ html[data-family-theme="dan"] .now-stripe {
   background: linear-gradient(
     90deg,
     var(--accent) 0% 17.3%,
-    #e8a820 17.3% 28%,
+    #7db892 17.3% 28%,
     var(--accent-orange) 28% 33.35%,
-    #d97810 33.35% 36.65%,
+    #a85438 33.35% 36.65%,
     var(--accent-alt) 36.65% 42%,
-    var(--accent-alt) 42% 77.84%,
-    #4a8fc4 77.84% 100%
+    #1a6b74 42% 77.84%,
+    #35d4d0 77.84% 100%
   );
 }
 
@@ -171,7 +171,7 @@ html[data-family-theme="dan"] .now-stripe {
 }
 
 .theme-chip[data-theme="dan"] {
-  background: linear-gradient(135deg, #f0b429 0%, #5b9fd4 100%);
+  background: linear-gradient(135deg, #6fa882 0%, #2eb8b8 55%, #c46140 100%);
   color: #fff;
 }
 
@@ -213,11 +213,11 @@ html[data-family-theme="dan"] .theme-picker-label-stripe {
   background: linear-gradient(
     90deg,
     var(--accent) 0% 17.3%,
-    #e8a820 17.3% 28%,
+    #7db892 17.3% 28%,
     var(--accent-orange) 28% 33.35%,
-    #d97810 33.35% 36.65%,
+    #a85438 33.35% 36.65%,
     var(--accent-alt) 36.65% 42%,
-    var(--accent-alt) 42% 77.84%,
-    #4a8fc4 77.84% 100%
+    #1a6b74 42% 77.84%,
+    #35d4d0 77.84% 100%
   );
 }
