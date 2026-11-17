@@ -39,7 +39,7 @@ html[data-family-theme="wayne"] .song:not(.current) {
   box-shadow: inset 0 0 0 3px rgba(255, 209, 0, 0.35);
 }
 
-html.iphone html[data-family-theme="wayne"] .play-favourites:not(:disabled) {
+html.iphone[data-family-theme="wayne"] .play-favourites:not(:disabled) {
   box-shadow: inset 0 0 0 2px #000;
 }
 
