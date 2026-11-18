@@ -5,6 +5,10 @@ html {
   --nav-glass-text: #f5f9ff;
   --nav-glass-current-text: #fff;
   --nav-glass-current-shadow: 0 1px 2px rgba(0, 8, 24, 0.45);
+  --shuffle-on-surface: var(--accent);
+  --shuffle-on-lit: color-mix(in srgb, var(--accent) 74%, #fff);
+  --play-surface: var(--accent);
+  --play-lit: color-mix(in srgb, var(--accent) 74%, #fff);
 }
 html[data-family-theme="jori"] {
   --bg: #121a32;
@@ -43,11 +47,11 @@ html[data-family-theme="wayne"] {
   --bg: #0d0d0d;
   --card: rgba(255, 255, 255, 0.08);
   --notice-surface: color-mix(in srgb, var(--bg) 82%, var(--accent) 18%);
-  --accent: #ffd100;
+  --accent: #d4b422;
   --accent-alt: #db141a;
   --accent-orange: #ff8800;
   --text: #fff;
-  --nav-glass: #ffd100;
+  --nav-glass: #d4b422;
   --nav-glass-text: #fff;
   --nav-glass-current-text: #fff;
   --nav-glass-current-shadow: 0 1px 2px rgba(0, 0, 0, 0.55);
@@ -137,6 +141,12 @@ html[data-family-theme="dan"] {
   --notice-surface: color-mix(in srgb, var(--bg) 82%, var(--accent) 18%);
   --accent: #f0b429;
   --accent-alt: #4f9599;
+  --dan-shuffle: #7e2a16;
+  --dan-shuffle-lit: color-mix(in srgb, var(--dan-shuffle) 72%, var(--accent-alt) 28%);
+  --shuffle-on-surface: var(--dan-shuffle);
+  --shuffle-on-lit: var(--dan-shuffle-lit);
+  --play-surface: var(--dan-shuffle);
+  --play-lit: var(--dan-shuffle-lit);
   --accent-orange: #ff8800;
   --text: #f0eef8;
   --nav-glass: #4f9599;
@@ -163,7 +173,7 @@ html[data-family-theme="steff"] {
   --card: color-mix(in srgb, var(--bg) 86%, #000 14%);
   --notice-surface: color-mix(in srgb, var(--bg) 82%, var(--accent) 18%);
   --accent: #e8a0bf;
-  --accent-alt: #6ecfad;
+  --accent-alt: #52ad94;
   --accent-orange: #ff8800;
   --text: #f0eef8;
   --nav-glass: #e8a0bf;
@@ -192,33 +202,113 @@ html[data-family-theme="zero"] {
   --accent-alt: #5c5c5c;
   --accent-orange: #707070;
   --text: #f5f5f5;
-  --nav-glass: #5d6da8;
+  --nav-glass: #5a6791;
   --song-box-gradient: linear-gradient(
     135deg,
     color-mix(in srgb, var(--bg) 90%, #fff 10%) 0%,
     color-mix(in srgb, var(--bg) 88%, #2e2e2e 12%) 100%
   );
-  --song-box-ring: #5d6da8;
-  --zero-outline: #5d6da8;
+  --song-box-ring: #5a6791;
+  --zero-outline: #5a6791;
   --zero-trans-fill: #7a7a7a;
   --zero-trans-lit: #ececec;
   --zero-trans-play: #525252;
-  --zero-trans-gap: 64px;
-  --zero-trans-pad: 18px;
-  --zero-btn-side: 72px;
-  --zero-btn-play: 92px;
-  --zero-side-lift: 10px;
+  --zero-trans-blue: color-mix(in srgb, var(--zero-outline) 36%, #252530 64%);
+  --zero-trans-blue-lit: color-mix(in srgb, var(--zero-outline) 20%, #ececec 80%);
+  --zero-trans-blue-play: color-mix(in srgb, var(--zero-outline) 52%, #1e1e28 48%);
+  --zero-trans-blue-glow:
+    0 0 10px color-mix(in srgb, var(--zero-outline) 42%, transparent),
+    0 0 22px color-mix(in srgb, var(--zero-outline) 22%, transparent);
+  --zero-trans-blue-glow-strong:
+    0 0 12px color-mix(in srgb, var(--zero-outline) 55%, transparent),
+    0 0 28px color-mix(in srgb, var(--zero-outline) 32%, transparent),
+    0 0 44px color-mix(in srgb, var(--zero-outline) 16%, transparent);
+  --zero-trans-gap: 52px;
+  --zero-trans-pad: 14px;
+  --zero-btn-side: 62px;
+  --zero-btn-play: 90px;
+  --zero-side-lift: 8px;
   --transport-bar: calc(104px + env(safe-area-inset-bottom));
   --nav-cream: #fff;
+  --nav-glass-current-text: #f2f5fa;
+  --nav-glass-current-shadow: 0 1px 2px rgba(0, 0, 0, 0.45), 0 0 10px color-mix(in srgb, var(--nav-glass) 28%, transparent);
+}
+
+html[data-family-theme="zero"] .top-nav {
+  background: #000000;
+}
+
+html[data-family-theme="zero"] .top-nav-row > .home:not(.search-clear) {
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.62),
+    inset 0 -1px 0 color-mix(in srgb, var(--nav-glass) 32%, transparent),
+    inset 0 0 0 1px color-mix(in srgb, var(--nav-glass) 55%, #fff 25%),
+    0 0 28px color-mix(in srgb, var(--nav-glass) 62%, transparent),
+    0 0 52px color-mix(in srgb, var(--nav-glass) 44%, transparent),
+    0 0 88px color-mix(in srgb, var(--nav-glass) 28%, transparent),
+    0 0 128px color-mix(in srgb, var(--nav-glass) 14%, transparent),
+    0 6px 16px rgba(0, 0, 0, 0.42);
+}
+
+html[data-family-theme="zero"] .top-nav-row > .home.is-current:not(.search-clear) {
+  color: var(--nav-glass-current-text);
+  background:
+    linear-gradient(
+      180deg,
+      rgba(255, 255, 255, 0.41) 0%,
+      color-mix(in srgb, var(--nav-glass) 22%, transparent) 17%,
+      rgba(255, 255, 255, 0.03) 43%
+    ),
+    linear-gradient(
+      165deg,
+      color-mix(in srgb, var(--nav-glass) 63%, color-mix(in srgb, #fff 35%, #0c0c14 65%) 37%) 0%,
+      color-mix(in srgb, var(--nav-glass) 47%, color-mix(in srgb, #c8d0ea 50%, #12121c 50%) 53%) 39%,
+      color-mix(in srgb, var(--nav-glass) 21%, color-mix(in srgb, #252530 45%, var(--bg) 55%) 79%) 100%
+    );
+  text-shadow: var(--nav-glass-current-shadow);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.62),
+    inset 0 -1px 0 color-mix(in srgb, var(--nav-glass) 33%, transparent),
+    inset 0 0 0 1px color-mix(in srgb, var(--nav-glass) 58%, color-mix(in srgb, #fff 42%, #1a1a22 58%) 42%),
+    0 0 34px color-mix(in srgb, var(--nav-glass) 82%, #fff 4%),
+    0 0 61px color-mix(in srgb, var(--nav-glass) 59%, transparent),
+    0 0 100px color-mix(in srgb, var(--nav-glass) 38%, transparent),
+    0 0 144px color-mix(in srgb, var(--nav-glass) 20%, transparent),
+    0 8px 18px rgba(0, 0, 0, 0.52);
+}
+
+html[data-family-theme="zero"].iphone .top-nav-row > .home.is-current:not(.search-clear) {
+  background:
+    linear-gradient(
+      180deg,
+      rgba(255, 255, 255, 0.38) 0%,
+      color-mix(in srgb, var(--nav-glass) 19%, transparent) 15%,
+      rgba(255, 255, 255, 0.02) 41%
+    ),
+    linear-gradient(
+      165deg,
+      color-mix(in srgb, var(--nav-glass) 60%, color-mix(in srgb, #fff 38%, #0c0c14 62%) 40%) 0%,
+      color-mix(in srgb, var(--nav-glass) 43%, color-mix(in srgb, #c8d0ea 50%, #12121c 50%) 57%) 41%,
+      color-mix(in srgb, var(--nav-glass) 20%, color-mix(in srgb, #252530 42%, var(--bg) 58%) 80%) 100%
+    );
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.57),
+    inset 0 -1px 0 color-mix(in srgb, var(--nav-glass) 28%, transparent),
+    inset 0 0 0 1px color-mix(in srgb, var(--nav-glass) 54%, color-mix(in srgb, #fff 40%, #1a1a22 60%) 46%),
+    0 0 15px color-mix(in srgb, var(--nav-glass) 65%, #fff 4%),
+    0 0 27px color-mix(in srgb, var(--nav-glass) 43%, transparent),
+    0 0 43px color-mix(in srgb, var(--nav-glass) 24%, transparent),
+    0 4px 12px rgba(0, 0, 0, 0.49);
 }
 
 html[data-family-theme="zero"] body.section-artists,
 html[data-family-theme="zero"] body.section-songs,
+html[data-family-theme="zero"] body.section-videos,
 html[data-family-theme="zero"] body.songs-page {
   --section-page-bg: linear-gradient(
     168deg,
-    color-mix(in srgb, var(--bg) 50%, var(--nav-glass) 50%) 0%,
-    color-mix(in srgb, var(--bg) 76%, var(--nav-glass) 24%) 48%,
+    color-mix(in srgb, var(--bg) 69%, var(--nav-glass) 31%) 0%,
+    color-mix(in srgb, var(--bg) 86%, var(--nav-glass) 14%) 48%,
     var(--bg) 100%
   );
 }
@@ -262,7 +352,7 @@ html[data-family-theme="zero"] .song.current .song-sub {
 html[data-family-theme="zero"] .song-favorite,
 html[data-family-theme="zero"] .now-favorite {
   color: var(--zero-outline);
-  background: rgba(74, 88, 132, 0.12);
+  background: rgba(77, 88, 121, 0.12);
   box-shadow: inset 0 0 0 1px var(--zero-outline);
 }
 
@@ -310,31 +400,36 @@ html[data-family-theme="zero"] .now-stack {
 }
 
 html[data-family-theme="zero"] .transport {
-  display: block;
+  display: flex;
+  flex-direction: row;
+  align-items: flex-end;
+  justify-content: flex-start;
+  gap: var(--zero-trans-gap);
   width: 100%;
+  box-sizing: border-box;
+  overflow: visible;
   min-height: calc(var(--zero-btn-play) + var(--zero-trans-pad) + 2px + env(safe-area-inset-bottom));
-  padding: 2px 0 calc(var(--zero-trans-pad) + env(safe-area-inset-bottom));
+  padding:
+    2px
+    max(14px, calc(env(safe-area-inset-right, 0px) + 12px))
+    calc(var(--zero-trans-pad) + env(safe-area-inset-bottom))
+    max(
+      6px,
+      env(safe-area-inset-left, 0px),
+      calc(50% - var(--zero-btn-side) - var(--zero-trans-gap) - (var(--zero-btn-play) / 2))
+    );
   background: var(--bg);
   box-shadow: none;
 }
 
-html[data-family-theme="zero"] .transport #shuffle {
-  display: none;
-}
-
+html[data-family-theme="zero"] .transport #shuffle,
 html[data-family-theme="zero"] .transport #previous,
 html[data-family-theme="zero"] .transport #next {
-  position: absolute;
-  bottom: calc(var(--zero-trans-pad) + env(safe-area-inset-bottom) + var(--zero-side-lift));
-}
-
-html[data-family-theme="zero"] .transport #previous {
-  right: calc(50% + (var(--zero-btn-play) / 2) + var(--zero-trans-gap));
+  position: relative;
+  bottom: auto;
   left: auto;
-}
-
-html[data-family-theme="zero"] .transport #next {
-  left: calc(50% + (var(--zero-btn-play) / 2) + var(--zero-trans-gap));
+  right: auto;
+  margin-bottom: var(--zero-side-lift);
 }
 
 html[data-family-theme="zero"] .transport .big {
@@ -351,14 +446,14 @@ html[data-family-theme="zero"] .transport .big {
   aspect-ratio: 1;
   padding: 0;
   border-radius: 50%;
-  border: 2px solid var(--zero-outline);
-  background: var(--zero-trans-fill);
-  color: #fff;
-  box-shadow: none;
+  border: 2px solid color-mix(in srgb, var(--zero-outline) 82%, #fff 18%);
+  background: var(--zero-trans-blue);
+  color: #f2f4fa;
+  box-shadow: var(--zero-trans-blue-glow);
   filter: none;
   font-size: 0;
   line-height: 0;
-  transition: transform 0.1s ease;
+  transition: transform 0.1s ease, box-shadow 0.15s ease;
 }
 
 html[data-family-theme="zero"] .transport .big > span {
@@ -366,85 +461,68 @@ html[data-family-theme="zero"] .transport .big > span {
 }
 
 html[data-family-theme="zero"] .transport .big svg {
-  width: 40px;
-  height: 40px;
+  width: 34px;
+  height: 34px;
   filter: none;
 }
 
 html[data-family-theme="zero"] .transport .big.plain,
 html[data-family-theme="zero"] .transport .big.prominent {
-  background: var(--zero-trans-fill);
-  color: #fff;
-  border: 2px solid var(--zero-outline);
-  box-shadow: none;
+  background: var(--zero-trans-blue);
+  color: #f2f4fa;
+  border: 2px solid color-mix(in srgb, var(--zero-outline) 82%, #fff 18%);
+  box-shadow: var(--zero-trans-blue-glow);
 }
 
 html[data-family-theme="zero"] .transport #play-button {
-  position: absolute;
-  left: 50%;
-  bottom: calc(var(--zero-trans-pad) + env(safe-area-inset-bottom));
+  position: relative;
+  left: auto;
+  bottom: auto;
+  flex: 0 0 auto;
   width: var(--zero-btn-play);
   height: var(--zero-btn-play);
   min-width: var(--zero-btn-play);
   max-width: var(--zero-btn-play);
   max-height: var(--zero-btn-play);
+  margin-bottom: 0;
 }
 
 html[data-family-theme="zero"] .transport #play-button svg {
-  width: 48px;
-  height: 48px;
+  width: 46px;
+  height: 46px;
 }
 
 html[data-family-theme="zero"] .transport #play-button:not(.is-playing) {
-  background: var(--zero-trans-lit);
-  color: #000;
-  transform: translateX(-50%);
+  background: var(--zero-trans-blue-lit);
+  color: color-mix(in srgb, var(--zero-outline) 62%, #101018 38%);
+  box-shadow: var(--zero-trans-blue-glow-strong);
+  transform: none;
 }
 
 html[data-family-theme="zero"] .transport #play-button.is-playing {
-  background: var(--zero-trans-play);
+  background: var(--zero-trans-blue-play);
   color: #fff;
-  transform: translateX(-50%) translateY(3px);
-}
-
-html[data-family-theme="zero"] .transport #play-button.is-shuffle-on:not(.is-playing) {
-  background: var(--zero-trans-lit);
-  color: #000;
-  transform: translateX(-50%);
-}
-
-html[data-family-theme="zero"] .transport #play-button.is-playing.is-shuffle-on {
-  background: var(--zero-trans-lit);
-  color: #000;
-  box-shadow:
-    0 0 8px rgba(255, 255, 255, 0.72),
-    0 0 18px rgba(255, 255, 255, 0.42),
-    0 0 32px color-mix(in srgb, var(--zero-outline) 55%, transparent),
-    0 0 48px color-mix(in srgb, var(--zero-outline) 28%, transparent);
-}
-
-html[data-family-theme="zero"] .transport #play-button.is-shuffle-on:not(.is-playing) .icon-play {
-  display: none;
-}
-
-html[data-family-theme="zero"] .transport #play-button.is-shuffle-on:not(.is-playing) .icon-shuffle {
-  display: block;
+  box-shadow: var(--zero-trans-blue-glow-strong);
+  transform: translateY(3px);
 }
 
 html[data-family-theme="zero"] .transport #play-button .icon-shuffle {
-  width: 40px;
-  height: 40px;
+  display: none !important;
+}
+
+html[data-family-theme="zero"] .transport #play-button.is-playing.is-shuffle-on .icon-pause {
+  display: block;
 }
 
 html[data-family-theme="zero"] .transport #shuffle.is-on:not(:active),
 html[data-family-theme="zero"] #shuffle.is-on:not(:active) {
-  background: var(--zero-trans-lit);
-  color: #000;
+  background: var(--zero-trans-blue-lit);
+  color: color-mix(in srgb, var(--zero-outline) 62%, #101018 38%);
   box-shadow:
-    0 0 8px rgba(255, 255, 255, 0.72),
-    0 0 18px rgba(255, 255, 255, 0.42),
-    0 0 32px color-mix(in srgb, var(--zero-outline) 55%, transparent),
-    0 0 48px color-mix(in srgb, var(--zero-outline) 28%, transparent);
+    0 0 10px rgba(255, 255, 255, 0.55),
+    0 0 20px color-mix(in srgb, var(--zero-outline) 48%, transparent),
+    0 0 36px color-mix(in srgb, var(--zero-outline) 30%, transparent),
+    0 0 52px color-mix(in srgb, var(--zero-outline) 14%, transparent);
 }
 
 html[data-family-theme="zero"] .transport .big:active:not(:disabled),
@@ -462,7 +540,7 @@ html[data-family-theme="zero"] .transport #shuffle:active:not(:disabled) {
 }
 
 html[data-family-theme="zero"] .transport #play-button:active:not(:disabled) {
-  transform: translateX(-50%) translateY(3px);
+  transform: translateY(3px);
 }
 
 html[data-family-theme="zero"] .transport #shuffle.is-on:active:not(:disabled),
@@ -474,16 +552,16 @@ html[data-family-theme="zero"] #shuffle.is-on:active:not(:disabled) {
 }
 
 html[data-family-theme="zero"] .transport #play-button.is-playing:active:not(:disabled) {
-  transform: translateX(-50%) translateY(5px);
+  transform: translateY(5px);
 }
 
 html.iphone[data-family-theme="zero"] {
   --transport-bar: calc(82px + env(safe-area-inset-bottom));
-  --zero-trans-gap: 32px;
-  --zero-trans-pad: 12px;
-  --zero-btn-side: 48px;
+  --zero-trans-gap: 14px;
+  --zero-trans-pad: 10px;
+  --zero-btn-side: 42px;
   --zero-btn-play: 62px;
-  --zero-side-lift: 7px;
+  --zero-side-lift: 6px;
 }
 
 html.iphone[data-family-theme="zero"] .now-stack {
@@ -491,8 +569,12 @@ html.iphone[data-family-theme="zero"] .now-stack {
 }
 
 html.iphone[data-family-theme="zero"] .transport {
-  padding-left: 0;
-  padding-right: 0;
+  padding-left: max(
+    4px,
+    env(safe-area-inset-left, 0px),
+    calc(50% - var(--zero-btn-side) - var(--zero-trans-gap) - (var(--zero-btn-play) / 2))
+  );
+  padding-right: max(20px, calc(env(safe-area-inset-right, 0px) + 14px));
 }
 
 html.iphone[data-family-theme="zero"] .transport .big {
@@ -508,45 +590,44 @@ html.iphone[data-family-theme="zero"] .transport .big {
 }
 
 html.iphone[data-family-theme="zero"] .transport .big svg {
-  width: 26px;
-  height: 26px;
+  width: 22px;
+  height: 22px;
 }
 
 html.iphone[data-family-theme="zero"] .transport #play-button .icon-play,
 html.iphone[data-family-theme="zero"] .transport #play-button .icon-pause {
-  width: 34px;
-  height: 34px;
-}
-
-html.iphone[data-family-theme="zero"] .transport #play-button .icon-shuffle {
-  width: 28px;
-  height: 28px;
+  width: 32px;
+  height: 32px;
 }
 
 @media (max-width: 540px) and (pointer: coarse) {
   html[data-family-theme="zero"]:not(.ipad) {
     --transport-bar: calc(82px + env(safe-area-inset-bottom));
-    --zero-trans-gap: 32px;
-    --zero-trans-pad: 12px;
-    --zero-btn-side: 48px;
+    --zero-trans-gap: 14px;
+    --zero-trans-pad: 10px;
+    --zero-btn-side: 42px;
     --zero-btn-play: 62px;
-    --zero-side-lift: 7px;
+    --zero-side-lift: 6px;
   }
 
   html[data-family-theme="zero"]:not(.ipad) .transport .big svg {
-    width: 26px;
-    height: 26px;
+    width: 22px;
+    height: 22px;
   }
 
   html[data-family-theme="zero"]:not(.ipad) .transport #play-button .icon-play,
   html[data-family-theme="zero"]:not(.ipad) .transport #play-button .icon-pause {
-    width: 34px;
-    height: 34px;
+    width: 32px;
+    height: 32px;
   }
 
-  html[data-family-theme="zero"]:not(.ipad) .transport #play-button .icon-shuffle {
-    width: 28px;
-    height: 28px;
+  html[data-family-theme="zero"]:not(.ipad) .transport {
+    padding-left: max(
+      4px,
+      env(safe-area-inset-left, 0px),
+      calc(50% - var(--zero-btn-side) - var(--zero-trans-gap) - (var(--zero-btn-play) / 2))
+    );
+    padding-right: max(20px, calc(env(safe-area-inset-right, 0px) + 14px));
   }
 }
 
@@ -561,11 +642,11 @@ html.iphone[data-family-theme="zero"] .transport #shuffle:active:not(:disabled) 
 }
 
 html.iphone[data-family-theme="zero"] .transport #play-button:active:not(:disabled) {
-  transform: translateX(-50%) translateY(2px);
+  transform: translateY(2px);
 }
 
 html.iphone[data-family-theme="zero"] .transport #play-button.is-playing:active:not(:disabled) {
-  transform: translateX(-50%) translateY(4px);
+  transform: translateY(4px);
 }
 
 html[data-family-theme="zero"] .search-box {
@@ -608,38 +689,47 @@ html[data-family-theme="dan"] .now-stripe {
   );
 }
 
-html[data-family-theme="dan"] .transport #shuffle.is-on {
-  background: linear-gradient(
-    180deg,
-    color-mix(in srgb, #7E2A16 74%, #fff) 0%,
-    #7E2A16 44%,
-    color-mix(in srgb, #7E2A16 56%, #000) 72%,
-    color-mix(in srgb, #7E2A16 30%, #000) 100%
-  );
+html[data-family-theme="dan"] .transport #shuffle.plain,
+html[data-family-theme="dan"] .transport #shuffle:not(.is-on) {
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.32),
-    inset 0 -5px 8px rgba(0, 0, 0, 0.32),
-    0 0 12px color-mix(in srgb, var(--accent) 88%, transparent),
-    0 0 24px color-mix(in srgb, var(--accent) 62%, transparent),
-    0 0 40px color-mix(in srgb, var(--accent) 38%, transparent),
-    0 5px 0 rgba(0, 0, 0, 0.46),
-    0 8px 16px rgba(0, 0, 0, 0.52);
+    inset 0 1px 0 rgba(255, 255, 255, 0.3),
+    inset 0 -5px 8px rgba(0, 0, 0, 0.38),
+    0 5px 0 rgba(0, 0, 0, 0.48),
+    0 9px 16px rgba(0, 0, 0, 0.55);
 }
 
-html.iphone[data-family-theme="dan"] .transport #shuffle.is-on {
+html[data-family-theme="dan"] .transport #shuffle.plain:active:not(:disabled),
+html[data-family-theme="dan"] .transport #shuffle:not(.is-on):active:not(:disabled) {
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.26),
-    inset 0 -4px 6px rgba(0, 0, 0, 0.28),
-    0 0 10px color-mix(in srgb, var(--accent) 82%, transparent),
-    0 0 20px color-mix(in srgb, var(--accent) 55%, transparent),
-    0 0 32px color-mix(in srgb, var(--accent) 32%, transparent),
-    0 4px 0 rgba(0, 0, 0, 0.4),
-    0 6px 12px rgba(0, 0, 0, 0.46);
+    inset 0 2px 6px rgba(0, 0, 0, 0.35),
+    0 1px 0 rgba(0, 0, 0, 0.35),
+    0 3px 8px rgba(0, 0, 0, 0.4);
+}
+
+html.iphone[data-family-theme="dan"] .transport #shuffle.plain,
+html.iphone[data-family-theme="dan"] .transport #shuffle:not(.is-on) {
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.22),
+    inset 0 -4px 6px rgba(0, 0, 0, 0.34),
+    0 4px 0 rgba(0, 0, 0, 0.42),
+    0 6px 12px rgba(0, 0, 0, 0.48);
+}
+
+html.iphone[data-family-theme="dan"] .transport #shuffle.plain:active:not(:disabled),
+html.iphone[data-family-theme="dan"] .transport #shuffle:not(.is-on):active:not(:disabled) {
+  box-shadow:
+    inset 0 2px 5px rgba(0, 0, 0, 0.34),
+    0 1px 0 rgba(0, 0, 0, 0.32),
+    0 2px 6px rgba(0, 0, 0, 0.38);
 }
 
 .theme-picker-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
   width: 100%;
-  margin-top: 6px;
+  margin-top: 28px;
+  margin-bottom: 0;
 }
 
 .theme-picker-label {
@@ -653,6 +743,8 @@ html.iphone[data-family-theme="dan"] .transport #shuffle.is-on {
 
 .theme-picker-label-stripe {
   display: block;
+  flex: 0 0 auto;
+  width: 100%;
   height: 5px;
   border-radius: 3px;
   border: 1px solid #000;
@@ -666,6 +758,21 @@ html.iphone[data-family-theme="dan"] .transport #shuffle.is-on {
     var(--accent-alt) 42% 77.84%,
     color-mix(in srgb, var(--accent-alt) 75%, #fff) 77.84% 100%
   );
+}
+
+body.section-home #finder > .theme-picker-bottom-stripe {
+  position: relative;
+  z-index: 2;
+  flex: 0 0 auto;
+  margin: 8px 0 28px;
+}
+
+body.section-home .actions {
+  padding-bottom: 0;
+}
+
+body.section-home #finder {
+  padding-top: 0;
 }
 
 .theme-picker-label-text {
@@ -721,7 +828,7 @@ html.iphone[data-family-theme="dan"] .transport #shuffle.is-on {
 }
 
 .theme-chip[data-theme="wayne"] {
-  background: #ffd100;
+  background: #d4b422;
   color: #db141a;
 }
 
@@ -754,11 +861,12 @@ html[data-family-theme="zero"] .theme-chip.is-active {
 }
 
 html.iphone .theme-picker-wrap {
-  margin-top: 4px;
+  margin-top: 22px;
+  margin-bottom: 0;
 }
 
 html.iphone .home-songs-sign {
-  padding: 4px 12px 3px;
+  padding: 0 12px;
 }
 
 html.iphone .home-songs-sign-text {
@@ -773,6 +881,14 @@ html.iphone .theme-picker-label {
 
 html.iphone .theme-picker-label-stripe {
   height: 4px;
+}
+
+html.iphone body.section-home #finder > .theme-picker-bottom-stripe {
+  margin: 6px 0 22px;
+}
+
+html.iphone body.section-home #finder {
+  padding-top: 0;
 }
 
 html.iphone .theme-picker-label-text {

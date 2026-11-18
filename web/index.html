@@ -43,8 +43,8 @@
   <link rel="icon" href="/favicon.ico?v=play1">
   <link rel="manifest" href="/manifest.webmanifest">
   <link rel="apple-touch-icon" sizes="180x180" href="/icon-180.png?v=go1">
-  <link rel="stylesheet" href="/styles.css?v=163">
-  <link rel="stylesheet" href="/themes.css?v=111">
+  <link rel="stylesheet" href="/styles.css?v=184">
+  <link rel="stylesheet" href="/themes.css?v=150">
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Micro+5&display=swap">
 </head>
 <body>
@@ -226,6 +226,11 @@
     <div class="sheet">
       <div class="sheet-body">
         <h1>Videos</h1>
+        <div id="videos-now" class="videos-now" hidden aria-live="polite">
+          <p id="videos-now-title" class="videos-now-title"></p>
+          <p id="videos-now-sub" class="videos-now-sub"></p>
+          <div id="videos-stage-host" class="videos-stage-host"></div>
+        </div>
         <h2 class="youtube-heading">
           <span>Search</span>
           <img src="/youtube-logo.png?v=jyt1" alt="YouTube" decoding="async">
@@ -286,6 +291,6 @@
     <button id="notice-action" class="notice-action" type="button" hidden>Open in YouTube</button>
   </div>
   <audio id="audio" playsinline preload="none"></audio>
-  <script src="/app.js?v=106" defer></script>
+  <script src="/app.js?v=115" defer></script>
 </body>
 </html>
