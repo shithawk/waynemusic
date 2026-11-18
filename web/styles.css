@@ -670,7 +670,7 @@ body.songs-page .finder {
   gap: 14px;
   width: 100%;
   margin: 0;
-  padding: 0 0 48px;
+  padding: 0 0 72px;
 }
 
 .home-songs-sign {
@@ -988,13 +988,13 @@ input::placeholder { color: rgba(255, 255, 255, 0.72); }
   text-shadow: var(--play-all-label-shadow);
 }
 
+html[data-family-theme="steff"] #manage-songs,
 html[data-family-theme="steff"] #manage-songs .play-all-label-shadow,
 html[data-family-theme="steff"] #manage-sheet .sheet-body > h1 {
   color: #fff;
   -webkit-text-fill-color: #fff;
-  text-shadow: var(--play-all-label-shadow);
-  filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.95))
-    drop-shadow(0 2px 3px rgba(0, 0, 0, 0.8));
+  text-shadow: none;
+  filter: none;
 }
 
 #artists-sheet .play-all::before,
