@@ -43,8 +43,8 @@
   <link rel="icon" href="/favicon.ico?v=play1">
   <link rel="manifest" href="/manifest.webmanifest">
   <link rel="apple-touch-icon" sizes="180x180" href="/icon-180.png?v=go1">
-  <link rel="stylesheet" href="/styles.css?v=185">
-  <link rel="stylesheet" href="/themes.css?v=150">
+  <link rel="stylesheet" href="/styles.css?v=186">
+  <link rel="stylesheet" href="/themes.css?v=151">
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Micro+5&display=swap">
 </head>
 <body>
@@ -100,6 +100,27 @@
           <button type="button" class="theme-chip" data-theme="steff">Steff</button>
         </div>
       </div>
+      <span class="theme-picker-label-stripe theme-picker-bottom-stripe home-only" aria-hidden="true"></span>
+      <div class="home-library-signs home-only" id="home-library-signs">
+        <button type="button" class="home-songs-sign home-library-sign" id="home-sign-artists" aria-label="Go to Artists">
+          <span class="home-songs-sign-text" id="home-artists-hint">0 Artists</span>
+          <span class="home-library-sign-play" aria-hidden="true">
+            <svg viewBox="0 0 36 36" width="22" height="22"><path fill="currentColor" d="M11 5 L31 18 L11 31 Z"></path></svg>
+          </span>
+        </button>
+        <button type="button" class="home-songs-sign home-library-sign" id="home-sign-songs" aria-label="Go to Songs">
+          <span class="home-songs-sign-text" id="home-songs-hint">0 Songs</span>
+          <span class="home-library-sign-play" aria-hidden="true">
+            <svg viewBox="0 0 36 36" width="22" height="22"><path fill="currentColor" d="M11 5 L31 18 L11 31 Z"></path></svg>
+          </span>
+        </button>
+        <button type="button" class="home-songs-sign home-library-sign" id="home-sign-videos" aria-label="Go to Videos">
+          <span class="home-songs-sign-text" id="home-videos-hint">0 Videos</span>
+          <span class="home-library-sign-play" aria-hidden="true">
+            <svg viewBox="0 0 36 36" width="22" height="22"><path fill="currentColor" d="M11 5 L31 18 L11 31 Z"></path></svg>
+          </span>
+        </button>
+      </div>
     </div>
 
     <p id="empty" class="empty home-only">Tap + Add music to put songs on this device.</p>
@@ -113,8 +134,8 @@
     </div>
 
     <div id="finder" class="finder" hidden>
-      <div class="home-songs-sign" aria-label="Songs in library">
-        <p id="song-list-hint" class="finder-hint home-songs-sign-text">0 Songs</p>
+      <div class="home-songs-sign songs-page-sign" aria-label="Songs in library">
+        <p id="songs-page-hint" class="home-songs-sign-text">0 Songs</p>
       </div>
       <div id="song-list"></div>
     </div>
@@ -291,6 +312,6 @@
     <button id="notice-action" class="notice-action" type="button" hidden>Open in YouTube</button>
   </div>
   <audio id="audio" playsinline preload="none"></audio>
-  <script src="/app.js?v=117" defer></script>
+  <script src="/app.js?v=121" defer></script>
 </body>
 </html>

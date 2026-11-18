@@ -664,13 +664,31 @@ body.songs-page .finder {
   font-weight: 600;
 }
 
+.home-library-signs {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  width: 100%;
+  margin: 0;
+  padding: 0 0 48px;
+}
+
 .home-songs-sign {
   position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
   margin: 0;
-  padding: 0 18px;
+  padding: 4px 14px;
+  min-height: 0;
   border-radius: 4px;
   overflow: hidden;
   isolation: isolate;
+  cursor: pointer;
+  appearance: none;
+  -webkit-appearance: none;
   background-color: color-mix(in srgb, color-mix(in srgb, #000 50%, var(--bg) 50%) 68%, transparent);
   background-image:
     linear-gradient(to bottom, rgba(255, 255, 255, 0.15) 1px, transparent 1px),
@@ -684,6 +702,24 @@ body.songs-page .finder {
     inset 0 1px 8px rgba(0, 0, 0, 0.85),
     0 4px 14px rgba(0, 0, 0, 0.5);
   border: 2px solid #1c1c1c;
+  color: inherit;
+}
+
+.home-library-sign:active {
+  opacity: 0.82;
+}
+
+.home-library-sign-play {
+  position: relative;
+  z-index: 1;
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--accent);
+  filter:
+    drop-shadow(0 0 4px color-mix(in srgb, var(--accent) 70%, transparent))
+    drop-shadow(0 0 10px color-mix(in srgb, var(--accent) 45%, transparent));
 }
 
 .home-songs-sign::before,
@@ -729,14 +765,27 @@ body.songs-page .finder {
   z-index: 1;
   margin: 0;
   font-family: "Micro 5", "VT323", monospace;
-  font-size: clamp(2.5rem, 11vw, 3.6rem);
+  font-size: clamp(1.85rem, 7.5vw, 2.55rem);
   font-weight: 400;
   line-height: 1;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.05em;
   text-transform: uppercase;
   text-align: center;
   color: var(--accent);
-  text-shadow: none;
+  text-shadow:
+    0 0 6px color-mix(in srgb, var(--accent) 55%, transparent),
+    0 0 16px color-mix(in srgb, var(--accent) 35%, transparent);
+}
+
+.home-library-sign-play svg {
+  width: 22px;
+  height: 22px;
+}
+
+.songs-page-sign {
+  margin: 0 0 10px;
+  cursor: default;
+  pointer-events: none;
 }
 
 .search-empty {
@@ -1468,6 +1517,14 @@ body.has-now .sheet-screen { bottom: calc(var(--transport-bar) + var(--now-bar-s
   -webkit-overflow-scrolling: touch;
   touch-action: pan-y;
   padding-bottom: 8px;
+}
+
+#videos-sheet .sheet-body {
+  padding-bottom: 28px;
+}
+
+#videos-sheet #video-list {
+  padding-bottom: 12px;
 }
 
 .stack { display: flex; flex-direction: column; gap: 20px; }

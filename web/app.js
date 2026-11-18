@@ -139,7 +139,7 @@ let youtubeHasSearched = false;
 let linkConfirmId = "";
 const downloading = new Set();
 
-const SW_BUILD = "57";
+const SW_BUILD = "61";
 
 const MARQUEE_PAUSE_S = 3;
 const MARQUEE_HOLD_END_S = 3;
@@ -302,12 +302,12 @@ async function init() {
         " could not open saved songs. Leave private browsing, then add Jori's Music to the Home Screen."
     );
   }
-  await mergeYouTubeCatalogFromMac();
   if (state.shuffle) startShuffle(state.currentId);
   render();
   refreshSavedLinks();
   requestPersist();
   registerServiceWorker();
+  void mergeYouTubeCatalogFromMac();
   setInterval(() => {
     if (!state.currentId || seekHold) return;
     if (pendingSeek) applyPendingSeek();
@@ -325,6 +325,9 @@ function bindEvents() {
   document.getElementById("artists").addEventListener("click", () => openArtists());
   document.getElementById("songs-nav").addEventListener("click", showSongs);
   document.getElementById("videos-nav").addEventListener("click", openVideos);
+  document.getElementById("home-sign-artists").addEventListener("click", () => openArtists());
+  document.getElementById("home-sign-songs").addEventListener("click", showSongs);
+  document.getElementById("home-sign-videos").addEventListener("click", openVideos);
   syncNavCurrent();
   document.getElementById("youtube-search-form").addEventListener("submit", (event) => {
     event.preventDefault();
@@ -555,25 +558,80 @@ function render() {
   renderVideos();
 }
 
+function libraryArtistCount() {
+  const names = new Set();
+  for (const track of state.tracks) {
+    for (const name of artistNames(track)) names.add(name.toLocaleLowerCase());
+  }
+  return names.size;
+}
+
+function librarySongCount() {
+  return state.tracks.length;
+}
+
+function libraryVideoCount() {
+  return state.tracks.filter((track) => track.source === "youtube" || track.source === "soundcloud").length;
+}
+
+function songsCountLabel(count) {
+  return count === 1 ? "1 Song" : count + " Songs";
+}
+
+function refreshHomeLibrarySigns() {
+  const artists = libraryArtistCount();
+  const songs = librarySongCount();
+  const videos = libraryVideoCount();
+  const songsLabel = songsCountLabel(songs);
+  const artistsHint = document.getElementById("home-artists-hint");
+  const songsHint = document.getElementById("home-songs-hint");
+  const videosHint = document.getElementById("home-videos-hint");
+  const songsPageHint = document.getElementById("songs-page-hint");
+  if (artistsHint) artistsHint.textContent = artists === 1 ? "1 Artist" : artists + " Artists";
+  if (songsHint) songsHint.textContent = songsLabel;
+  if (videosHint) videosHint.textContent = videos === 1 ? "1 Video" : videos + " Videos";
+  if (songsPageHint) songsPageHint.textContent = songsLabel;
+  const artistsBtn = document.getElementById("home-sign-artists");
+  const songsBtn = document.getElementById("home-sign-songs");
+  const videosBtn = document.getElementById("home-sign-videos");
+  if (artistsBtn && artistsHint) {
+    artistsBtn.setAttribute("aria-label", "Go to Artists · " + artistsHint.textContent);
+  }
+  if (songsBtn && songsHint) {
+    songsBtn.setAttribute("aria-label", "Go to Songs · " + songsHint.textContent);
+  }
+  if (videosBtn && videosHint) {
+    videosBtn.setAttribute("aria-label", "Go to Videos · " + videosHint.textContent);
+  }
+}
+
 function renderSongs() {
   const hasTracks = state.tracks.length > 0;
+  const onSongsPage = document.body.classList.contains("songs-page");
   document.getElementById("empty").hidden = hasTracks;
-  document.getElementById("finder").hidden = !hasTracks;
+  document.getElementById("finder").hidden = !onSongsPage;
   document.getElementById("manage-songs").hidden = !hasTracks;
   const list = document.getElementById("song-list");
   list.replaceChildren();
-  const query = state.query.trim().toLowerCase();
-  const visible = state.tracks.filter((track) => {
-    if (!query) return true;
-    return track.title.toLowerCase().includes(query) || track.artist.toLowerCase().includes(query);
-  });
-  if (hasTracks && visible.length === 0) {
-    const empty = document.createElement("p");
-    empty.className = "search-empty";
-    empty.textContent = "No song matches that. Try another word.";
-    list.append(empty);
+  if (onSongsPage) {
+    const query = state.query.trim().toLowerCase();
+    const visible = state.tracks.filter((track) => {
+      if (!query) return true;
+      return track.title.toLowerCase().includes(query) || track.artist.toLowerCase().includes(query);
+    });
+    if (!hasTracks) {
+      const empty = document.createElement("p");
+      empty.className = "search-empty";
+      empty.textContent = "No songs on this device yet.";
+      list.append(empty);
+    } else if (visible.length === 0) {
+      const empty = document.createElement("p");
+      empty.className = "search-empty";
+      empty.textContent = "No song matches that. Try another word.";
+      list.append(empty);
+    }
+    for (const track of visible) list.append(songBox(track));
   }
-  for (const track of visible) list.append(songBox(track));
   const current = currentTrack();
   document.getElementById("now-stack").hidden = !current;
   document.body.classList.toggle("has-now", Boolean(current));
@@ -585,12 +643,8 @@ function renderSongs() {
   updateNowFavoriteButton();
   updateNowArtwork();
   refreshPlayFavouritesButton();
+  refreshHomeLibrarySigns();
   if (current) refreshSeek();
-  const songListHint = document.getElementById("song-list-hint");
-  if (songListHint) {
-    const n = state.tracks.length;
-    songListHint.textContent = n === 1 ? "1 Song" : n + " Songs";
-  }
 }
 
 function updateNowArtwork() {
@@ -1260,7 +1314,13 @@ function openVideos() {
 async function mergeYouTubeCatalogFromMac() {
   let entries;
   try {
-    const response = await fetch("/youtube-catalog.json", { cache: "no-store" });
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 4000);
+    const response = await fetch("/youtube-catalog.json", {
+      cache: "no-store",
+      signal: controller.signal
+    });
+    clearTimeout(timer);
     if (!response.ok) return;
     const payload = await response.json();
     entries = Array.isArray(payload) ? payload : [];
@@ -1710,7 +1770,6 @@ function skipPastStreamingTracks(direction) {
 }
 
 function advancePastStreamingFailure() {
-  if (!shouldAdvance()) return;
   const track = currentTrack();
   if (!track || !isStreamingTrack(track)) return;
   clearStreamingWatchdog();
@@ -1718,11 +1777,8 @@ function advancePastStreamingFailure() {
   setPlaying(false);
   pauseYouTube();
   pauseSoundCloud();
-  if (streamingPlaybackUnavailable()) {
-    skipPastStreamingTracks(1);
-    return;
-  }
-  if (state.tracks.length < 2) {
+  const hasLocal = state.tracks.some((entry) => entry && entry.source === "local");
+  if (!hasLocal) {
     stopPlayback();
     state.currentId = null;
     closePlayer();
@@ -1730,7 +1786,16 @@ function advancePastStreamingFailure() {
     setNotice("No connection — streaming songs need internet.");
     return;
   }
-  step(1);
+  skipPastStreamingTracks(1);
+}
+
+function streamingPlaybackConfirmed(source) {
+  if (source === "youtube") {
+    if (!window.YT) return false;
+    return youtubePlayerState() === YT.PlayerState.PLAYING;
+  }
+  if (source === "soundcloud") return Boolean(state.playing);
+  return isAudiblyPlaying();
 }
 
 function armStreamingWatchdog() {
@@ -1739,18 +1804,20 @@ function armStreamingWatchdog() {
   if (!track || track.source === "local") return;
   const trackId = track.id;
   const source = track.source;
-  const ms = streamingPlaybackUnavailable() ? 4000 : 12000;
+  const ms = streamingPlaybackUnavailable() ? 3000 : 5000;
   streamingWatchdog = setTimeout(() => {
     streamingWatchdog = null;
     if (state.currentId !== trackId || !isSource(source)) return;
-    if (isAudiblyPlaying() || (streamingHold && appInBackground())) return;
+    if (streamingHold && appInBackground()) return;
+    // BUFFERING can hang forever with no data — only real PLAYING counts.
+    if (streamingPlaybackConfirmed(source)) return;
     advancePastStreamingFailure();
   }, ms);
 }
 
 function noticeYouTubePlaybackError() {
   const track = currentTrack();
-  if (track && track.source === "youtube" && streamingPlaybackUnavailable()) {
+  if (track && track.source === "youtube") {
     advancePastStreamingFailure();
     return;
   }
@@ -1768,6 +1835,7 @@ function showSongs() {
   document.body.classList.add("songs-page");
   document.getElementById("songs").scrollTop = 0;
   syncNavCurrent();
+  renderSongs();
 }
 
 function goHome() {
@@ -1781,6 +1849,7 @@ function goHome() {
   document.body.classList.remove("search-page");
   document.getElementById("songs").scrollTop = 0;
   syncNavCurrent();
+  renderSongs();
 }
 
 function syncNavCurrent() {
@@ -2362,6 +2431,7 @@ function needsMeta(track) {
 }
 
 async function refreshSavedLinks() {
+  if (typeof navigator !== "undefined" && navigator.onLine === false) return;
   const pending = state.tracks.filter(needsMeta);
   const soundcloudMissing = state.tracks.filter(
     (track) => track.source === "soundcloud" && !track.streamRef && !String(track.mediaRef || "").includes("api.soundcloud.com/tracks/")
