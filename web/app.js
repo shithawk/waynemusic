@@ -139,7 +139,7 @@ let youtubeHasSearched = false;
 let linkConfirmId = "";
 const downloading = new Set();
 
-const SW_BUILD = "55";
+const SW_BUILD = "56";
 
 const MARQUEE_PAUSE_S = 3;
 const MARQUEE_HOLD_END_S = 3;
@@ -198,14 +198,16 @@ function refreshMarquee(host) {
   );
 }
 
-function setMarqueeText(host, text) {
+function setMarqueeText(host, text, stamp) {
   if (!host) return;
   const next = text || "";
-  if (marqueeText.get(host) === next) return;
-  marqueeText.set(host, next);
+  const key = stamp === undefined ? next : String(stamp) + "\0" + next;
   const inner = ensureMarqueeHost(host);
   if (!inner) return;
+  if (marqueeText.get(host) === key && inner.textContent === next) return;
+  marqueeText.set(host, key);
   inner.textContent = next;
+  inner.style.transform = "";
   requestAnimationFrame(() => {
     requestAnimationFrame(() => refreshMarquee(host));
   });
@@ -694,30 +696,35 @@ function presentVideosSheet() {
   scrollSheetBodyToTop("videos-sheet");
 }
 
-function syncVideosInlinePlayer() {
-  const track = currentTrack();
+function syncVideosInlinePlayer(trackOverride) {
+  const track = trackOverride || currentTrack();
   const use =
     state.videosInline && videosSheetIsOpen() && Boolean(track && isStreamingTrack(track));
   const now = document.getElementById("videos-now");
   const host = document.getElementById("videos-stage-host");
   const scroll = document.querySelector("#player .player-scroll");
-  const stage = document.querySelector("#player .stage");
-  if (!now || !host || !scroll || !stage) return;
+  const stage = document.querySelector(".stage");
+  if (now) {
+    if (use) {
+      now.hidden = false;
+      const label = nowLabel(track);
+      setMarqueeText(document.getElementById("videos-now-title"), label, track.id + ":" + label);
+      setMarqueeText(document.getElementById("videos-now-sub"), subtitle(track), track.id + ":sub:" + subtitle(track));
+      setNowBarMarquee(state.playing, label);
+    } else {
+      now.hidden = true;
+    }
+  }
+  if (!host || !scroll || !stage) return;
   if (use) {
-    now.hidden = false;
-    setMarqueeText(document.getElementById("videos-now-title"), track.title);
-    setMarqueeText(document.getElementById("videos-now-sub"), subtitle(track));
     if (stage.parentElement !== host) host.append(stage);
     closePlayer();
     requestAnimationFrame(() => {
-      if (track.source === "youtube") fitYouTube();
+      if (track && track.source === "youtube") fitYouTube();
     });
-  } else {
-    now.hidden = true;
-    if (stage.parentElement !== scroll) {
-      const sub = document.getElementById("player-sub");
-      if (sub) sub.insertAdjacentElement("afterend", stage);
-    }
+  } else if (stage.parentElement !== scroll) {
+    const sub = document.getElementById("player-sub");
+    if (sub) sub.insertAdjacentElement("afterend", stage);
   }
 }
 
@@ -1031,7 +1038,7 @@ function playListed(id, options) {
   if (!keepQueue && track.id === state.currentId && state.playing) {
     if (videosInline) {
       state.videosScrollToTop = true;
-      syncVideosInlinePlayer();
+      syncVideosInlinePlayer(track);
       renderVideos();
       scrollSheetBodyToTop("videos-sheet");
       return;
@@ -1039,6 +1046,7 @@ function playListed(id, options) {
     if (track.source !== "local") openPlayer();
     return;
   }
+  if (videosInline) syncVideosInlinePlayer(track);
   userPlay(track, !videosInline && track.source !== "local");
 }
 
