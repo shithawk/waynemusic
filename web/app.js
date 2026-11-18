@@ -139,7 +139,7 @@ let youtubeHasSearched = false;
 let linkConfirmId = "";
 const downloading = new Set();
 
-const SW_BUILD = "56";
+const SW_BUILD = "57";
 
 const MARQUEE_PAUSE_S = 3;
 const MARQUEE_HOLD_END_S = 3;
@@ -702,7 +702,7 @@ function syncVideosInlinePlayer(trackOverride) {
     state.videosInline && videosSheetIsOpen() && Boolean(track && isStreamingTrack(track));
   const now = document.getElementById("videos-now");
   const host = document.getElementById("videos-stage-host");
-  const scroll = document.querySelector("#player .player-scroll");
+  const player = document.getElementById("player");
   const stage = document.querySelector(".stage");
   if (now) {
     if (use) {
@@ -715,17 +715,73 @@ function syncVideosInlinePlayer(trackOverride) {
       now.hidden = true;
     }
   }
-  if (!host || !scroll || !stage) return;
-  if (use) {
-    if (stage.parentElement !== host) host.append(stage);
-    closePlayer();
-    requestAnimationFrame(() => {
-      if (track && track.source === "youtube") fitYouTube();
-    });
-  } else if (stage.parentElement !== scroll) {
-    const sub = document.getElementById("player-sub");
-    if (sub) sub.insertAdjacentElement("afterend", stage);
+  if (!stage || !player) return;
+  if (use && host) {
+    if (player.classList.contains("open")) closePlayer();
+    player.classList.add("stage-inline");
+    player.inert = false;
+    placeInlineStage(host);
+  } else {
+    player.classList.remove("stage-inline");
+    clearInlineStage();
   }
+}
+
+let inlineStageBound = false;
+
+function bindInlineStage() {
+  if (inlineStageBound) return;
+  inlineStageBound = true;
+  const follow = () => {
+    const host = document.getElementById("videos-stage-host");
+    const shell = document.getElementById("player");
+    if (!host || !shell || !shell.classList.contains("stage-inline")) return;
+    placeInlineStage(host);
+  };
+  const body = document.querySelector("#videos-sheet .sheet-body");
+  if (body) body.addEventListener("scroll", follow, { passive: true });
+  window.addEventListener("resize", follow);
+}
+
+function placeInlineStage(host) {
+  const stage = document.querySelector(".stage");
+  if (!stage || !host) return;
+  bindInlineStage();
+  const rect = host.getBoundingClientRect();
+  const bounds = host.closest(".sheet-body") ? host.closest(".sheet-body").getBoundingClientRect() : null;
+  stage.classList.add("stage-floating");
+  stage.style.left = rect.left + "px";
+  stage.style.top = rect.top + "px";
+  stage.style.width = Math.max(rect.width, 0) + "px";
+  stage.style.height = Math.max(rect.height, 0) + "px";
+  if (bounds && rect.width > 0 && rect.height > 0) {
+    const top = Math.max(0, bounds.top - rect.top);
+    const bottom = Math.max(0, rect.bottom - bounds.bottom);
+    const left = Math.max(0, bounds.left - rect.left);
+    const right = Math.max(0, rect.right - bounds.right);
+    const hidden = top >= rect.height || bottom >= rect.height || left >= rect.width || right >= rect.width;
+    stage.style.clipPath = hidden ? "inset(100%)" : "inset(" + top + "px " + right + "px " + bottom + "px " + left + "px)";
+  } else {
+    stage.style.clipPath = "";
+  }
+  const width = Math.round(rect.width);
+  if (width > 0 && stage.dataset.fitW !== String(width)) {
+    stage.dataset.fitW = String(width);
+    requestAnimationFrame(() => {
+      if (document.getElementById("player").classList.contains("stage-inline")) fitYouTube();
+    });
+  }
+}
+
+function clearInlineStage() {
+  const stage = document.querySelector(".stage");
+  if (!stage) return;
+  stage.classList.remove("stage-floating");
+  stage.style.left = "";
+  stage.style.top = "";
+  stage.style.width = "";
+  stage.style.height = "";
+  stage.style.clipPath = "";
 }
 
 function renderPlayer() {
