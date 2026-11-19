@@ -43,7 +43,7 @@
   <link rel="icon" href="/favicon.ico?v=play1">
   <link rel="manifest" href="/manifest.webmanifest">
   <link rel="apple-touch-icon" sizes="180x180" href="/icon-180.png?v=go1">
-  <link rel="stylesheet" href="/styles.css?v=190">
+  <link rel="stylesheet" href="/styles.css?v=196">
   <link rel="stylesheet" href="/themes.css?v=153">
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Micro+5&display=swap">
 </head>
@@ -87,6 +87,10 @@
       <button id="play-favourites" class="big play-favourites" type="button" disabled>♥ Favourites</button>
       <button id="add-music" class="big prominent" type="button">+ Add music</button>
       <button id="manage-songs" class="big plain" type="button" hidden>- Remove songs</button>
+      <button id="crossfade-toggle" class="crossfade-toggle is-on" type="button" aria-pressed="true">
+        <span class="crossfade-toggle-lamp" aria-hidden="true"></span>
+        <span class="crossfade-toggle-label">Crossfade in next song</span>
+      </button>
       <div class="theme-picker-wrap home-only">
         <p class="theme-picker-label" id="theme-picker-label">
           <span class="theme-picker-label-stripe" aria-hidden="true"></span>
@@ -177,7 +181,8 @@
         </div>
         <div id="stage-yt" hidden>
           <img class="yt-stage-logo" src="/youtube-logo.png?v=jyt1" alt="" decoding="async">
-          <div id="yt-player"></div>
+          <div id="yt-player" class="yt-mount is-active"></div>
+          <div id="yt-player-b" class="yt-mount" hidden></div>
         </div>
         <div id="stage-sc" hidden></div>
       </div>
@@ -316,6 +321,7 @@
     <button id="notice-action" class="notice-action" type="button" hidden>Open in YouTube</button>
   </div>
   <audio id="audio" playsinline preload="none"></audio>
-  <script src="/app.js?v=132" defer></script>
+  <audio id="audio-b" playsinline preload="none"></audio>
+  <script src="/app.js?v=136" defer></script>
 </body>
 </html>
