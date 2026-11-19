@@ -1,11 +1,12 @@
-const DEFAULT_FAMILY_THEME = "jori";
+const DEFAULT_FAMILY_THEME = "wayne";
 const FAMILY_THEME_META = {
   jori: "#121a32",
   wayne: "#0d0d0d",
   jacob: "#1e2329",
   dan: "#1c2a34",
   steff: "#2d1f3d",
-  zero: "#0a0a0a"
+  zero: "#0a0a0a",
+  liquid: "#f4efe4"
 };
 const FAMILY_THEME_STORAGE = "family-theme";
 
@@ -103,8 +104,8 @@ function applyDeviceCopy() {
   set(
     "install-hint-text",
     deviceKind() === "iphone"
-      ? "Install Jori's Music: in Safari, tap Share at the bottom of the screen, then Add to Home Screen."
-      : "Install Jori's Music: tap Share, then Add to Home Screen."
+      ? "Install Wayne's Music: in Safari, tap Share at the bottom of the screen, then Add to Home Screen."
+      : "Install Wayne's Music: tap Share, then Add to Home Screen."
   );
   set("empty", "Tap + Add music to put songs " + on + ".");
   set("from-ipad", "Add a song saved on this device");
@@ -303,7 +304,7 @@ async function init() {
     setNotice(
       "This " +
         deviceLabel() +
-        " could not open saved songs. Leave private browsing, then add Jori's Music to the Home Screen."
+        " could not open saved songs. Leave private browsing, then add Wayne's Music to the Home Screen."
     );
   }
   if (state.shuffle) startShuffle(state.currentId);
@@ -3644,6 +3645,209 @@ async function getBlob(id) {
   });
 }
 
+const liquidBlob = {
+  raf: 0,
+  bound: false,
+  press: 0,
+  pointer: null,
+  suppressClick: false,
+  finger: { x: 0.5, y: 0.52, tx: 0.5, ty: 0.52 },
+  trail: [],
+  shown: null,
+
+  start() {
+    const stage = document.getElementById("liquid-transport");
+    if (!stage) return;
+    stage.hidden = false;
+    this.bind();
+    if (this.raf) return;
+    const tick = (now) => {
+      this.raf = requestAnimationFrame(tick);
+      if (document.hidden) return;
+      if (document.documentElement.getAttribute("data-family-theme") !== "liquid") return;
+      this.draw(now || performance.now());
+    };
+    this.raf = requestAnimationFrame(tick);
+  },
+
+  stop() {
+    if (this.raf) cancelAnimationFrame(this.raf);
+    this.raf = 0;
+    const stage = document.getElementById("liquid-transport");
+    if (stage) stage.hidden = true;
+  },
+
+  bind() {
+    if (this.bound) return;
+    const btn = document.getElementById("liquid-play");
+    if (!btn) return;
+    this.bound = true;
+    const aim = (event) => {
+      const rect = btn.getBoundingClientRect();
+      if (!rect.width || !rect.height) return;
+      this.finger.tx = Math.min(0.9, Math.max(0.1, (event.clientX - rect.left) / rect.width));
+      this.finger.ty = Math.min(0.86, Math.max(0.14, (event.clientY - rect.top) / rect.height));
+    };
+    btn.addEventListener("pointerdown", (event) => {
+      if (event.button != null && event.button !== 0) return;
+      this.press = 1;
+      this.pointer = { x: event.clientX, y: event.clientY, dx: 0, dy: 0 };
+      aim(event);
+      btn.setPointerCapture?.(event.pointerId);
+    });
+    btn.addEventListener("pointermove", (event) => {
+      if (!this.press || !this.pointer) return;
+      aim(event);
+      this.pointer.dx = event.clientX - this.pointer.x;
+      this.pointer.dy = event.clientY - this.pointer.y;
+    });
+    const release = () => {
+      this.press = 0;
+      this.finger.tx = 0.5;
+      this.finger.ty = 0.52;
+    };
+    btn.addEventListener("pointerup", (event) => {
+      const start = this.pointer;
+      const dx = start ? start.dx || (event.clientX - start.x) : 0;
+      const dy = start ? start.dy || (event.clientY - start.y) : 0;
+      this.pointer = null;
+      release();
+      if (Math.abs(dx) >= 36 && Math.abs(dx) > Math.abs(dy)) {
+        this.suppressClick = true;
+        setTimeout(() => { this.suppressClick = false; }, 450);
+        event.preventDefault();
+        skip(dx > 0 ? 1 : -1);
+      }
+    });
+    btn.addEventListener("pointercancel", release);
+    btn.addEventListener("click", () => {
+      if (this.suppressClick) {
+        this.suppressClick = false;
+        return;
+      }
+      if (isAudiblyPlaying()) userPause();
+      else userPlay(currentTrack() || songToStart(), playerIsOpen());
+    });
+    btn.addEventListener("keydown", (event) => {
+      if (event.key === "ArrowRight") {
+        event.preventDefault();
+        skip(1);
+      } else if (event.key === "ArrowLeft") {
+        event.preventDefault();
+        skip(-1);
+      }
+    });
+  },
+
+  draw(now) {
+    const canvas = document.getElementById("liquid-blob");
+    const btn = document.getElementById("liquid-play");
+    if (!canvas || !btn) return;
+    const rect = canvas.getBoundingClientRect();
+    if (rect.width < 2 || rect.height < 2) return;
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    const w = Math.round(rect.width * dpr);
+    const h = Math.round(rect.height * dpr);
+    if (canvas.width !== w || canvas.height !== h) {
+      canvas.width = w;
+      canvas.height = h;
+    }
+    const ctx = canvas.getContext("2d", { alpha: true });
+    if (!ctx) return;
+    const playing = isAudiblyPlaying();
+    if (playing !== this.shown) {
+      this.shown = playing;
+      const label = playing
+        ? "Pause. Swipe right for next, left for previous."
+        : "Play. Swipe right for next, left for previous.";
+      btn.setAttribute("aria-label", label);
+    }
+    const t = now * 0.001 * (playing ? 1.35 : 0.72);
+    this.finger.x += (this.finger.tx - this.finger.x) * (this.press ? 0.28 : 0.08);
+    this.finger.y += (this.finger.ty - this.finger.y) * (this.press ? 0.28 : 0.08);
+    this.trail.unshift({ x: this.finger.x, y: this.finger.y });
+    if (this.trail.length > 6) this.trail.pop();
+
+    const balls = [];
+    const cx = w * (0.5 + Math.sin(t * 0.63) * 0.035);
+    const cy = h * (0.52 + Math.cos(t * 0.51) * 0.03);
+    const breathe = 1 + Math.sin(t * 1.4) * 0.045 + (playing ? 0.06 : 0);
+    balls.push({ x: cx, y: cy, r: h * 0.34 * breathe });
+    const lobes = [
+      [0.17, 0.9, 0.2],
+      [0.13, 1.25, 2.2],
+      [0.2, 0.72, 4.1],
+      [0.11, 1.55, 1.15]
+    ];
+    lobes.forEach(([amp, speed, phase], i) => {
+      balls.push({
+        x: cx + Math.cos(t * speed + phase) * w * amp,
+        y: cy + Math.sin(t * speed * 0.86 + phase) * h * (0.16 + i * 0.02),
+        r: h * (0.16 + (i % 2) * 0.05)
+      });
+    });
+    this.trail.forEach((p, i) => {
+      balls.push({
+        x: p.x * w,
+        y: p.y * h,
+        r: h * (this.press ? 0.22 : 0.12) * (1 - i / 8)
+      });
+    });
+
+    const img = ctx.createImageData(w, h);
+    const data = img.data;
+    const pulse = playing ? 0.5 + 0.5 * Math.sin(t * 2.2) : 0;
+    for (let y = 0; y < h; y++) {
+      const row = y * w;
+      for (let x = 0; x < w; x++) {
+        let field = 0;
+        for (let i = 0; i < balls.length; i++) {
+          const b = balls[i];
+          const dx = x - b.x;
+          const dy = y - b.y;
+          field += (b.r * b.r) / (dx * dx + dy * dy + 36);
+        }
+        const o = (row + x) * 4;
+        if (field < 0.92) {
+          data[o + 3] = 0;
+          continue;
+        }
+        const edge = Math.min(1, (field - 0.92) * 3.1);
+        const depth = Math.min(1, (field - 1) / 2.6);
+        const rim = (1 - depth) * (1 - depth);
+        const flow = 0.5 + 0.5 * Math.sin(t * 0.8 + x * 0.012 + y * 0.02);
+        const cr = 18 + (1 - flow) * 24 + rim * 190;
+        const cg = 128 + flow * 55 + rim * 70 - depth * 24;
+        const cb = 168 - flow * 70 + rim * 40 + pulse * 16;
+        data[o] = cr;
+        data[o + 1] = cg;
+        data[o + 2] = cb;
+        data[o + 3] = edge * (210 + rim * 45);
+      }
+    }
+    ctx.clearRect(0, 0, w, h);
+    ctx.putImageData(img, 0, 0);
+    const sx = w * (0.38 + Math.sin(t * 0.7) * 0.06 + (this.finger.x - 0.5) * 0.2);
+    const sy = h * (0.34 + Math.cos(t * 0.6) * 0.04);
+    const gloss = ctx.createRadialGradient(sx, sy, 0, sx, sy, h * 0.55);
+    gloss.addColorStop(0, "rgba(255,255,255,0.72)");
+    gloss.addColorStop(0.28, "rgba(210,245,255,0.18)");
+    gloss.addColorStop(1, "rgba(255,255,255,0)");
+    ctx.globalCompositeOperation = "source-atop";
+    ctx.fillStyle = gloss;
+    ctx.fillRect(0, 0, w, h);
+    ctx.globalCompositeOperation = "source-over";
+  }
+};
+
+
+function chipThemeTarget(chip, current) {
+  if (current === chip) return "zero";
+  if (current === "zero" && zeroHeroFor() === chip) return "liquid";
+  if (current === "liquid" && zeroHeroFor() === chip) return chip;
+  return chip;
+}
+
 function initFamilyTheme() {
   const picker = document.getElementById("theme-picker");
   if (!picker) return;
@@ -3655,7 +3859,7 @@ function initFamilyTheme() {
       const next = btn.dataset.theme;
       if (!FAMILY_THEME_META[next]) return;
       const current = document.documentElement.getAttribute("data-family-theme");
-      const target = current === next ? "zero" : next;
+      const target = chipThemeTarget(next, current);
       if (target === "zero") {
         try {
           localStorage.setItem(ZERO_HERO_FOR_KEY, next);
@@ -3702,6 +3906,9 @@ function applyHomeHero(theme) {
   if (theme === "zero") {
     const key = zeroHeroFor();
     src = FAMILY_HEROES_BW[key] || FAMILY_HEROES_BW[DEFAULT_FAMILY_THEME];
+  } else if (theme === "liquid") {
+    const key = zeroHeroFor();
+    src = FAMILY_HEROES[key] || FAMILY_HEROES[DEFAULT_FAMILY_THEME];
   } else {
     src = FAMILY_HEROES[theme] || FAMILY_HEROES[DEFAULT_FAMILY_THEME];
   }
@@ -3715,10 +3922,14 @@ function applyFamilyTheme(theme) {
   if (meta) meta.setAttribute("content", FAMILY_THEME_META[theme]);
   const zeroFor = zeroHeroFor();
   document.querySelectorAll(".theme-chip").forEach((btn) => {
-    const on = theme === "zero" ? btn.dataset.theme === zeroFor : btn.dataset.theme === theme;
+    const on = theme === "zero" || theme === "liquid"
+      ? btn.dataset.theme === zeroFor
+      : btn.dataset.theme === theme;
     btn.classList.toggle("is-active", on);
     btn.setAttribute("aria-pressed", on ? "true" : "false");
   });
+  if (theme === "liquid") liquidBlob.start();
+  else liquidBlob.stop();
   updateShuffleButton();
   const playButton = document.getElementById("play-button");
   if (playButton) {

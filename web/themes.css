@@ -930,3 +930,41 @@ html[data-family-theme="dan"] .theme-picker-label-stripe {
     color-mix(in srgb, var(--accent-alt) 78%, #fff) 77.84% 100%
   );
 }
+html[data-family-theme="liquid"] {
+  color-scheme: light;
+  --bg: #f4efe4;
+  --card: rgba(255, 252, 246, 0.86);
+  --notice-surface: #fffaf2;
+  --accent: #0b4e86;
+  --accent-alt: #1f9a68;
+  --accent-orange: #2f9e78;
+  --text: #1c2430;
+  --nav-glass: #0b4e86;
+  --nav-glass-text: #fff;
+  --nav-glass-current-text: #fff;
+  --song-box-gradient: linear-gradient(135deg, #0a4578 0%, #187a58 100%);
+  --song-box-ring: #083864;
+}
+
+html[data-family-theme="liquid"] body,
+html[data-family-theme="liquid"] body.section-home,
+html[data-family-theme="liquid"] body.section-artists,
+html[data-family-theme="liquid"] body.section-songs,
+html[data-family-theme="liquid"] body.section-videos,
+html[data-family-theme="liquid"] body.songs-page {
+  --section-page-bg: linear-gradient(180deg, #f7f3ea 0%, #f4efe4 62%, #e5f3ee 100%);
+}
+
+html[data-family-theme="liquid"] input {
+  color: var(--text);
+}
+
+html[data-family-theme="liquid"] input::placeholder {
+  color: rgba(28, 36, 48, 0.45);
+}
+
+html[data-family-theme="liquid"] .theme-chip.is-active {
+  box-shadow:
+    inset 0 0 0 2px #0b4e86,
+    0 0 12px rgba(31, 154, 104, 0.45);
+}

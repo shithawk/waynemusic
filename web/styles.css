@@ -2438,3 +2438,202 @@ html.iphone .transport #play-button.is-playing:active:not(:disabled) {
     height: 24px;
   }
 }
+.liquid-transport {
+  display: none;
+  position: relative;
+  height: 112px;
+  border-radius: 36px;
+  overflow: visible;
+  background: transparent;
+}
+
+.liquid-transport canvas {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+#liquid-play {
+  position: absolute;
+  inset: 0;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  cursor: pointer;
+  touch-action: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+html[data-family-theme="liquid"] .transport {
+  display: block;
+  padding: 4px 22px calc(6px + env(safe-area-inset-bottom));
+  background: linear-gradient(to top, #f4efe4 72%, rgba(244, 239, 228, 0.94));
+}
+
+html[data-family-theme="liquid"] .transport > .big {
+  display: none !important;
+}
+
+html[data-family-theme="liquid"] .liquid-transport {
+  display: block;
+}
+
+html[data-family-theme="liquid"],
+html.iphone[data-family-theme="liquid"] {
+  --transport-bar: calc(136px + env(safe-area-inset-bottom));
+}
+
+html[data-family-theme="liquid"] body.has-now,
+html.iphone[data-family-theme="liquid"] body.has-now {
+  --now-bar-space: 57px;
+}
+
+html[data-family-theme="liquid"] .now-stack,
+html.iphone[data-family-theme="liquid"] .now-stack {
+  bottom: calc(100px + env(safe-area-inset-bottom));
+}
+
+html[data-family-theme="liquid"] .now-dock {
+  background: #12304a;
+  color: #fff;
+  gap: 0;
+  padding-top: 0;
+}
+
+html[data-family-theme="liquid"] .now-stripe {
+  height: 4px;
+}
+
+html[data-family-theme="liquid"] .now-bar-row {
+  padding-top: 0;
+  padding-bottom: 1px;
+}
+
+html[data-family-theme="liquid"] .now-bar,
+html[data-family-theme="liquid"] .now-bar-line,
+html[data-family-theme="liquid"] .now-bar-status,
+html[data-family-theme="liquid"] .now-bar-song,
+html[data-family-theme="liquid"] .now-dock .text-marquee-inner,
+html[data-family-theme="liquid"] #now-bar-line,
+html[data-family-theme="liquid"] #now-bar-line span,
+html[data-family-theme="liquid"] .now-stack:not(.is-playing) .now-bar-status {
+  color: #fff;
+  -webkit-text-fill-color: #fff;
+}
+
+html[data-family-theme="liquid"] .song.current,
+html[data-family-theme="liquid"] .song.current .song-title,
+html[data-family-theme="liquid"] .song.current .song-sub {
+  color: #fff;
+  -webkit-text-fill-color: #fff;
+}
+
+html[data-family-theme="liquid"] .song-favorite.is-on,
+html[data-family-theme="liquid"] .song.current .song-favorite.is-on,
+html[data-family-theme="liquid"] .now-favorite.is-on {
+  color: #f4efe4;
+  background: #0b5a38;
+  box-shadow:
+    inset 0 0 0 3px #f4efe4,
+    0 0 0 2px #0b5a38;
+}
+
+html[data-family-theme="liquid"] .song-favorite.is-on .heart-solid,
+html[data-family-theme="liquid"] .now-favorite.is-on .heart-solid {
+  transform: scale(1.18);
+  filter: drop-shadow(0 0 3px rgba(244, 239, 228, 0.95));
+}
+
+html[data-family-theme="liquid"] .transport {
+  background: #f4efe4;
+}
+
+html[data-family-theme="liquid"] .home-library-sign-play {
+  background: none;
+  border-radius: 0;
+  padding: 0;
+  filter: none;
+  width: 14px;
+  height: 14px;
+}
+
+html[data-family-theme="liquid"] .home-library-sign-play svg {
+  display: none;
+}
+
+html[data-family-theme="liquid"] .home-library-sign-play::before {
+  content: "";
+  display: block;
+  width: 10px;
+  height: 10px;
+  border-top: 3px solid currentColor;
+  border-right: 3px solid currentColor;
+  transform: rotate(45deg);
+}
+
+html[data-family-theme="liquid"] .home-songs-sign {
+  background-color: #f7f3ea;
+  background-image:
+    linear-gradient(to bottom, rgba(28, 36, 48, 0.08) 1px, transparent 1px),
+    linear-gradient(to right, rgba(28, 36, 48, 0.08) 1px, transparent 1px);
+  background-size: 4px 4px, 4px 4px;
+  box-shadow: inset 0 0 0 2px rgba(28, 36, 48, 0.28);
+  border-color: rgba(28, 36, 48, 0.35);
+}
+
+html[data-family-theme="liquid"] .home-songs-sign::before,
+html[data-family-theme="liquid"] .home-songs-sign::after {
+  opacity: 0;
+}
+
+html[data-family-theme="liquid"] .now-dock .seek,
+html[data-family-theme="liquid"] .seek {
+  background: #fff;
+  box-shadow: inset 0 0 0 2px rgba(11, 78, 134, 0.28);
+}
+
+html[data-family-theme="liquid"] .seek-time {
+  color: #1a1612;
+  text-shadow: none;
+}
+
+html[data-family-theme="liquid"] .seek-thumb {
+  background: #0b4e86;
+  border-color: #1f9a68;
+}
+
+html[data-family-theme="liquid"] .banner h1,
+html[data-family-theme="liquid"] #add-music {
+  color: #fff;
+}
+
+html[data-family-theme="liquid"] .home-library-signs {
+  padding-bottom: 8px;
+}
+
+html[data-family-theme="liquid"] body.section-home .home-actions {
+  background: #fffaf2;
+}
+
+html[data-family-theme="liquid"] #artists-sheet,
+html[data-family-theme="liquid"] #videos-sheet,
+html[data-family-theme="liquid"] #add-sheet {
+  color: #1c2430;
+}
+
+html[data-family-theme="liquid"] #add-sheet #download-all,
+html[data-family-theme="liquid"] #add-sheet #add-link,
+html[data-family-theme="liquid"] #add-sheet .download:not(.saved) {
+  color: #fff;
+  -webkit-text-fill-color: #fff;
+}
+
+html[data-family-theme="liquid"] #link-input {
+  background: #fff;
+  box-shadow: inset 0 0 0 2px #0b4e86;
+}
+
+html[data-family-theme="liquid"] #youtube-search-go {
+  color: #fff;
+  -webkit-text-fill-color: #fff;
+}

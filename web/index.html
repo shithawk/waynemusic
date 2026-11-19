@@ -1,19 +1,19 @@
 <!DOCTYPE html>
-<html lang="en" data-family-theme="jori">
+<html lang="en" data-family-theme="wayne">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black">
-  <meta name="apple-mobile-web-app-title" content="Jori's Music">
-  <title>Jori's Music</title>
-  <meta name="theme-color" content="#121a32">
+  <meta name="apple-mobile-web-app-title" content="Wayne's Music">
+  <title>Wayne's Music</title>
+  <meta name="theme-color" content="#0d0d0d">
   <script>
     (function () {
       var key = "family-theme";
-      var def = "jori";
-      var ok = { jori: 1, wayne: 1, jacob: 1, dan: 1, steff: 1, zero: 1 };
+      var def = "wayne";
+      var ok = { jori: 1, wayne: 1, jacob: 1, dan: 1, steff: 1, zero: 1, liquid: 1 };
       var t = null;
       try {
         t = localStorage.getItem(key);
@@ -43,8 +43,8 @@
   <link rel="icon" href="/favicon.ico?v=play1">
   <link rel="manifest" href="/manifest.webmanifest">
   <link rel="apple-touch-icon" sizes="180x180" href="/icon-180.png?v=go1">
-  <link rel="stylesheet" href="/styles.css?v=188">
-  <link rel="stylesheet" href="/themes.css?v=151">
+  <link rel="stylesheet" href="/styles.css?v=189">
+  <link rel="stylesheet" href="/themes.css?v=153">
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Micro+5&display=swap">
 </head>
 <body>
@@ -74,12 +74,12 @@
   <div id="songs" class="screen">
     <header class="banner home-only">
       <img id="home-hero" src="/heroes/jori.jpg" alt="">
-      <h1>Jori's Music</h1>
+      <h1>Wayne's Music</h1>
     </header>
     <div class="stripe home-only" aria-hidden="true"><span class="accent"></span><span class="accent-alt"></span></div>
 
     <section id="install-hint" class="hint-card home-only" hidden>
-      <p id="install-hint-text">Install Jori's Music: tap Share, then Add to Home Screen.</p>
+      <p id="install-hint-text">Install Wayne's Music: tap Share, then Add to Home Screen.</p>
       <p class="hint-sub">On iPhone, open this link in Safari while Tailscale is on, then add to the Home Screen.</p>
     </section>
 
@@ -305,6 +305,10 @@
       </svg>
       <span id="shuffle-label">Off</span>
     </button>
+    <div id="liquid-transport" class="liquid-transport" hidden>
+      <canvas id="liquid-blob"></canvas>
+      <button id="liquid-play" type="button" aria-label="Play"></button>
+    </div>
   </div>
 
   <div id="notice" class="notice" hidden role="status">
@@ -312,6 +316,6 @@
     <button id="notice-action" class="notice-action" type="button" hidden>Open in YouTube</button>
   </div>
   <audio id="audio" playsinline preload="none"></audio>
-  <script src="/app.js?v=124" defer></script>
+  <script src="/app.js?v=126" defer></script>
 </body>
 </html>
