@@ -324,6 +324,11 @@ body.search-page .search-title {
 
 body.search-page #search-page {
   padding-top: 4px;
+  padding-bottom: 40px;
+}
+
+#search-results {
+  padding-bottom: 24px;
 }
 
 .search-results-label {
@@ -405,7 +410,7 @@ body.search-page #search-page {
 
 body.has-now #songs { bottom: calc(var(--transport-bar) + var(--now-bar-space)); }
 
-#song-list { padding-bottom: 16px; }
+#song-list { padding-bottom: 40px; }
 
 .banner {
   position: relative;
@@ -1547,8 +1552,32 @@ body.has-now .sheet-screen { bottom: calc(var(--transport-bar) + var(--now-bar-s
   padding-bottom: 8px;
 }
 
+#artists-sheet .sheet-body {
+  padding-bottom: 40px;
+}
+
+#manage-sheet .sheet-body {
+  padding-bottom: 40px;
+}
+
 #videos-sheet .sheet-body {
-  padding-bottom: 28px;
+  padding-bottom: 40px;
+}
+
+#videos-sheet .sheet-body > h1 {
+  margin: 0 0 2px;
+}
+
+#videos-sheet .videos-now {
+  margin: 0 0 10px;
+}
+
+#videos-sheet .youtube-heading {
+  margin-top: 8px;
+}
+
+#videos-sheet .sheet-search {
+  margin-top: 8px;
 }
 
 #videos-sheet #video-list {
