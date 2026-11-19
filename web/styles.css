@@ -1734,6 +1734,21 @@ html.iphone .sheet .youtube-clear-results {
 .confirm-card p { font-size: 1.35rem; }
 #link-confirm-name { font-size: 1.7rem; font-weight: 700; }
 
+.link-confirm-sc {
+  width: 100%;
+  margin: 4px 0 8px;
+  overflow: hidden;
+  border-radius: 12px;
+  background: #111;
+}
+
+.link-confirm-sc iframe {
+  display: block;
+  width: 100%;
+  height: 166px;
+  border: 0;
+}
+
 .notice {
   position: fixed;
   left: 16px;

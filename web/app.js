@@ -141,6 +141,7 @@ let lastSeekAt = 0;
 let youtubeSearchToken = 0;
 let youtubeHasSearched = false;
 let linkConfirmId = "";
+let linkProbeCancel = null;
 const downloading = new Set();
 
 const SW_BUILD = "65";
@@ -2801,7 +2802,10 @@ async function importFiles(fileList) {
 }
 
 const LINK_PLAY_FAIL = "Couldn’t play this song. It wasn’t added.";
+const LINK_PLAY_CANCEL = "Add cancelled.";
 const LINK_PROBE_MS = 8000;
+const LINK_AUTO_MS = 3000;
+const LINK_TAP_MS = 90000;
 
 async function pasteLink() {
   showLinkConfirm("Checking link…");
@@ -2856,6 +2860,7 @@ function showLinkConfirm(status, track) {
   const name = document.getElementById("link-confirm-name");
   const detail = document.getElementById("link-confirm-detail");
   const play = document.getElementById("link-confirm-play");
+  const done = document.getElementById("link-confirm-done");
   if (track) {
     linkConfirmId = track.id;
     name.hidden = false;
@@ -2863,6 +2868,8 @@ function showLinkConfirm(status, track) {
     detail.hidden = false;
     detail.textContent = subtitle(track);
     play.hidden = false;
+    if (done) done.textContent = "Done";
+    clearLinkConfirmSc();
   } else {
     linkConfirmId = "";
     name.hidden = true;
@@ -2878,7 +2885,22 @@ function linkConfirmVisible() {
   return !document.getElementById("link-confirm").hidden;
 }
 
+function clearLinkConfirmSc() {
+  const mount = document.getElementById("link-confirm-sc");
+  if (!mount) return;
+  mount.replaceChildren();
+  mount.hidden = true;
+  const done = document.getElementById("link-confirm-done");
+  if (done && !linkProbeCancel) done.textContent = "Done";
+}
+
 function hideLinkConfirm() {
+  if (linkProbeCancel) {
+    const cancel = linkProbeCancel;
+    linkProbeCancel = null;
+    cancel();
+  }
+  clearLinkConfirmSc();
   linkConfirmId = "";
   document.getElementById("link-confirm").hidden = true;
 }
@@ -2900,18 +2922,20 @@ async function addLinkText(text) {
   document.getElementById("paste-link").disabled = true;
   document.getElementById("add-link").disabled = true;
   document.getElementById("add-link").textContent = "Checking link…";
+  showLinkConfirm("Checking link…");
   try {
     const track = await addLink(text, {
-      onStatus: (message) => {
-        document.getElementById("add-link").textContent = message;
-      }
+      onStatus: (message) => showLinkConfirm(message)
     });
     document.getElementById("link-input").value = "";
+    hideLinkConfirm();
     hideSheet("add-sheet");
     render();
     setNotice("Added " + track.title);
   } catch (error) {
-    setAddError(error.message || "That link could not be added.");
+    const message = error.message || "That link could not be added.";
+    if (linkConfirmVisible()) showLinkConfirm(message);
+    else setAddError(message);
   } finally {
     state.working = false;
     document.getElementById("paste-link").disabled = false;
@@ -2942,7 +2966,7 @@ async function addLink(text, options) {
   status("Checking link…");
   const meta = await fetchOEmbed(parsed);
   status("Trying playback…");
-  await probeStreamingPlayback(parsed, meta);
+  await probeStreamingPlayback(parsed, meta, { onStatus: status, allowTap: parsed.source === "soundcloud" });
   const track = {
     id: parsed.source + ":" + parsed.mediaRef,
     title: meta.title,
@@ -2958,11 +2982,14 @@ async function addLink(text, options) {
   return track;
 }
 
-function probeStreamingPlayback(parsed, meta) {
+function probeStreamingPlayback(parsed, meta, options) {
   if (parsed.source === "youtube") return probeYouTubePlayback(parsed.mediaRef);
   if (parsed.source === "soundcloud") {
     const url = String((meta && meta.streamRef) || parsed.mediaRef || "").trim();
-    return probeSoundCloudPlayback(url);
+    return probeSoundCloudPlayback(url, {
+      allowTap: !options || options.allowTap !== false,
+      onStatus: options && options.onStatus
+    });
   }
   return Promise.reject(new Error(LINK_PLAY_FAIL));
 }
@@ -3042,23 +3069,97 @@ function probeYouTubePlayback(videoId) {
   });
 }
 
-function probeSoundCloudPlayback(playURL) {
+function probeSoundCloudPlayback(playURL, options) {
+  const allowTap = Boolean(options && options.allowTap);
+  const onStatus = options && typeof options.onStatus === "function" ? options.onStatus : null;
   return new Promise((resolve, reject) => {
     let settled = false;
     let frame = null;
     let widget = null;
-    const finish = (ok) => {
-      if (settled) return;
-      settled = true;
-      clearTimeout(timer);
+    let waitingForTap = false;
+    let autoTimer = null;
+    let tapTimer = null;
+    let playCheckTimer = null;
+
+    const cleanup = () => {
+      clearTimeout(autoTimer);
+      clearTimeout(tapTimer);
+      clearTimeout(playCheckTimer);
+      if (linkProbeCancel === cancel) linkProbeCancel = null;
       try {
         if (widget && widget.pause) widget.pause();
       } catch { /* probe teardown */ }
       if (frame && frame.parentNode) frame.remove();
-      if (ok) resolve();
-      else reject(new Error(LINK_PLAY_FAIL));
+      clearLinkConfirmSc();
     };
-    const timer = setTimeout(() => finish(false), LINK_PROBE_MS);
+
+    const finish = (ok, err) => {
+      if (settled) return;
+      settled = true;
+      cleanup();
+      if (ok) resolve();
+      else reject(err || new Error(LINK_PLAY_FAIL));
+    };
+
+    const cancel = () => finish(false, new Error(LINK_PLAY_CANCEL));
+    linkProbeCancel = cancel;
+
+    const setStatus = (message) => {
+      if (onStatus) onStatus(message);
+      else showLinkConfirm(message);
+    };
+
+    const revealForTap = () => {
+      if (settled || waitingForTap) return;
+      if (!allowTap || !frame) {
+        finish(false);
+        return;
+      }
+      waitingForTap = true;
+      clearTimeout(autoTimer);
+      clearTimeout(playCheckTimer);
+      const mount = document.getElementById("link-confirm-sc");
+      const done = document.getElementById("link-confirm-done");
+      if (!mount) {
+        finish(false);
+        return;
+      }
+      setStatus("Tap play on the SoundCloud player to add this song.");
+      showLinkConfirm("Tap play on the SoundCloud player to add this song.");
+      if (done) done.textContent = "Cancel";
+      mount.hidden = false;
+      frame.removeAttribute("aria-hidden");
+      frame.style.cssText = "display:block;width:100%;height:166px;border:0;";
+      mount.replaceChildren(frame);
+      try {
+        if (widget && widget.setVolume) widget.setVolume(100);
+      } catch { /* keep going */ }
+      tapTimer = setTimeout(() => finish(false), LINK_TAP_MS);
+    };
+
+    const acceptIfStillPlaying = () => {
+      clearTimeout(playCheckTimer);
+      playCheckTimer = setTimeout(() => {
+        if (settled) return;
+        if (!widget || !widget.isPaused) {
+          finish(true);
+          return;
+        }
+        widget.isPaused((paused) => {
+          if (settled) return;
+          if (!paused) finish(true);
+          else if (allowTap) revealForTap();
+          else finish(false);
+        });
+      }, 450);
+    };
+
+    autoTimer = setTimeout(() => {
+      if (settled || waitingForTap) return;
+      if (allowTap) revealForTap();
+      else finish(false);
+    }, LINK_AUTO_MS);
+
     const start = async () => {
       try {
         await loadSoundCloudAPI();
@@ -3068,23 +3169,34 @@ function probeSoundCloudPlayback(playURL) {
         frame.setAttribute("allow", "autoplay; encrypted-media");
         frame.setAttribute("aria-hidden", "true");
         frame.style.cssText =
-          "position:fixed;left:-9999px;top:0;width:320px;height:180px;opacity:0;pointer-events:none;border:0;";
+          "position:fixed;left:-9999px;top:0;width:320px;height:166px;opacity:0;pointer-events:none;border:0;";
         frame.src =
           "https://w.soundcloud.com/player/?" +
           "url=" +
           encodeURIComponent(playURL) +
-          "&auto_play=true&hide_related=true&show_comments=false&show_user=false&show_reposts=false&visual=false&show_teaser=false";
+          "&auto_play=true&hide_related=true&show_comments=false&show_user=true&show_reposts=false&visual=false&show_teaser=false";
         document.body.append(frame);
         widget = window.SC.Widget(frame);
         widget.bind(window.SC.Widget.Events.READY, () => {
           try {
-            if (widget.setVolume) widget.setVolume(0);
+            if (widget.setVolume) widget.setVolume(waitingForTap ? 100 : 0);
             widget.play();
-          } catch { /* wait for PLAY */ }
+          } catch { /* wait for PLAY or tap */ }
         });
-        widget.bind(window.SC.Widget.Events.PLAY, () => finish(true));
+        widget.bind(window.SC.Widget.Events.PLAY, () => {
+          if (settled) return;
+          if (waitingForTap) {
+            finish(true);
+            return;
+          }
+          acceptIfStillPlaying();
+        });
         if (window.SC.Widget.Events.ERROR) {
-          widget.bind(window.SC.Widget.Events.ERROR, () => finish(false));
+          widget.bind(window.SC.Widget.Events.ERROR, () => {
+            if (settled || waitingForTap) return;
+            if (allowTap) revealForTap();
+            else finish(false);
+          });
         }
       } catch {
         finish(false);
