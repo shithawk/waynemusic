@@ -128,6 +128,8 @@ let pendingYtVideo = "";
 let scWidget = null;
 let streamingWatchdog = null;
 let streamingHold = false;
+let streamingLive = false;
+let streamingPauseToken = 0;
 let noticeTimer = 0;
 let noticeActionURL = "";
 let ignoreAdvance = false;
@@ -292,6 +294,20 @@ async function init() {
     }
     if (!streamingHold) return;
     resumeStreaming();
+  });
+  window.addEventListener("pagehide", () => skipStreamingWhenBackgrounded());
+  document.addEventListener("freeze", () => skipStreamingWhenBackgrounded());
+  window.addEventListener("blur", () => {
+    window.setTimeout(() => {
+      if (document.hasFocus()) return;
+      if (document.hidden || document.visibilityState === "hidden") {
+        skipStreamingWhenBackgrounded();
+        return;
+      }
+      const active = document.activeElement;
+      if (active && active.tagName === "IFRAME") return;
+      skipStreamingWhenBackgrounded();
+    }, 200);
   });
   window.addEventListener("offline", () => {
     const track = currentTrack();
@@ -1691,6 +1707,7 @@ function setPlaying(playing) {
   state.playing = playing;
   if (playing) streamingHold = isStreamingTrack(currentTrack());
   else if (!appInBackground()) streamingHold = false;
+  if (playing && isStreamingTrack(currentTrack())) streamingLive = true;
   const playButton = document.getElementById("play-button");
   document.getElementById("play-label").textContent = playing ? "Pause" : "Play";
   playButton.setAttribute("aria-label", playing ? "Pause" : "Play");
@@ -1757,7 +1774,8 @@ function streamingPlaybackUnavailable() {
 }
 
 function appInBackground() {
-  return typeof document !== "undefined" && document.hidden;
+  if (typeof document === "undefined") return false;
+  return document.hidden || document.visibilityState === "hidden";
 }
 
 function isStreamingTrack(track) {
@@ -1765,15 +1783,34 @@ function isStreamingTrack(track) {
 }
 
 function shouldSkipStreamingTrack(track) {
-  return isStreamingTrack(track) && streamingPlaybackUnavailable();
+  // Offline, or the phone is away: YouTube and SoundCloud cannot keep playing.
+  return isStreamingTrack(track) && (streamingPlaybackUnavailable() || appInBackground());
 }
 
+
+function embedPaused() {
+  if (!isStreamingTrack(currentTrack())) return;
+  const trackId = state.currentId;
+  const token = ++streamingPauseToken;
+  window.setTimeout(() => {
+    if (token !== streamingPauseToken) return;
+    if (state.currentId !== trackId || !isStreamingTrack(currentTrack())) return;
+    if (document.hidden || document.visibilityState === "hidden") {
+      skipStreamingWhenBackgrounded();
+      return;
+    }
+    if (isAudiblyPlaying()) return;
+    streamingLive = false;
+  }, 400);
+}
 
 function skipStreamingWhenBackgrounded() {
   const track = currentTrack();
   if (!isStreamingTrack(track)) return;
-  if (!state.playing && !streamingHold) return;
-  // Phone minimize / background stops embedded YouTube & SoundCloud — continue with a local song.
+  if (!state.playing && !streamingHold && !streamingLive) return;
+  // Minimize and lost focus stop embedded YouTube and SoundCloud. Continue on a local song.
+  streamingPauseToken++;
+  streamingLive = false;
   advancePastStreamingFailure();
 }
 
@@ -2649,7 +2686,7 @@ async function playTrack(track, options) {
     finishTrackChange();
     if (
       (track.source === "youtube" || track.source === "soundcloud") &&
-      streamingPlaybackUnavailable()
+      (streamingPlaybackUnavailable() || appInBackground())
     ) {
       advancePastStreamingFailure();
       return;
@@ -2667,8 +2704,11 @@ function isAudiblyPlaying() {
 
 function userPause() {
   streamingHold = false;
+  streamingLive = false;
+  streamingPauseToken++;
   const track = currentTrack();
   if (!track) return;
+  if (isStreamingTrack(track)) setPlaying(false);
   if (track.source === "local") {
     audio().pause();
     return;
@@ -3006,7 +3046,7 @@ function tryPlayYouTube() {
 }
 
 function playYouTube(track) {
-  if (streamingPlaybackUnavailable()) {
+  if (streamingPlaybackUnavailable() || appInBackground()) {
     advancePastStreamingFailure();
     return;
   }
@@ -3033,7 +3073,7 @@ function playYouTube(track) {
 }
 
 async function playSoundCloud(track) {
-  if (streamingPlaybackUnavailable()) {
+  if (streamingPlaybackUnavailable() || appInBackground()) {
     advancePastStreamingFailure();
     return;
   }
@@ -3057,7 +3097,7 @@ async function playSoundCloud(track) {
   stage.append(frame);
   if (!window.SC || !window.SC.Widget) {
     finishTrackChange();
-    if (streamingPlaybackUnavailable()) advancePastStreamingFailure();
+    if (streamingPlaybackUnavailable() || appInBackground()) advancePastStreamingFailure();
     else setNotice("SoundCloud could not load. Check your connection and try again.");
     return;
   }
@@ -3074,8 +3114,7 @@ async function playSoundCloud(track) {
   });
   scWidget.bind(window.SC.Widget.Events.PAUSE, () => {
     if (!isSource("soundcloud")) return;
-    if (streamingHold && appInBackground()) return;
-    setPlaying(false);
+    embedPaused();
   });
   scWidget.bind(window.SC.Widget.Events.FINISH, () => {
     if (isSource("soundcloud") && shouldAdvance()) step(1);
@@ -3083,7 +3122,7 @@ async function playSoundCloud(track) {
   if (window.SC.Widget.Events.ERROR) {
     scWidget.bind(window.SC.Widget.Events.ERROR, () => {
       if (!isSource("soundcloud")) return;
-      if (streamingPlaybackUnavailable()) advancePastStreamingFailure();
+      if (streamingPlaybackUnavailable() || appInBackground()) advancePastStreamingFailure();
     });
   }
   armStreamingWatchdog();
@@ -3146,8 +3185,7 @@ window.onYouTubeIframeAPIReady = function onYouTubeIframeAPIReady() {
           }
         }
         if (event.data === YT.PlayerState.PAUSED) {
-          if (streamingHold && appInBackground()) return;
-          setPlaying(false);
+          embedPaused();
         }
         if (event.data === YT.PlayerState.ENDED && youtubeActuallyEnded(event)) step(1);
       },
@@ -3682,6 +3720,8 @@ const liquidBlob = {
   press: 0,
   pointer: null,
   suppressClick: false,
+  swipeCue: 0,
+  swipeCueUntil: 0,
   finger: { x: 0.5, y: 0.52, tx: 0.5, ty: 0.52 },
   trail: [],
   shown: null,
@@ -3723,6 +3763,8 @@ const liquidBlob = {
       if (event.button != null && event.button !== 0) return;
       this.press = 1;
       this.pointer = { x: event.clientX, y: event.clientY, dx: 0, dy: 0 };
+      this.swipeCue = 0;
+      this.swipeCueUntil = 0;
       aim(event);
       btn.setPointerCapture?.(event.pointerId);
     });
@@ -3731,6 +3773,14 @@ const liquidBlob = {
       aim(event);
       this.pointer.dx = event.clientX - this.pointer.x;
       this.pointer.dy = event.clientY - this.pointer.y;
+      const dx = this.pointer.dx;
+      const dy = this.pointer.dy;
+      if (Math.abs(dx) >= 24 && Math.abs(dx) > Math.abs(dy)) {
+        this.swipeCue = dx > 0 ? 1 : -1;
+        this.swipeCueUntil = 0;
+      } else if (this.swipeCueUntil <= 0) {
+        this.swipeCue = 0;
+      }
     });
     const release = () => {
       this.press = 0;
@@ -3746,11 +3796,20 @@ const liquidBlob = {
       if (Math.abs(dx) >= 36 && Math.abs(dx) > Math.abs(dy)) {
         this.suppressClick = true;
         setTimeout(() => { this.suppressClick = false; }, 450);
+        this.swipeCue = dx > 0 ? 1 : -1;
+        this.swipeCueUntil = performance.now() + 420;
         event.preventDefault();
         skip(dx > 0 ? 1 : -1);
+      } else {
+        this.swipeCue = 0;
+        this.swipeCueUntil = 0;
       }
     });
-    btn.addEventListener("pointercancel", release);
+    btn.addEventListener("pointercancel", () => {
+      this.swipeCue = 0;
+      this.swipeCueUntil = 0;
+      release();
+    });
     btn.addEventListener("click", () => {
       if (this.suppressClick) {
         this.suppressClick = false;
@@ -3868,9 +3927,67 @@ const liquidBlob = {
     ctx.fillStyle = gloss;
     ctx.fillRect(0, 0, w, h);
     ctx.globalCompositeOperation = "source-over";
+    this.drawMark(ctx, cx, cy, h * breathe, playing);
+    let cue = this.swipeCue;
+    if (this.swipeCueUntil > 0 && now > this.swipeCueUntil) {
+      this.swipeCue = 0;
+      this.swipeCueUntil = 0;
+      cue = 0;
+    }
+    if (cue) this.drawSkip(ctx, cx, cy, h * breathe, cue);
+  },
+
+  drawMark(ctx, x, y, size, playing) {
+    ctx.save();
+    ctx.globalAlpha = 0.5;
+    ctx.fillStyle = "#f7f3ea";
+    const s = size * 0.2;
+    if (playing) {
+      const barW = s * 0.3;
+      const gap = s * 0.18;
+      const barH = s * 1.2;
+      const r = barW * 0.4;
+      ctx.beginPath();
+      ctx.roundRect(x - gap - barW, y - barH / 2, barW, barH, r);
+      ctx.roundRect(x + gap, y - barH / 2, barW, barH, r);
+      ctx.fill();
+    } else {
+      ctx.beginPath();
+      ctx.moveTo(x - s * 0.38, y - s * 0.58);
+      ctx.lineTo(x + s * 0.62, y);
+      ctx.lineTo(x - s * 0.38, y + s * 0.58);
+      ctx.closePath();
+      ctx.fill();
+    }
+    ctx.restore();
+  },
+
+  drawSkip(ctx, cx, cy, size, direction) {
+    ctx.save();
+    ctx.globalAlpha = 0.5;
+    ctx.fillStyle = "#f7f3ea";
+    const s = size * 0.16;
+    const x = cx + direction * size * 0.42;
+    const y = cy;
+    ctx.beginPath();
+    if (direction > 0) {
+      ctx.moveTo(x - s * 0.45, y - s * 0.7);
+      ctx.lineTo(x + s * 0.45, y);
+      ctx.lineTo(x - s * 0.45, y + s * 0.7);
+      ctx.closePath();
+      ctx.fill();
+      ctx.fillRect(x + s * 0.52, y - s * 0.7, s * 0.22, s * 1.4);
+    } else {
+      ctx.moveTo(x + s * 0.45, y - s * 0.7);
+      ctx.lineTo(x - s * 0.45, y);
+      ctx.lineTo(x + s * 0.45, y + s * 0.7);
+      ctx.closePath();
+      ctx.fill();
+      ctx.fillRect(x - s * 0.74, y - s * 0.7, s * 0.22, s * 1.4);
+    }
+    ctx.restore();
   }
 };
-
 
 function chipThemeTarget(chip, current) {
   if (current === chip) return "zero";

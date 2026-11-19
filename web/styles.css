@@ -2617,13 +2617,26 @@ html[data-family-theme="liquid"] body.section-home .home-actions {
 
 html[data-family-theme="liquid"] #artists-sheet,
 html[data-family-theme="liquid"] #videos-sheet,
-html[data-family-theme="liquid"] #add-sheet {
+html[data-family-theme="liquid"] #add-sheet,
+html[data-family-theme="liquid"] #manage-sheet {
   color: #1c2430;
+}
+
+html[data-family-theme="liquid"] #close-manage {
+  color: #fff;
+  -webkit-text-fill-color: #fff;
 }
 
 html[data-family-theme="liquid"] #add-sheet #download-all,
 html[data-family-theme="liquid"] #add-sheet #add-link,
 html[data-family-theme="liquid"] #add-sheet .download:not(.saved) {
+  color: #fff;
+  -webkit-text-fill-color: #fff;
+}
+
+html[data-family-theme="liquid"] .catalog-row.saved,
+html[data-family-theme="liquid"] .catalog-row.saved .song-title,
+html[data-family-theme="liquid"] .catalog-row.saved .song-sub {
   color: #fff;
   -webkit-text-fill-color: #fff;
 }
