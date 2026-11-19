@@ -1,0 +1,21 @@
+# Wayne's video list (blank lines and # comments are ignored).
+#
+# YouTube or SoundCloud. Same line shapes for both.
+#
+# URL only (tries the site for a title):
+#   https://www.youtube.com/watch?v=VIDEO_ID
+#   https://soundcloud.com/artist/track
+#
+# Recommended — you set song + artist (no network needed):
+#   Artist - Song title | https://www.youtube.com/watch?v=VIDEO_ID
+#   Artist - Song title | https://soundcloud.com/artist/track
+#
+# Or URL first:
+#   https://www.youtube.com/watch?v=VIDEO_ID | Artist | Song title
+#   https://soundcloud.com/artist/track | Artist | Song title
+#
+# Rebuild after editing:
+#   bash scripts/make-youtube-catalog.sh
+#
+# Videos in Wayne's Music. Open the player once so this list can load.
+

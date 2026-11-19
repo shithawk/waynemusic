@@ -1335,6 +1335,37 @@ async function mergeYouTubeCatalogFromMac() {
   if (!entries.length) return;
   let changed = false;
   for (const entry of entries) {
+    if (entry.source === "soundcloud") {
+      let page = "";
+      try {
+        page = normalizeSoundCloudURL(entry.url || "");
+      } catch {
+        continue;
+      }
+      let parsedURL;
+      try {
+        parsedURL = new URL(page);
+      } catch {
+        continue;
+      }
+      if (!isSoundCloud(parsedURL)) continue;
+      if (state.tracks.some((track) => track.source === "soundcloud" && normalizeSoundCloudURL(track.mediaRef) === page)) continue;
+      const soundcloud = {
+        id: "soundcloud:" + page,
+        title: String(entry.title || "SoundCloud").trim() || "SoundCloud",
+        artist: String(entry.artist || "").trim(),
+        source: "soundcloud",
+        mediaRef: page,
+        bytes: 0,
+        createdAt: Date.now()
+      };
+      try {
+        await putTrack(soundcloud);
+        state.tracks.push(soundcloud);
+        changed = true;
+      } catch { /* IndexedDB may be unavailable in a transient tab. */ }
+      continue;
+    }
     const id = sanitizeYouTubeID(entry.videoId);
     if (!id) continue;
     if (state.tracks.some((track) => track.source === "youtube" && track.mediaRef === id)) continue;
@@ -3908,7 +3939,9 @@ function applyHomeHero(theme) {
     src = FAMILY_HEROES_BW[key] || FAMILY_HEROES_BW[DEFAULT_FAMILY_THEME];
   } else if (theme === "liquid") {
     const key = zeroHeroFor();
-    src = FAMILY_HEROES[key] || FAMILY_HEROES[DEFAULT_FAMILY_THEME];
+    src = key === "jacob"
+      ? "/heroes/jacobLiquid.jpg"
+      : (FAMILY_HEROES[key] || FAMILY_HEROES[DEFAULT_FAMILY_THEME]);
   } else {
     src = FAMILY_HEROES[theme] || FAMILY_HEROES[DEFAULT_FAMILY_THEME];
   }

@@ -24,6 +24,13 @@
 		file_server
 	}
 
+	handle /youtube-catalog.json {
+		rewrite * /catalog.json
+		root * youtube
+		header Cache-Control "no-store"
+		file_server
+	}
+
 	handle /api/youtube-oembed {
 		rewrite * /oembed?format=json&{http.request.uri.query}
 		reverse_proxy https://www.youtube.com {
