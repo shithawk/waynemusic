@@ -263,7 +263,7 @@ let primaryAudioId = "audio";
 const audio = () => document.getElementById(primaryAudioId);
 const otherAudio = () => document.getElementById(primaryAudioId === "audio" ? "audio-b" : "audio");
 
-const CROSSFADE_MS = 2500;
+const CROSSFADE_MS = 4500;
 const CROSSFADE_SKIP_MS = 800;
 const PRELOAD_LEAD_MS = 1200;
 
@@ -279,6 +279,7 @@ const xf = {
   token: 0
 };
 
+let ytPlayerA = null;
 let ytPlayerB = null;
 let ytPrimaryIsA = true;
 let scOutgoingFrame = null;
@@ -350,38 +351,103 @@ function setSlotVolume(slot, level01) {
 }
 
 function activeYtPlayer() {
-  return ytPrimaryIsA ? ytPlayer : ytPlayerB;
+  return ytPrimaryIsA ? ytPlayerA : ytPlayerB;
 }
 
 function idleYtPlayer() {
-  return ytPrimaryIsA ? ytPlayerB : ytPlayer;
+  return ytPrimaryIsA ? ytPlayerB : ytPlayerA;
+}
+
+function syncActiveYtAlias() {
+  ytPlayer = activeYtPlayer();
 }
 
 function syncYtMountVisibility() {
   const a = document.getElementById("yt-player");
   const b = document.getElementById("yt-player-b");
   if (!a || !b) return;
-  a.classList.toggle("is-active", ytPrimaryIsA);
-  b.classList.toggle("is-active", !ytPrimaryIsA);
-  a.hidden = !ytPrimaryIsA && !(xf.active && xf.inn && xf.inn.kind === "youtube" && xf.inn.player === ytPlayer);
-  b.hidden = ytPrimaryIsA && !(xf.active && xf.inn && xf.inn.kind === "youtube" && xf.inn.player === ytPlayerB);
-  if (xf.active && xf.inn && xf.inn.kind === "youtube") {
+  const incoming = xf.active && xf.inn && xf.inn.kind === "youtube" ? xf.inn.player : null;
+  a.classList.toggle("is-active", incoming ? incoming === ytPlayerA : ytPrimaryIsA);
+  b.classList.toggle("is-active", incoming ? incoming === ytPlayerB : !ytPrimaryIsA);
+  a.hidden = !(ytPrimaryIsA || incoming === ytPlayerA);
+  b.hidden = !(!ytPrimaryIsA || incoming === ytPlayerB);
+  if (incoming) {
     a.hidden = false;
     b.hidden = false;
-    if (xf.inn.player === ytPlayerB) {
-      b.classList.add("is-active");
-      a.classList.remove("is-active");
-    } else {
-      a.classList.add("is-active");
-      b.classList.remove("is-active");
-    }
   }
 }
 
 function swapYtPrimary() {
   ytPrimaryIsA = !ytPrimaryIsA;
-  ytPlayer = activeYtPlayer();
+  syncActiveYtAlias();
   syncYtMountVisibility();
+}
+
+function ensureYouTubePlayers() {
+  return new Promise((resolve) => {
+    const ready = () =>
+      Boolean(
+        ytPlayerA &&
+          ytPlayerB &&
+          ytPlayerA.loadVideoById &&
+          ytPlayerB.loadVideoById
+      );
+    if (ready()) {
+      syncActiveYtAlias();
+      resolve(true);
+      return;
+    }
+    loadYouTubeAPI();
+    if (window.YT && window.YT.Player && !ytPlayerA && !ytPlayerB) {
+      ytPrimaryIsA = true;
+      makeYouTubePlayer("yt-player", true);
+      makeYouTubePlayer("yt-player-b", false);
+    }
+    const started = performance.now();
+    const poll = () => {
+      if (ready()) {
+        syncActiveYtAlias();
+        resolve(true);
+        return;
+      }
+      if (performance.now() - started > 8000) {
+        resolve(false);
+        return;
+      }
+      window.setTimeout(poll, 50);
+    };
+    poll();
+  });
+}
+
+function waitYtPlaying(player, timeoutMs) {
+  return new Promise((resolve) => {
+    if (!player || !window.YT) {
+      resolve(false);
+      return;
+    }
+    try {
+      const state = player.getPlayerState ? player.getPlayerState() : -1;
+      if (state === YT.PlayerState.PLAYING || state === YT.PlayerState.BUFFERING) {
+        resolve(true);
+        return;
+      }
+    } catch { /* not ready */ }
+    let done = false;
+    const finish = (ok) => {
+      if (done) return;
+      done = true;
+      window.clearInterval(timer);
+      resolve(ok);
+    };
+    const timer = window.setInterval(() => {
+      try {
+        const state = player.getPlayerState ? player.getPlayerState() : -1;
+        if (state === YT.PlayerState.PLAYING || state === YT.PlayerState.BUFFERING) finish(true);
+      } catch { /* keep waiting */ }
+    }, 80);
+    window.setTimeout(() => finish(false), timeoutMs || 2500);
+  });
 }
 
 function currentPlaybackPosition() {
@@ -484,12 +550,10 @@ function finishCrossfade() {
       primaryAudioId = inn.el.id;
       setLocalVolume(audio(), 1);
     } else if (inn.kind === "youtube" && inn.player) {
-      if (inn.player === ytPlayerB || inn.player === ytPlayer) {
-        if (inn.player !== ytPlayer) swapYtPrimary();
-        else syncYtMountVisibility();
-      }
-      ytPlayer = inn.player;
+      ytPrimaryIsA = inn.player === ytPlayerA;
+      syncActiveYtAlias();
       setYtVolume(ytPlayer, 1);
+      syncYtMountVisibility();
     } else if (inn.kind === "soundcloud") {
       scWidget = inn.widget;
       setScVolume(scWidget, 1);
@@ -535,16 +599,28 @@ async function prepareIncomingSlot(track) {
     return { kind: "local", el, trackId: track.id };
   }
   if (track.source === "youtube") {
-    loadYouTubeAPI();
+    const ok = await ensureYouTubePlayers();
+    if (!ok) return null;
     const idle = idleYtPlayer();
     if (!idle || !idle.loadVideoById) return null;
-    setYtVolume(idle, 0);
-    try {
-      idle.loadVideoById(track.mediaRef);
-      if (idle.playVideo) idle.playVideo();
-    } catch { return null; }
+    const stage = document.getElementById("stage-yt");
+    if (stage) stage.hidden = false;
     const mount = idle === ytPlayerB ? document.getElementById("yt-player-b") : document.getElementById("yt-player");
     if (mount) mount.hidden = false;
+    setYtVolume(idle, 0);
+    try {
+      idle.unMute && idle.unMute();
+      idle.loadVideoById(track.mediaRef);
+      if (idle.playVideo) idle.playVideo();
+    } catch {
+      return null;
+    }
+    await waitYtPlaying(idle, 2800);
+    setYtVolume(idle, 0);
+    if (idle.playVideo) {
+      try { idle.playVideo(); } catch { /* keep going */ }
+    }
+    syncYtMountVisibility();
     return { kind: "youtube", player: idle, trackId: track.id };
   }
   if (track.source === "soundcloud") {
@@ -608,6 +684,7 @@ async function startCrossfade(nextTrack, durationMs) {
     skipPastStreamingTracks(1);
     return false;
   }
+  const previousId = state.currentId;
   const out = captureOutgoingSlot();
   if (!out) return false;
   beginTrackChange();
@@ -641,7 +718,11 @@ async function startCrossfade(nextTrack, durationMs) {
   const inn = await prepareIncomingSlot(nextTrack);
   if (token !== xf.token || !inn) {
     cancelCrossfade();
+    state.currentId = previousId;
     finishTrackChange();
+    void playTrack(nextTrack, {
+      open: videosInlinePlayback() ? false : playerIsOpen() || nextTrack.source !== "local"
+    });
     return false;
   }
   xf.inn = inn;
@@ -653,6 +734,8 @@ async function startCrossfade(nextTrack, durationMs) {
     try { inn.player.playVideo(); } catch { /* */ }
     syncYtMountVisibility();
   }
+  // Restart the fade clock after incoming is actually ready (YT can take a moment).
+  xf.startedAt = performance.now();
   xf.raf = requestAnimationFrame(runCrossfadeTick);
   return true;
 }
@@ -902,7 +985,6 @@ function bindEvents() {
   document.getElementById("add-music").addEventListener("click", openAdd);
   document.getElementById("manage-songs").addEventListener("click", openManage);
   document.getElementById("crossfade-toggle").addEventListener("click", toggleCrossfade);
-  document.getElementById("close-manage").addEventListener("click", goHome);
   document.getElementById("download-all").addEventListener("click", downloadAll);
   document.getElementById("from-ipad").addEventListener("click", () => document.getElementById("file-input").click());
   document.getElementById("file-input").addEventListener("change", (event) => importFiles(event.target.files));
@@ -1979,11 +2061,12 @@ async function addYouTubeVideo(id, button) {
   const title = (button.dataset.videoTitle || "YouTube video").trim();
   const artist = (button.dataset.videoArtist || "").trim();
   button.disabled = true;
-  button.textContent = "Adding…";
+  button.textContent = "Trying playback…";
   try {
     if (state.tracks.some((track) => track.source === "youtube" && track.mediaRef === id)) {
       throw new Error("That video is already in the list.");
     }
+    await probeYouTubePlayback(id);
     const track = {
       id: "youtube:" + id,
       title: title,
@@ -2016,7 +2099,7 @@ async function addYouTubeVideo(id, button) {
     }
     button.disabled = false;
     button.textContent = "Add";
-    setVideoSearchStatus(error.message || "That video could not be added.");
+    setVideoSearchStatus(error.message || LINK_PLAY_FAIL);
   }
 }
 
@@ -2717,8 +2800,11 @@ async function importFiles(fileList) {
   else setNotice("Added " + titles.length + " songs. " + failures + " could not be added.");
 }
 
+const LINK_PLAY_FAIL = "Couldn’t play this song. It wasn’t added.";
+const LINK_PROBE_MS = 8000;
+
 async function pasteLink() {
-  showLinkConfirm("Adding…");
+  showLinkConfirm("Checking link…");
   let copied = "";
   try {
     copied = await navigator.clipboard.readText();
@@ -2746,7 +2832,10 @@ async function addPastedLink(text) {
       showLinkConfirm("That song is already in the list.", existing);
       return;
     }
-    const track = await addLink(text);
+    showLinkConfirm("Checking link…");
+    const track = await addLink(text, {
+      onStatus: (message) => showLinkConfirm(message)
+    });
     render();
     if (linkConfirmVisible()) showLinkConfirm("Added", track);
     else setNotice("Added " + track.title);
@@ -2810,9 +2899,13 @@ async function addLinkText(text) {
   state.working = true;
   document.getElementById("paste-link").disabled = true;
   document.getElementById("add-link").disabled = true;
-  document.getElementById("add-link").textContent = "Adding…";
+  document.getElementById("add-link").textContent = "Checking link…";
   try {
-    const track = await addLink(text);
+    const track = await addLink(text, {
+      onStatus: (message) => {
+        document.getElementById("add-link").textContent = message;
+      }
+    });
     document.getElementById("link-input").value = "";
     hideSheet("add-sheet");
     render();
@@ -2827,13 +2920,29 @@ async function addLinkText(text) {
   }
 }
 
-async function addLink(text) {
+function setLinkAddStatus(text) {
+  if (linkConfirmVisible()) showLinkConfirm(text);
+  else {
+    const button = document.getElementById("add-link");
+    if (button) button.textContent = text || "Add this link";
+  }
+}
+
+async function addLink(text, options) {
+  const onStatus = options && typeof options.onStatus === "function" ? options.onStatus : null;
+  const status = (message) => {
+    if (onStatus) onStatus(message);
+    else setLinkAddStatus(message);
+  };
   const parsed = parseLink(text);
   if (!parsed) throw new Error("Use a YouTube or SoundCloud link.");
   if (state.tracks.some((track) => linkRefsMatch(track, parsed))) {
     throw new Error("That song is already in the list.");
   }
+  status("Checking link…");
   const meta = await fetchOEmbed(parsed);
+  status("Trying playback…");
+  await probeStreamingPlayback(parsed, meta);
   const track = {
     id: parsed.source + ":" + parsed.mediaRef,
     title: meta.title,
@@ -2847,6 +2956,142 @@ async function addLink(text) {
   await putTrack(track);
   state.tracks = sortTracks(state.tracks.concat(track));
   return track;
+}
+
+function probeStreamingPlayback(parsed, meta) {
+  if (parsed.source === "youtube") return probeYouTubePlayback(parsed.mediaRef);
+  if (parsed.source === "soundcloud") {
+    const url = String((meta && meta.streamRef) || parsed.mediaRef || "").trim();
+    return probeSoundCloudPlayback(url);
+  }
+  return Promise.reject(new Error(LINK_PLAY_FAIL));
+}
+
+function probeYouTubePlayback(videoId) {
+  return new Promise((resolve, reject) => {
+    let settled = false;
+    let player = null;
+    let mount = null;
+    const finish = (ok) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
+      try {
+        if (player && player.stopVideo) player.stopVideo();
+      } catch { /* probe teardown */ }
+      try {
+        if (player && player.destroy) player.destroy();
+      } catch { /* probe teardown */ }
+      if (mount && mount.parentNode) mount.remove();
+      const leftover = document.getElementById("yt-probe-mount");
+      if (leftover && leftover.parentNode) leftover.remove();
+      if (ok) resolve();
+      else reject(new Error(LINK_PLAY_FAIL));
+    };
+    const timer = setTimeout(() => finish(false), LINK_PROBE_MS);
+    const start = async () => {
+      try {
+        loadYouTubeAPI();
+        await new Promise((ready, fail) => {
+          const began = Date.now();
+          const wait = () => {
+            if (window.YT && window.YT.Player) return ready();
+            if (Date.now() - began > LINK_PROBE_MS) return fail(new Error(LINK_PLAY_FAIL));
+            setTimeout(wait, 50);
+          };
+          wait();
+        });
+        mount = document.createElement("div");
+        mount.id = "yt-probe-mount";
+        mount.setAttribute("aria-hidden", "true");
+        mount.style.cssText =
+          "position:fixed;left:-9999px;top:0;width:320px;height:180px;opacity:0;pointer-events:none;";
+        document.body.append(mount);
+        player = new YT.Player("yt-probe-mount", {
+          width: 320,
+          height: 180,
+          videoId: videoId,
+          playerVars: {
+            autoplay: 1,
+            mute: 1,
+            playsinline: 1,
+            rel: 0,
+            controls: 0,
+            fs: 0,
+            origin: window.location.origin
+          },
+          events: {
+            onReady: (event) => {
+              try {
+                if (event.target.mute) event.target.mute();
+                if (event.target.setVolume) event.target.setVolume(0);
+                if (event.target.playVideo) event.target.playVideo();
+              } catch { /* wait for PLAYING */ }
+            },
+            onStateChange: (event) => {
+              if (event.data === YT.PlayerState.PLAYING) finish(true);
+            },
+            onError: () => finish(false)
+          }
+        });
+      } catch {
+        finish(false);
+      }
+    };
+    void start();
+  });
+}
+
+function probeSoundCloudPlayback(playURL) {
+  return new Promise((resolve, reject) => {
+    let settled = false;
+    let frame = null;
+    let widget = null;
+    const finish = (ok) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
+      try {
+        if (widget && widget.pause) widget.pause();
+      } catch { /* probe teardown */ }
+      if (frame && frame.parentNode) frame.remove();
+      if (ok) resolve();
+      else reject(new Error(LINK_PLAY_FAIL));
+    };
+    const timer = setTimeout(() => finish(false), LINK_PROBE_MS);
+    const start = async () => {
+      try {
+        await loadSoundCloudAPI();
+        if (!window.SC || !window.SC.Widget) return finish(false);
+        frame = document.createElement("iframe");
+        frame.id = "sc-probe-frame";
+        frame.setAttribute("allow", "autoplay; encrypted-media");
+        frame.setAttribute("aria-hidden", "true");
+        frame.style.cssText =
+          "position:fixed;left:-9999px;top:0;width:320px;height:180px;opacity:0;pointer-events:none;border:0;";
+        frame.src =
+          "https://w.soundcloud.com/player/?" +
+          "url=" +
+          encodeURIComponent(playURL) +
+          "&auto_play=true&hide_related=true&show_comments=false&show_user=false&show_reposts=false&visual=false&show_teaser=false";
+        document.body.append(frame);
+        widget = window.SC.Widget(frame);
+        widget.bind(window.SC.Widget.Events.READY, () => {
+          try {
+            if (widget.setVolume) widget.setVolume(0);
+            widget.play();
+          } catch { /* wait for PLAY */ }
+        });
+        widget.bind(window.SC.Widget.Events.PLAY, () => finish(true));
+        if (window.SC.Widget.Events.ERROR) {
+          widget.bind(window.SC.Widget.Events.ERROR, () => finish(false));
+        }
+      } catch {
+        finish(false);
+      }
+    };
+    void start();
+  });
 }
 
 function linkRefsMatch(track, parsed) {
@@ -3653,12 +3898,10 @@ function makeYouTubePlayer(mountId, isPrimarySlot) {
     },
     events: {
       onReady: (event) => {
-        if (isPrimarySlot) {
-          ytReady = true;
-          ytPlayer = event.target;
-        } else {
-          ytPlayerB = event.target;
-        }
+        if (mountId === "yt-player") ytPlayerA = event.target;
+        else ytPlayerB = event.target;
+        ytReady = Boolean(ytPlayerA && ytPlayerB);
+        syncActiveYtAlias();
         allowYouTubeFullscreenFor(event.target);
         fitYouTube();
         syncYtMountVisibility();
@@ -3670,33 +3913,50 @@ function makeYouTubePlayer(mountId, isPrimarySlot) {
         }
       },
       onStateChange: (event) => {
-        if (!isSource("youtube") || !window.YT) return;
-        if (
-          pendingYtPlay &&
-          (event.data === YT.PlayerState.UNSTARTED ||
-            event.data === YT.PlayerState.CUED ||
-            event.data === YT.PlayerState.PAUSED ||
-            event.data === YT.PlayerState.BUFFERING)
-        ) {
-          tryPlayYouTube();
-        }
-        if (event.data === YT.PlayerState.PLAYING) {
-          pendingYtPlay = false;
-          finishTrackChange();
-          setPlaying(true);
-          applyPendingSeek();
-          if (state.videosInline) {
-            syncVideosInlinePlayer();
-            requestAnimationFrame(fitYouTube);
+        const isActivePlayer = event.target === activeYtPlayer();
+        const isIncoming = xf.active && xf.inn && xf.inn.player === event.target;
+        if (!window.YT) return;
+        if (!isActivePlayer && !isIncoming) return;
+        if ((isActivePlayer || isIncoming) && isSource("youtube")) {
+          if (
+            isActivePlayer &&
+            pendingYtPlay &&
+            (event.data === YT.PlayerState.UNSTARTED ||
+              event.data === YT.PlayerState.CUED ||
+              event.data === YT.PlayerState.PAUSED ||
+              event.data === YT.PlayerState.BUFFERING)
+          ) {
+            tryPlayYouTube();
+          }
+          if (event.data === YT.PlayerState.PLAYING) {
+            if (isActivePlayer) pendingYtPlay = false;
+            if (!xf.active) finishTrackChange();
+            setPlaying(true);
+            if (isActivePlayer) applyPendingSeek();
+            if (state.videosInline) {
+              syncVideosInlinePlayer();
+              requestAnimationFrame(fitYouTube);
+            }
+          }
+          if (event.data === YT.PlayerState.PAUSED) {
+            if (!isActivePlayer || pendingYtPlay || ignoreAdvance || xf.active) return;
+            embedPaused();
+          }
+          if (
+            isActivePlayer &&
+            event.data === YT.PlayerState.ENDED &&
+            !xf.active &&
+            youtubeActuallyEnded(event)
+          ) {
+            step(1);
           }
         }
-        if (event.data === YT.PlayerState.PAUSED) {
-          embedPaused();
-        }
-        if (event.data === YT.PlayerState.ENDED && youtubeActuallyEnded(event)) step(1);
       },
       onError: (event) => {
+        if (event.target !== activeYtPlayer()) return;
+        pendingYtPlay = false;
         finishTrackChange();
+        setPlaying(false);
         noticeYouTubePlaybackError(event && event.data);
       }
     }
@@ -3705,8 +3965,8 @@ function makeYouTubePlayer(mountId, isPrimarySlot) {
 
 window.onYouTubeIframeAPIReady = function onYouTubeIframeAPIReady() {
   ytPrimaryIsA = true;
-  makeYouTubePlayer("yt-player", true);
-  makeYouTubePlayer("yt-player-b", false);
+  if (!ytPlayerA) makeYouTubePlayer("yt-player", true);
+  if (!ytPlayerB) makeYouTubePlayer("yt-player-b", false);
 };
 
 function allowYouTubeFullscreenFor(player) {
@@ -3723,7 +3983,7 @@ function allowYouTubeFullscreenFor(player) {
 }
 
 function allowYouTubeFullscreen() {
-  allowYouTubeFullscreenFor(ytPlayer);
+  allowYouTubeFullscreenFor(ytPlayerA);
   allowYouTubeFullscreenFor(ytPlayerB);
 }
 
@@ -3733,7 +3993,7 @@ function fitYouTube() {
   const width = stage.clientWidth;
   const height = stage.clientHeight;
   if (width <= 0 || height <= 0) return;
-  if (ytPlayer && ytPlayer.setSize) ytPlayer.setSize(width, height);
+  if (ytPlayerA && ytPlayerA.setSize) ytPlayerA.setSize(width, height);
   if (ytPlayerB && ytPlayerB.setSize) ytPlayerB.setSize(width, height);
 }
 
@@ -3885,14 +4145,12 @@ function stopPlayback() {
 }
 
 function pauseYouTube() {
-  try {
-    if (ytPlayer && ytPlayer.stopVideo) ytPlayer.stopVideo();
-    else if (ytPlayer && ytPlayer.pauseVideo) ytPlayer.pauseVideo();
-  } catch { /* The player may not be ready yet. */ }
-  try {
-    if (ytPlayerB && ytPlayerB.stopVideo) ytPlayerB.stopVideo();
-    else if (ytPlayerB && ytPlayerB.pauseVideo) ytPlayerB.pauseVideo();
-  } catch { /* The player may not be ready yet. */ }
+  [ytPlayerA, ytPlayerB].forEach((player) => {
+    try {
+      if (player && player.stopVideo) player.stopVideo();
+      else if (player && player.pauseVideo) player.pauseVideo();
+    } catch { /* The player may not be ready yet. */ }
+  });
 }
 
 function pauseSoundCloud() {

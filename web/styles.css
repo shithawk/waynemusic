@@ -2644,16 +2644,40 @@ html[data-family-theme="liquid"] body.section-home .home-actions {
   background: #fffaf2;
 }
 
+html[data-family-theme="liquid"] .crossfade-toggle {
+  color: #5a6573;
+  background: #efe8da;
+  box-shadow:
+    inset 0 0 0 2px rgba(28, 36, 48, 0.18),
+    0 6px 16px rgba(28, 36, 48, 0.08);
+}
+
+html[data-family-theme="liquid"] .crossfade-toggle-lamp {
+  background: rgba(28, 36, 48, 0.18);
+  box-shadow: inset 0 0 0 2px rgba(28, 36, 48, 0.28);
+}
+
+html[data-family-theme="liquid"] .crossfade-toggle.is-on {
+  color: #fff;
+  background: linear-gradient(135deg, #0b4e86 0%, #147a5a 100%);
+  box-shadow:
+    inset 0 0 0 2px rgba(255, 255, 255, 0.28),
+    0 10px 24px rgba(11, 78, 134, 0.34);
+}
+
+html[data-family-theme="liquid"] .crossfade-toggle.is-on .crossfade-toggle-lamp {
+  background: #fff;
+  box-shadow:
+    0 0 12px rgba(255, 255, 255, 0.85),
+    inset 0 0 0 2px rgba(11, 78, 134, 0.35);
+}
+
+
 html[data-family-theme="liquid"] #artists-sheet,
 html[data-family-theme="liquid"] #videos-sheet,
 html[data-family-theme="liquid"] #add-sheet,
 html[data-family-theme="liquid"] #manage-sheet {
   color: #1c2430;
-}
-
-html[data-family-theme="liquid"] #close-manage {
-  color: #fff;
-  -webkit-text-fill-color: #fff;
 }
 
 html[data-family-theme="liquid"] #add-sheet #download-all,
