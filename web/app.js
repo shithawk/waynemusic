@@ -766,7 +766,7 @@ async function prepareIncomingSlot(track) {
       "https://w.soundcloud.com/player/?" +
       "url=" +
       encodeURIComponent(playURL) +
-      "&auto_play=true&hide_related=true&show_comments=false&show_user=true&show_reposts=false&visual=true&show_teaser=false";
+      "&auto_play=true&hide_related=true&show_comments=false&show_user=false&show_reposts=false&visual=true&show_teaser=false&buying=false&liking=false&download=false&sharing=false&show_playcount=false&show_artwork=true";
     stage.append(frame);
     const widget = window.SC.Widget(frame);
     await new Promise((resolve) => {
@@ -1513,7 +1513,8 @@ function placeInlineStage(host) {
   const rect = host.getBoundingClientRect();
   const bounds = host.closest(".sheet-body") ? host.closest(".sheet-body").getBoundingClientRect() : null;
   const fs = document.getElementById("yt-fullscreen");
-  const extra = fs && !fs.hidden ? 48 : 0;
+  // Video + Full screen row + breathing room before the next Videos section.
+  const extra = fs && !fs.hidden ? 72 : 0;
   const target = block || stage;
   target.classList.add("stage-floating");
   target.style.left = rect.left + "px";
@@ -1563,6 +1564,7 @@ function renderPlayer() {
   document.getElementById("stage-yt").hidden = !track || track.source !== "youtube";
   document.getElementById("stage-sc").hidden = !track || track.source !== "soundcloud";
   syncYouTubeFullscreenButton();
+  syncStreamStageArt();
   setPlaying(state.playing);
   syncVideosInlinePlayer();
 }
@@ -2458,11 +2460,198 @@ function setPlaying(playing) {
   if ("mediaSession" in navigator) {
     navigator.mediaSession.playbackState = playing ? "playing" : "paused";
   }
+  syncStreamStageArt();
   renderSongs();
   renderSearchResults();
   if (!document.getElementById("add-sheet").hidden) renderCatalog();
   if (!document.getElementById("artists-sheet").hidden) renderArtists();
   if (!document.getElementById("videos-sheet").hidden) renderVideos();
+}
+
+function youtubeThumbURL(videoId) {
+  const id = String(videoId || "").trim();
+  if (!id) return "";
+  return "https://i.ytimg.com/vi/" + encodeURIComponent(id) + "/hqdefault.jpg";
+}
+
+function syncStreamStageArt() {
+  const track = currentTrack();
+  const ytArt = document.getElementById("yt-stage-art");
+  const scArt = ensureScStageArtEl() || document.getElementById("sc-stage-art");
+  const fs = youtubeIsFullscreen();
+  if (ytArt) {
+    // Live video while playing; thumbnail only when paused to hide YouTube's big play button.
+    const showYt = Boolean(track && track.source === "youtube" && !fs && !state.playing);
+    ytArt.hidden = !showYt;
+    if (showYt) {
+      const src = youtubeThumbURL(track.mediaRef);
+      if (src && ytArt.getAttribute("src") !== src) ytArt.src = src;
+    }
+  }
+  if (scArt) {
+    if (track && track.source === "soundcloud") {
+      void ensureSoundCloudStageArt(track, scArt, scWidget);
+    } else {
+      clearSoundCloudStageArt();
+    }
+  }
+}
+
+function ensureScStageArtEl() {
+  const stage = document.getElementById("stage-sc");
+  if (!stage) return null;
+  let art = document.getElementById("sc-stage-art");
+  if (!art) {
+    art = document.createElement("img");
+    art.id = "sc-stage-art";
+    art.className = "stream-stage-art";
+    art.alt = "";
+    art.decoding = "async";
+    art.hidden = true;
+    stage.prepend(art);
+  }
+  return art;
+}
+
+function isSoundCloudPlaceholderArt(raw) {
+  const art = String(raw || "").trim().toLowerCase();
+  if (!art) return true;
+  return (
+    art.includes("fb_placeholder") ||
+    art.includes("default_avatar") ||
+    art.includes("default_artwork") ||
+    art.includes("placeholder") ||
+    art.includes("/images/aov4i0k") ||
+    /sndcdn\.com\/(?:artworks|avatars)-000000000000/i.test(art)
+  );
+}
+
+function soundCloudArtURL(raw) {
+  let art = String(raw || "").trim();
+  if (!art || isSoundCloudPlaceholderArt(art)) return "";
+  art = art
+    .replace("-badge.", "-t500x500.")
+    .replace("-large.", "-t500x500.")
+    .replace("-small.", "-t500x500.")
+    .replace("-tiny.", "-t500x500.")
+    .replace("-original.", "-t500x500.");
+  return art;
+}
+
+function soundCloudArtFromWidgetSound(sound) {
+  if (!sound || typeof sound !== "object") return "";
+  const visuals =
+    (sound.visuals && sound.visuals.visuals) ||
+    (sound.user && sound.user.visuals && sound.user.visuals.visuals) ||
+    [];
+  const visualUrl =
+    Array.isArray(visuals) && visuals.length
+      ? visuals[0].visual_url || visuals[0].visualUrl || ""
+      : "";
+  const candidates = [
+    sound.artwork_url,
+    sound.artworkUrl,
+    visualUrl,
+    sound.user && (sound.user.avatar_url || sound.user.avatarUrl),
+  ];
+  for (const raw of candidates) {
+    const art = soundCloudArtURL(raw);
+    if (art) return art;
+  }
+  return "";
+}
+
+function applySoundCloudStageArt(track, artEl, raw) {
+  if (!track || !artEl) return false;
+  const art = soundCloudArtURL(raw);
+  if (!art) return false;
+  track.artworkUrl = art;
+  artEl.hidden = false;
+  artEl.referrerPolicy = "no-referrer";
+  artEl.decoding = "async";
+  if (artEl.getAttribute("src") !== art) artEl.src = art;
+  const stage = document.getElementById("stage-sc");
+  if (stage) stage.classList.add("has-art");
+  return true;
+}
+
+function clearSoundCloudStageArt() {
+  const stage = document.getElementById("stage-sc");
+  const art = document.getElementById("sc-stage-art");
+  if (stage) stage.classList.remove("has-art");
+  if (art) {
+    art.hidden = true;
+    art.removeAttribute("src");
+  }
+}
+
+function soundCloudPageURL(track) {
+  if (!track) return "";
+  const candidates = [track.mediaRef, track.streamRef, track.artworkUrl];
+  for (const raw of candidates) {
+    const text = String(raw || "").trim();
+    if (!text) continue;
+    try {
+      const parsed = parseLink(text);
+      if (parsed && parsed.source === "soundcloud" && parsed.pageURL) return parsed.pageURL;
+    } catch {
+      /* try next */
+    }
+    if (/soundcloud\.com\//i.test(text) && !/api\.soundcloud\.com/i.test(text)) {
+      try {
+        return normalizeSoundCloudURL(text);
+      } catch {
+        return text;
+      }
+    }
+  }
+  return String(track.mediaRef || "").trim();
+}
+
+async function ensureSoundCloudStageArt(track, artEl, widget) {
+  if (!track || !artEl) return;
+  if (track.source !== "soundcloud") {
+    clearSoundCloudStageArt();
+    return;
+  }
+  if (applySoundCloudStageArt(track, artEl, track.artworkUrl)) return;
+
+  // oEmbed first — reliable track artwork (widget often only exposes the SC logo).
+  const pageURL = soundCloudPageURL(track);
+  if (pageURL) {
+    try {
+      const response = await fetch("/api/soundcloud-oembed?url=" + encodeURIComponent(pageURL));
+      if (response.ok) {
+        const payload = await response.json();
+        if (applySoundCloudStageArt(track, artEl, payload.thumbnail_url)) return;
+      }
+    } catch {
+      /* try widget next */
+    }
+  }
+
+  if (widget && typeof widget.getCurrentSound === "function") {
+    const ok = await new Promise((resolve) => {
+      let done = false;
+      const finish = (value) => {
+        if (done) return;
+        done = true;
+        resolve(Boolean(value));
+      };
+      try {
+        widget.getCurrentSound((sound) => {
+          finish(applySoundCloudStageArt(track, artEl, soundCloudArtFromWidgetSound(sound)));
+        });
+      } catch {
+        finish(false);
+      }
+      setTimeout(() => finish(false), 2000);
+    });
+    if (ok) return;
+  }
+
+  // No real artwork — keep the visual widget visible (don't cover with SC logo).
+  clearSoundCloudStageArt();
 }
 
 function clearNotice() {
@@ -3304,6 +3493,7 @@ async function addLink(text, options) {
     createdAt: Date.now()
   };
   if (parsed.source === "soundcloud" && meta.streamRef) track.streamRef = meta.streamRef;
+  if (parsed.source === "soundcloud" && meta.artworkUrl) track.artworkUrl = meta.artworkUrl;
   await putTrack(track);
   state.tracks = sortTracks(state.tracks.concat(track));
   return track;
@@ -3367,12 +3557,27 @@ function soundCloudStreamRefFromOEmbed(payload) {
 async function resolveSoundCloudPlayURL(track) {
   const page = normalizeSoundCloudURL(track.mediaRef);
   const stored = String(track.streamRef || "").trim();
-  if (stored) return stored;
-  if (page.includes("api.soundcloud.com/tracks/")) return page;
-  const meta = await fetchOEmbed({ source: "soundcloud", pageURL: page, mediaRef: page });
-  const streamRef = meta.streamRef || page;
+  const hasArt = Boolean(String(track.artworkUrl || "").trim());
+  const hasStream = Boolean(stored) || page.includes("api.soundcloud.com/tracks/");
+  // Still hit oEmbed when artwork is missing — older tracks often have streamRef only.
+  if (hasStream && hasArt) return stored || page;
+  const oembedURL = soundCloudPageURL(track) || page;
+  const meta = await fetchOEmbed({
+    source: "soundcloud",
+    pageURL: oembedURL,
+    mediaRef: oembedURL
+  });
+  const streamRef = stored || meta.streamRef || page;
+  let dirty = false;
   if (meta.streamRef && meta.streamRef !== track.streamRef) {
     track.streamRef = meta.streamRef;
+    dirty = true;
+  }
+  if (meta.artworkUrl && soundCloudArtURL(meta.artworkUrl) && meta.artworkUrl !== track.artworkUrl) {
+    track.artworkUrl = soundCloudArtURL(meta.artworkUrl);
+    dirty = true;
+  }
+  if (dirty) {
     try {
       await putTrack(track);
     } catch { /* Playback can still use the resolved URL for this visit. */ }
@@ -3385,15 +3590,18 @@ async function fetchOEmbed(parsed) {
   const endpoint = parsed.source === "youtube" ? "/api/youtube-oembed" : "/api/soundcloud-oembed";
   try {
     const response = await fetch(endpoint + "?url=" + encodeURIComponent(parsed.pageURL));
-    if (!response.ok) return { title: fallback, artist: "", streamRef: "" };
+    if (!response.ok) return { title: fallback, artist: "", streamRef: "", artworkUrl: "" };
     const payload = await response.json();
     const videoTitle = String(payload.title || "").trim();
     const channel = String(payload.author_name || "").trim();
-    if (parsed.source === "youtube") return { ...youtubeNames(videoTitle, channel), streamRef: "" };
+    if (parsed.source === "youtube") {
+      return { ...youtubeNames(videoTitle, channel), streamRef: "", artworkUrl: "" };
+    }
     const streamRef = soundCloudStreamRefFromOEmbed(payload);
-    return { title: videoTitle || fallback, artist: channel, streamRef: streamRef };
+    const artworkUrl = soundCloudArtURL(payload.thumbnail_url);
+    return { title: videoTitle || fallback, artist: channel, streamRef: streamRef, artworkUrl: artworkUrl };
   } catch {
-    return { title: fallback, artist: "", streamRef: "" };
+    return { title: fallback, artist: "", streamRef: "", artworkUrl: "" };
   }
 }
 
@@ -3895,11 +4103,39 @@ function shuffleIds(ids) {
   return copy;
 }
 
+function reshuffleArtistQueue(currentId) {
+  const queue = state.artistQueue;
+  if (!queue || !queue.ids.length) return;
+  const ids = queue.ids.slice();
+  const rest = shuffleIds(ids.filter((id) => id !== currentId));
+  queue.ids = currentId && ids.includes(currentId) ? [currentId].concat(rest) : shuffleIds(ids);
+  const at = currentId ? queue.ids.indexOf(currentId) : 0;
+  queue.index = at >= 0 ? at : 0;
+}
+
+function restoreArtistQueueOrder(currentId) {
+  const queue = state.artistQueue;
+  if (!queue) return;
+  const tracks =
+    queue.name === "Favourites"
+      ? favoriteTracks()
+      : tracksForArtist(queue.name);
+  if (!tracks.length) return;
+  queue.ids = tracks.map((track) => track.id);
+  const at = currentId ? queue.ids.indexOf(currentId) : 0;
+  queue.index = at >= 0 ? at : 0;
+}
+
 function setShuffle(on) {
   state.shuffle = on;
   state.shuffleHistory = [];
   state.shuffleRewind = false;
-  if (on) startShuffle(state.currentId);
+  if (on) {
+    if (state.artistQueue) reshuffleArtistQueue(state.currentId);
+    else startShuffle(state.currentId);
+  } else if (state.artistQueue) {
+    restoreArtistQueueOrder(state.currentId);
+  }
   saveShuffle();
   updateShuffleButton();
 }
@@ -4220,11 +4456,17 @@ async function playSoundCloud(track) {
   const keepOutgoing = xf.active && xf.out && xf.out.kind === "soundcloud";
   if (!keepOutgoing) {
     scWidget = null;
-    document.getElementById("stage-sc").replaceChildren();
+    const stageClear = document.getElementById("stage-sc");
+    if (stageClear) {
+      stageClear.querySelectorAll("iframe").forEach((node) => node.remove());
+    }
   }
   await loadSoundCloudAPI();
   const playURL = await resolveSoundCloudPlayURL(track);
   const stage = document.getElementById("stage-sc");
+  const art = ensureScStageArtEl();
+  // Resolve artwork before the iframe paints so we don't flash the SoundCloud logo.
+  if (art) await ensureSoundCloudStageArt(track, art, null);
   const frame = document.createElement("iframe");
   frame.id = "sc-frame";
   frame.setAttribute("allow", "autoplay; encrypted-media; picture-in-picture");
@@ -4234,7 +4476,7 @@ async function playSoundCloud(track) {
   const widgetQuery =
     "url=" +
     encodeURIComponent(playURL) +
-    "&auto_play=true&hide_related=true&show_comments=false&show_user=true&show_reposts=false&visual=true&show_teaser=false";
+    "&auto_play=true&hide_related=true&show_comments=false&show_user=false&show_reposts=false&visual=true&show_teaser=false&buying=false&liking=false&download=false&sharing=false&show_playcount=false&show_artwork=true";
   frame.src = "https://w.soundcloud.com/player/?" + widgetQuery;
   stage.append(frame);
   if (!window.SC || !window.SC.Widget) {
@@ -4248,10 +4490,12 @@ async function playSoundCloud(track) {
     if (isSource("soundcloud")) {
       setScVolume(scWidget, 1);
       scWidget.play();
+      void ensureSoundCloudStageArt(track, art || ensureScStageArtEl(), scWidget);
     }
   });
   bindSoundCloudPlaybackEvents(scWidget);
   armStreamingWatchdog();
+  syncStreamStageArt();
 }
 
 function bindSoundCloudPlaybackEvents(widget) {
@@ -4309,8 +4553,8 @@ function makeYouTubePlayer(mountId, isPrimarySlot) {
       playsinline: 1,
       rel: 0,
       modestbranding: 1,
-      controls: 1,
-      fs: 1,
+      controls: 0,
+      fs: 0,
       iv_load_policy: 3,
       origin: window.location.origin
     },
@@ -4541,6 +4785,7 @@ function syncYouTubeFullscreenButton() {
   }
   if (ytStage && on) ytStage.classList.remove("is-fs-interactive");
   hardenStreamingEmbeds();
+  syncStreamStageArt();
   const playerEl = document.getElementById("player");
   if (playerEl && playerEl.classList.contains("stage-inline") && !on) {
     const host = document.getElementById("videos-stage-host");

@@ -1437,6 +1437,41 @@ html.iphone #player-sub { font-size: 0.88rem; }
   object-fit: contain;
 }
 
+/* SoundCloud: show track artwork on top; hide the widget logo underneath once art is ready. */
+#stage-sc iframe {
+  opacity: 1;
+}
+
+#stage-sc.has-art iframe {
+  opacity: 0;
+}
+
+.stream-stage-art {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  pointer-events: none;
+  background: transparent;
+}
+
+.stream-stage-art[hidden] {
+  display: none !important;
+}
+
+#stage-sc.has-art .stream-stage-art {
+  background: #000;
+}
+
+.stage:fullscreen #yt-stage-art,
+.stage:-webkit-full-screen #yt-stage-art,
+.stage.is-fs-fallback #yt-stage-art {
+  display: none !important;
+}
+
 #stage-yt #yt-player,
 #stage-yt #yt-player-b {
   position: absolute;
@@ -1621,7 +1656,7 @@ html.yt-fs-lock body {
   justify-content: center;
   gap: 0.45rem;
   align-self: center;
-  margin: 0 auto;
+  margin: 0 auto 0.85rem;
   padding: 0.15rem 0;
   border: 0;
   background: transparent;
@@ -1904,8 +1939,8 @@ body.has-now .sheet-screen { bottom: calc(var(--transport-bar) + var(--now-bar-s
 .videos-stage-host {
   width: 100%;
   aspect-ratio: 16 / 9;
-  /* Room for the Full screen control floated under the 16:9 video. */
-  margin-bottom: 2.75rem;
+  /* Room for Full screen + gap before Search YouTube. */
+  margin-bottom: 4.5rem;
 }
 
 .videos-stage-host .stage {
@@ -2834,9 +2869,13 @@ html.iphone .transport #play-button.is-playing:active:not(:disabled) {
 
 .liquid-help {
   position: absolute;
-  inset: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  top: auto;
   z-index: 4;
   display: block;
+  height: auto;
   margin: 0;
   padding: 0;
   border: 0;
@@ -2855,8 +2894,8 @@ html.iphone .transport #play-button.is-playing:active:not(:disabled) {
   position: relative;
   width: 100%;
   box-sizing: border-box;
-  padding: 10px 16px;
-  border-radius: 22px;
+  padding: 5px 14px 6px;
+  border-radius: 18px;
   background:
     linear-gradient(165deg, rgba(255, 250, 242, 0.98) 0%, rgba(244, 239, 228, 0.96) 55%, rgba(232, 244, 236, 0.95) 100%);
   color: #1c2430;
@@ -2874,26 +2913,34 @@ html.iphone .transport #play-button.is-playing:active:not(:disabled) {
   align-items: baseline;
   justify-content: space-between;
   gap: 10px;
-  padding: 4px 0;
+  padding: 1px 0;
+  line-height: 1.2;
   border-bottom: 1px solid rgba(28, 36, 48, 0.08);
 }
 
+.liquid-help-row:first-child {
+  padding-top: 0;
+}
+
 .liquid-help-row:last-child {
+  padding-bottom: 0;
   border-bottom: 0;
 }
 
 .liquid-help-gesture {
   color: #0b4e86;
-  font-size: 0.95rem;
+  font-size: 0.9rem;
   font-weight: 750;
   letter-spacing: 0.01em;
+  line-height: 1.2;
 }
 
 .liquid-help-action {
   color: #3a4554;
-  font-size: 0.9rem;
+  font-size: 0.85rem;
   font-weight: 600;
   text-align: right;
+  line-height: 1.2;
 }
 
 .liquid-help-ok {
@@ -2950,6 +2997,7 @@ html.iphone .transport #play-button.is-playing:active:not(:disabled) {
 
 html[data-family-theme="liquid"] .transport {
   display: block;
+  overflow: visible;
   padding: 4px 22px calc(6px + env(safe-area-inset-bottom));
   background: linear-gradient(to top, #f4efe4 72%, rgba(244, 239, 228, 0.94));
 }

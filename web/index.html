@@ -44,7 +44,7 @@
   <link rel="icon" href="/favicon.ico?v=play1">
   <link rel="manifest" href="/manifest.webmanifest">
   <link rel="apple-touch-icon" sizes="180x180" href="/icon-180.png?v=go1">
-  <link rel="stylesheet" href="/styles.css?v=225">
+  <link rel="stylesheet" href="/styles.css?v=235">
   <link rel="stylesheet" href="/themes.css?v=153">
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Micro+5&display=swap">
 </head>
@@ -185,8 +185,11 @@
             <img class="yt-stage-logo" src="/youtube-logo.png?v=jyt1" alt="" decoding="async">
             <div id="yt-player" class="yt-mount is-active"></div>
             <div id="yt-player-b" class="yt-mount" hidden></div>
+            <img id="yt-stage-art" class="stream-stage-art" alt="" hidden decoding="async">
           </div>
-          <div id="stage-sc" hidden></div>
+          <div id="stage-sc" hidden>
+            <img id="sc-stage-art" class="stream-stage-art" alt="" hidden decoding="async">
+          </div>
           <div class="stage-swipe-shield" aria-hidden="true"></div>
           <button id="yt-fs-exit" class="yt-fs-exit" type="button" hidden aria-label="Exit full screen">
             <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
@@ -349,6 +352,6 @@
   </div>
   <audio id="audio" playsinline preload="none"></audio>
   <audio id="audio-b" playsinline preload="none"></audio>
-  <script src="/app.js?v=193" defer></script>
+  <script src="/app.js?v=203" defer></script>
 </body>
 </html>
