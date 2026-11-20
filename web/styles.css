@@ -1564,6 +1564,14 @@ body.has-now .sheet-screen { bottom: calc(var(--transport-bar) + var(--now-bar-s
   padding-bottom: 40px;
 }
 
+#add-sheet .sheet-body {
+  padding-bottom: 40px;
+}
+
+#catalog-list {
+  padding-bottom: 24px;
+}
+
 #videos-sheet .sheet-body > h1 {
   margin: 0 0 2px;
 }
@@ -2535,6 +2543,122 @@ html.iphone .transport #play-button.is-playing:active:not(:disabled) {
   cursor: pointer;
   touch-action: none;
   -webkit-tap-highlight-color: transparent;
+}
+
+.liquid-help {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  display: block;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+  animation: liquid-help-in 0.42s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.liquid-help[hidden] {
+  display: none !important;
+}
+
+.liquid-help-card {
+  position: relative;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 10px 16px;
+  border-radius: 22px;
+  background:
+    linear-gradient(165deg, rgba(255, 250, 242, 0.98) 0%, rgba(244, 239, 228, 0.96) 55%, rgba(232, 244, 236, 0.95) 100%);
+  color: #1c2430;
+  box-shadow:
+    0 14px 32px rgba(18, 48, 74, 0.2),
+    inset 0 0 0 1.5px rgba(11, 78, 134, 0.18);
+}
+
+.liquid-help-rows {
+  width: 100%;
+}
+
+.liquid-help-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 4px 0;
+  border-bottom: 1px solid rgba(28, 36, 48, 0.08);
+}
+
+.liquid-help-row:last-child {
+  border-bottom: 0;
+}
+
+.liquid-help-gesture {
+  color: #0b4e86;
+  font-size: 0.95rem;
+  font-weight: 750;
+  letter-spacing: 0.01em;
+}
+
+.liquid-help-action {
+  color: #3a4554;
+  font-size: 0.9rem;
+  font-weight: 600;
+  text-align: right;
+}
+
+.liquid-help-ok {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  z-index: 2;
+  width: -moz-fit-content;
+  width: fit-content;
+  height: -moz-fit-content;
+  height: fit-content;
+  min-width: 84px;
+  max-height: 44px;
+  margin: auto;
+  padding: 8px 20px;
+  border: 0;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #0b4e86 0%, #147a5a 100%);
+  color: #fff;
+  font: inherit;
+  font-size: 0.9rem;
+  font-weight: 750;
+  letter-spacing: 0.06em;
+  cursor: pointer;
+  opacity: 0.4;
+  box-shadow:
+    0 10px 22px rgba(11, 78, 134, 0.34),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.22);
+  -webkit-tap-highlight-color: transparent;
+}
+
+.liquid-help-ok:active {
+  transform: scale(0.97);
+}
+
+@keyframes liquid-help-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .liquid-help {
+    animation: none;
+  }
 }
 
 html[data-family-theme="liquid"] .transport {

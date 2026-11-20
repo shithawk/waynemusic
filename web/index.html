@@ -8,6 +8,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black">
   <meta name="apple-mobile-web-app-title" content="Wayne's Music">
   <title>Wayne's Music</title>
+  <meta name="referrer" content="strict-origin-when-cross-origin">
   <meta name="theme-color" content="#0d0d0d">
   <script>
     (function () {
@@ -43,7 +44,7 @@
   <link rel="icon" href="/favicon.ico?v=play1">
   <link rel="manifest" href="/manifest.webmanifest">
   <link rel="apple-touch-icon" sizes="180x180" href="/icon-180.png?v=go1">
-  <link rel="stylesheet" href="/styles.css?v=201">
+  <link rel="stylesheet" href="/styles.css?v=212">
   <link rel="stylesheet" href="/themes.css?v=153">
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Micro+5&display=swap">
 </head>
@@ -312,6 +313,17 @@
     <div id="liquid-transport" class="liquid-transport" hidden>
       <canvas id="liquid-blob"></canvas>
       <button id="liquid-play" type="button" aria-label="Play"></button>
+      <div id="liquid-help" class="liquid-help" hidden role="dialog" aria-label="Blob transport help">
+        <div class="liquid-help-card">
+          <div class="liquid-help-rows">
+            <span class="liquid-help-row"><span class="liquid-help-gesture">Tap</span><span class="liquid-help-action">Play / Pause</span></span>
+            <span class="liquid-help-row"><span class="liquid-help-gesture">Swipe right</span><span class="liquid-help-action">Next</span></span>
+            <span class="liquid-help-row"><span class="liquid-help-gesture">Swipe left</span><span class="liquid-help-action">Prev</span></span>
+            <span class="liquid-help-row"><span class="liquid-help-gesture">Shake</span><span class="liquid-help-action">Shuffle on / off</span></span>
+          </div>
+          <button id="liquid-help-ok" class="liquid-help-ok" type="button">OK</button>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -321,6 +333,6 @@
   </div>
   <audio id="audio" playsinline preload="none"></audio>
   <audio id="audio-b" playsinline preload="none"></audio>
-  <script src="/app.js?v=151" defer></script>
+  <script src="/app.js?v=169" defer></script>
 </body>
 </html>
