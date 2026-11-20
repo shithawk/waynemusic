@@ -1,13 +1,13 @@
-const CACHE = "waynes-shell-v178";
+const CACHE = "waynes-shell-v205";
 const SHELL = [
   "/",
   "/index.html",
   "/styles.css",
-  "/styles.css?v=212",
+  "/styles.css?v=225",
   "/themes.css",
   "/themes.css?v=153",
   "/app.js",
-  "/app.js?v=169",
+  "/app.js?v=193",
   "/heroes/jori.jpg",
   "/heroes/joriBW.jpg",
   "/heroes/wayne.jpeg",

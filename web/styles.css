@@ -806,6 +806,54 @@ body.songs-page .finder {
   font-weight: 700;
 }
 
+#link-box .link-row {
+  display: flex;
+  align-items: stretch;
+  gap: 10px;
+  width: 100%;
+}
+
+#link-box .link-row #link-input {
+  flex: 1;
+  min-width: 0;
+  border: 2px solid var(--accent-alt, var(--accent));
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.25);
+  outline: none;
+}
+
+#link-box .link-row #link-input:focus {
+  border-color: var(--accent);
+  box-shadow:
+    inset 0 0 0 1px rgba(0, 0, 0, 0.2),
+    0 0 0 3px color-mix(in srgb, var(--accent) 35%, transparent);
+}
+
+#link-box .link-row #add-link {
+  flex: none;
+  align-self: stretch;
+  min-height: 0;
+  min-width: 4.75rem;
+  padding: 0 18px;
+  border: 0;
+  border-radius: 14px;
+  background: var(--accent);
+  color: #0a1020;
+  font-size: 1.2rem;
+  font-weight: 700;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+#link-box .link-row #add-link:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+#link-box .link-row #add-link:not(:disabled):active {
+  opacity: 0.82;
+}
+
+
 .finder label,
 .sheet label,
 .lede {
@@ -1126,10 +1174,15 @@ html[data-family-theme="steff"] #manage-sheet .sheet-body > h1 {
   min-height: 64px;
 }
 
-.play-favourites:disabled {
+.play-favourites:disabled,
+.play-favourites.is-empty {
   opacity: 0.45;
-  cursor: default;
 }
+
+.play-favourites.is-empty {
+  cursor: pointer;
+}
+
 
 .now-bar-line {
   flex: 1;
@@ -1152,6 +1205,10 @@ html[data-family-theme="steff"] #manage-sheet .sheet-body > h1 {
 
 .now-stack:not(.is-playing) .now-bar-status {
   color: rgba(240, 238, 248, 0.72);
+}
+
+.now-stack.is-loading .now-bar-status {
+  color: var(--accent);
 }
 
 .now-bar-song {
@@ -1262,20 +1319,46 @@ html[data-family-theme="steff"] #manage-sheet .sheet-body > h1 {
   overflow: visible;
 }
 
-#player.stage-inline .stage.stage-floating {
+#player.stage-inline .stage-block.stage-floating {
   visibility: visible;
   pointer-events: auto;
   position: fixed;
   margin: 0;
+  z-index: 10;
 }
 
 #player:not(.open) iframe {
   pointer-events: none;
 }
 
-#player:not(.open) .stage.stage-floating,
-#player:not(.open) .stage.stage-floating iframe {
+#player:not(.open) .stage-block.stage-floating,
+#player:not(.open) .stage-block.stage-floating .stage-block {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
+  width: 100%;
+}
+
+.stage-block .stage {
+  width: 100%;
+}
+
+.stage {
   pointer-events: auto;
+}
+
+#player:not(.open) .stage-block.stage-floating iframe {
+  pointer-events: none;
+}
+
+#player:not(.open) .stage-block.stage-floating #stage-yt.is-fs-interactive iframe {
+  pointer-events: auto;
+}
+
+#player:not(.open) .stage-block.stage-floating .yt-fullscreen {
+  pointer-events: auto;
+  visibility: visible;
 }
 
 .player-scroll {
@@ -1362,10 +1445,15 @@ html.iphone #player-sub { font-size: 0.88rem; }
 
 #stage-sc {
   display: grid;
+  pointer-events: none;
 }
 
 #stage-sc iframe {
   grid-area: 1 / 1;
+  border: 0;
+  /* Scroll/skip are handled by the stage shield — never the widget. */
+  pointer-events: none !important;
+  touch-action: none;
 }
 
 #stage-sc iframe.is-outgoing {
@@ -1373,11 +1461,209 @@ html.iphone #player-sub { font-size: 0.88rem; }
   pointer-events: none;
 }
 
+#stage-yt,
+#stage-yt .yt-mount,
+#stage-yt iframe,
+#stage-yt .yt-mount iframe {
+  pointer-events: none;
+}
+
+#stage-yt iframe:fullscreen,
+#stage-yt iframe:-webkit-full-screen,
+#stage-yt.is-fs-interactive,
+#stage-yt.is-fs-interactive .yt-mount,
+#stage-yt.is-fs-interactive iframe,
+#stage-yt.is-fs-interactive .yt-mount iframe {
+  pointer-events: auto;
+}
+
+.stage-swipe-shield {
+  position: absolute;
+  inset: 0;
+  z-index: 6;
+  /* Manual scroll forwarding — floating stage sits outside the sheet scroller. */
+  touch-action: none;
+  -webkit-user-select: none;
+  user-select: none;
+  cursor: default;
+}
+
+#stage-yt.is-fs-interactive ~ .stage-swipe-shield,
+.stage:fullscreen .stage-swipe-shield,
+.stage:-webkit-full-screen .stage-swipe-shield,
+.stage.is-fs-fallback .stage-swipe-shield {
+  pointer-events: none;
+}
+
+.stage:fullscreen #stage-yt,
+.stage:fullscreen #stage-yt .yt-mount,
+.stage:fullscreen #stage-yt iframe,
+.stage:fullscreen #stage-yt .yt-mount iframe,
+.stage:-webkit-full-screen #stage-yt,
+.stage:-webkit-full-screen #stage-yt .yt-mount,
+.stage:-webkit-full-screen #stage-yt iframe,
+.stage:-webkit-full-screen #stage-yt .yt-mount iframe,
+.stage.is-fs-fallback #stage-yt,
+.stage.is-fs-fallback #stage-yt .yt-mount,
+.stage.is-fs-fallback #stage-yt iframe,
+.stage.is-fs-fallback #stage-yt .yt-mount iframe {
+  pointer-events: auto;
+}
+
+.yt-fs-exit {
+  position: absolute;
+  top: max(10px, env(safe-area-inset-top, 0px));
+  right: max(10px, env(safe-area-inset-right, 0px));
+  z-index: 30;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.72);
+  color: #fff;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.45);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  pointer-events: auto;
+}
+
+.yt-fs-exit:active {
+  opacity: 0.8;
+}
+
+.stage:fullscreen .yt-fs-exit,
+.stage:-webkit-full-screen .yt-fs-exit,
+.stage.is-fs-fallback .yt-fs-exit {
+  display: inline-flex;
+}
+
+.stage:fullscreen .yt-fs-exit[hidden],
+.stage:-webkit-full-screen .yt-fs-exit[hidden],
+.stage.is-fs-fallback .yt-fs-exit[hidden] {
+  display: inline-flex !important;
+}
+
+.stage:fullscreen,
+.stage:-webkit-full-screen,
+.stage.is-fs-fallback {
+  width: 100% !important;
+  height: 100% !important;
+  max-width: none;
+  aspect-ratio: auto;
+  border-radius: 0;
+  background: #000;
+  box-shadow: none;
+}
+
+.stage.is-fs-fallback {
+  position: fixed !important;
+  inset: 0 !important;
+  left: 0 !important;
+  top: 0 !important;
+  z-index: 80 !important;
+  clip-path: none !important;
+  margin: 0 !important;
+}
+
+.stage:fullscreen #stage-local,
+.stage:fullscreen #stage-yt,
+.stage:fullscreen #stage-sc,
+.stage:-webkit-full-screen #stage-local,
+.stage:-webkit-full-screen #stage-yt,
+.stage:-webkit-full-screen #stage-sc,
+.stage.is-fs-fallback #stage-local,
+.stage.is-fs-fallback #stage-yt,
+.stage.is-fs-fallback #stage-sc {
+  position: absolute;
+  inset: 0;
+}
+
+.stage-block.stage-floating:has(.stage.is-fs-fallback),
+.stage-block.stage-floating:has(.stage:fullscreen),
+.stage-block.stage-floating:has(.stage:-webkit-full-screen) {
+  position: fixed !important;
+  inset: 0 !important;
+  left: 0 !important;
+  top: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  z-index: 80 !important;
+  clip-path: none !important;
+  margin: 0 !important;
+  pointer-events: none;
+}
+
+.stage-block.stage-floating:has(.stage.is-fs-fallback) .stage,
+.stage-block.stage-floating:has(.stage:fullscreen) .stage,
+.stage-block.stage-floating:has(.stage:-webkit-full-screen) .stage {
+  pointer-events: auto;
+}
+
+html.yt-fs-lock,
+html.yt-fs-lock body {
+  overflow: hidden !important;
+  overscroll-behavior: none;
+}
+
+
+.stage-block.stage-floating {
+  touch-action: none;
+}
+
+.yt-fullscreen {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  align-self: center;
+  margin: 0 auto;
+  padding: 0.15rem 0;
+  border: 0;
+  background: transparent;
+  color: var(--text, #f0eef8);
+  font: inherit;
+  font-size: 1.05rem;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  text-decoration: none;
+  cursor: pointer;
+  touch-action: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.yt-fullscreen-icon {
+  flex: 0 0 auto;
+  display: block;
+}
+
+.yt-fullscreen-label {
+  text-decoration: underline;
+  text-underline-offset: 0.18em;
+}
+
+.yt-fullscreen:active {
+  opacity: 0.72;
+}
+
+.yt-fullscreen[hidden] {
+  display: none !important;
+}
+
+.stage-block.stage-floating .stage {
+  width: 100%;
+  height: auto;
+}
+
+
 #stage-local img {
   object-fit: cover;
   object-position: center 22%;
 }
-#stage-sc iframe { border: 0; }
 
 .mirror { font-size: 1.25rem; }
 
@@ -1618,6 +1904,8 @@ body.has-now .sheet-screen { bottom: calc(var(--transport-bar) + var(--now-bar-s
 .videos-stage-host {
   width: 100%;
   aspect-ratio: 16 / 9;
+  /* Room for the Full screen control floated under the 16:9 video. */
+  margin-bottom: 2.75rem;
 }
 
 .videos-stage-host .stage {
@@ -1785,7 +2073,6 @@ html.iphone .sheet .youtube-clear-results {
   height: 166px;
   border: 0;
 }
-
 .notice {
   position: fixed;
   left: 16px;
