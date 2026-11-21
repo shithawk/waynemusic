@@ -414,7 +414,7 @@ body.has-now #songs { bottom: calc(var(--transport-bar) + var(--now-bar-space));
 
 .banner {
   position: relative;
-  height: clamp(200px, 36vw, 280px);
+  height: clamp(176px, 31vw, 248px);
   overflow: hidden;
   background: #0a1020;
 }
@@ -423,7 +423,7 @@ body.has-now #songs { bottom: calc(var(--transport-bar) + var(--now-bar-space));
   width: 100%;
   height: 100%;
   object-fit: cover;
-  object-position: center 22%;
+  object-position: center top;
 }
 
 .banner::after {
@@ -441,7 +441,7 @@ body.has-now #songs { bottom: calc(var(--transport-bar) + var(--now-bar-space));
 .banner h1 {
   position: absolute;
   left: 20px;
-  bottom: 20px;
+  bottom: 14px;
   z-index: 1;
   font-size: 2.1rem;
   font-weight: 700;
@@ -465,7 +465,7 @@ body.has-now #songs { bottom: calc(var(--transport-bar) + var(--now-bar-space));
 }
 
 .stripe {
-  height: 10px;
+  height: 5px;
 }
 
 .stripe span,
@@ -493,7 +493,7 @@ body.has-now #songs { bottom: calc(var(--transport-bar) + var(--now-bar-space));
 .actions {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 10px;
   padding: 16px 24px 0;
 }
 
@@ -513,6 +513,17 @@ body.has-now #songs { bottom: calc(var(--transport-bar) + var(--now-bar-space));
 }
 
 .actions .big { min-height: 64px; }
+
+.actions > #play-favourites,
+.actions > #add-music,
+.actions > #manage-songs,
+.home-actions > #play-favourites,
+.home-actions > #add-music,
+.home-actions > #manage-songs {
+  min-height: 48px;
+  padding-top: 8px;
+  padding-bottom: 8px;
+}
 
 .actions > #play-favourites,
 .actions > #add-music,
@@ -853,6 +864,21 @@ body.songs-page .finder {
   opacity: 0.82;
 }
 
+.added-links {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 4px;
+}
+
+.added-links[hidden] {
+  display: none !important;
+}
+
+.added-links .song {
+  margin-top: 0;
+}
+
 
 .finder label,
 .sheet label,
@@ -1171,7 +1197,7 @@ html[data-family-theme="steff"] #manage-sheet .sheet-body > h1 {
   background: var(--song-box-gradient, var(--card));
   color: #fff;
   box-shadow: inset 0 0 0 3px var(--song-box-ring, var(--accent));
-  min-height: 64px;
+  min-height: 48px;
 }
 
 .play-favourites:disabled,
@@ -1637,6 +1663,12 @@ html.iphone #player-sub { font-size: 0.88rem; }
 .stage-block.stage-floating:has(.stage:fullscreen) .stage,
 .stage-block.stage-floating:has(.stage:-webkit-full-screen) .stage {
   pointer-events: auto;
+}
+
+.stage-block.stage-floating:has(.stage.is-fs-fallback) .yt-fullscreen,
+.stage-block.stage-floating:has(.stage:fullscreen) .yt-fullscreen,
+.stage-block.stage-floating:has(.stage:-webkit-full-screen) .yt-fullscreen {
+  display: none !important;
 }
 
 html.yt-fs-lock,
@@ -2264,7 +2296,7 @@ html.iphone .search-clear {
 }
 
 html.iphone .banner {
-  height: clamp(140px, 38vw, 200px);
+  height: clamp(122px, 33vw, 176px);
 }
 
 html.iphone .banner h1 {
@@ -2286,8 +2318,23 @@ html.iphone .hint-card .hint-sub {
 }
 
 html.iphone .actions {
-  gap: 8px;
+  gap: 6px;
   padding: 10px 12px 0;
+}
+
+html.iphone .home-actions {
+  gap: 6px;
+}
+
+html.iphone .actions > #play-favourites,
+html.iphone .actions > #add-music,
+html.iphone .actions > #manage-songs,
+html.iphone .home-actions > #play-favourites,
+html.iphone .home-actions > #add-music,
+html.iphone .home-actions > #manage-songs {
+  min-height: 40px;
+  padding-top: 6px;
+  padding-bottom: 6px;
 }
 
 html.iphone .big {
@@ -2308,7 +2355,7 @@ html.iphone .big.plain {
 }
 
 html.iphone .play-favourites {
-  min-height: 44px;
+  min-height: 40px;
   font-size: 1rem;
   box-shadow: inset 0 0 0 2px var(--song-box-ring, var(--accent));
 }
@@ -2998,7 +3045,7 @@ html.iphone .transport #play-button.is-playing:active:not(:disabled) {
 html[data-family-theme="liquid"] .transport {
   display: block;
   overflow: visible;
-  padding: 4px 22px calc(6px + env(safe-area-inset-bottom));
+  padding: 0 22px calc(2px + env(safe-area-inset-bottom));
   background: linear-gradient(to top, #f4efe4 72%, rgba(244, 239, 228, 0.94));
 }
 
@@ -3012,17 +3059,17 @@ html[data-family-theme="liquid"] .liquid-transport {
 
 html[data-family-theme="liquid"],
 html.iphone[data-family-theme="liquid"] {
-  --transport-bar: calc(136px + env(safe-area-inset-bottom));
+  --transport-bar: calc(116px + env(safe-area-inset-bottom));
 }
 
 html[data-family-theme="liquid"] body.has-now,
 html.iphone[data-family-theme="liquid"] body.has-now {
-  --now-bar-space: 57px;
+  --now-bar-space: 36px;
 }
 
 html[data-family-theme="liquid"] .now-stack,
 html.iphone[data-family-theme="liquid"] .now-stack {
-  bottom: calc(100px + env(safe-area-inset-bottom));
+  bottom: calc(88px + env(safe-area-inset-bottom));
 }
 
 html[data-family-theme="liquid"] .now-dock {
@@ -3183,6 +3230,11 @@ html[data-family-theme="liquid"] #manage-sheet {
   color: #1c2430;
 }
 
+html[data-family-theme="liquid"] #confirm-keep {
+  color: #fff;
+  -webkit-text-fill-color: #fff;
+}
+
 html[data-family-theme="liquid"] #add-sheet #download-all,
 html[data-family-theme="liquid"] #add-sheet #add-link,
 html[data-family-theme="liquid"] #add-sheet .download:not(.saved) {
@@ -3193,6 +3245,30 @@ html[data-family-theme="liquid"] #add-sheet .download:not(.saved) {
 html[data-family-theme="liquid"] .catalog-row.saved,
 html[data-family-theme="liquid"] .catalog-row.saved .song-title,
 html[data-family-theme="liquid"] .catalog-row.saved .song-sub {
+  color: #fff;
+  -webkit-text-fill-color: #fff;
+}
+
+html[data-family-theme="liquid"] .song-play,
+html[data-family-theme="liquid"] .song.current .song-play {
+  color: #fff;
+}
+
+html[data-family-theme="liquid"] .play-all,
+html[data-family-theme="liquid"] #artists-sheet .play-all,
+html[data-family-theme="liquid"] #search-results .play-all,
+html[data-family-theme="liquid"] .play-all-label-shadow {
+  color: #fff;
+  -webkit-text-fill-color: #fff;
+}
+
+html[data-family-theme="liquid"] .catalog-row.saved .download {
+  color: #fff;
+  -webkit-text-fill-color: #fff;
+}
+
+html[data-family-theme="liquid"] #youtube-results .download:not(.saved),
+html[data-family-theme="liquid"] .catalog-row .download:not(.saved) {
   color: #fff;
   -webkit-text-fill-color: #fff;
 }

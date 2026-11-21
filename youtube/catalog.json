@@ -1,1 +1,32 @@
-[]
+[
+  {
+    "source": "soundcloud",
+    "title": "All The Photos",
+    "artist": "The Sea And Cake",
+    "url": "https://soundcloud.com/gaga-digi/the-sea-and-cake-all-the-photos"
+  },
+  {
+    "source": "soundcloud",
+    "title": "Any Day",
+    "artist": "The Sea And Cake",
+    "url": "https://soundcloud.com/newmusic2023/the-sea-and-cake-any-day"
+  },
+  {
+    "source": "soundcloud",
+    "title": "Inn Keeping",
+    "artist": "The Sea And Cake",
+    "url": "https://soundcloud.com/skatehard233/the-sea-and-cake-inn-keeping"
+  },
+  {
+    "source": "soundcloud",
+    "title": "New Schools",
+    "artist": "The Sea And Cake",
+    "url": "https://soundcloud.com/briefpastiche/the-sea-and-cake-new-schools"
+  },
+  {
+    "source": "soundcloud",
+    "title": "Weekend",
+    "artist": "The Sea And Cake",
+    "url": "https://soundcloud.com/wantanear/the-sea-and-cake-weekend"
+  }
+]
