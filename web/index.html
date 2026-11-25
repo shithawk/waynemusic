@@ -2,7 +2,34 @@
 <html lang="en" data-family-theme="wayne">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+
+  <script>
+    (function () {
+      function resetZoom() {
+        try {
+          var vv = window.visualViewport;
+          if (vv && vv.scale && vv.scale !== 1) {
+            var meta = document.querySelector('meta[name="viewport"]');
+            if (!meta) return;
+            var base = "width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover";
+            meta.setAttribute("content", base + ", maximum-scale=1.01");
+            meta.setAttribute("content", base);
+          }
+        } catch (_) {}
+      }
+      window.addEventListener("gesturestart", function (e) { e.preventDefault(); }, { passive: false });
+      window.addEventListener("gesturechange", function (e) { e.preventDefault(); }, { passive: false });
+      window.addEventListener("gestureend", function (e) { e.preventDefault(); }, { passive: false });
+      document.addEventListener("visibilitychange", function () {
+        if (!document.hidden) resetZoom();
+      });
+      window.addEventListener("pageshow", resetZoom);
+      window.addEventListener("focus", resetZoom);
+      setTimeout(resetZoom, 0);
+    })();
+  </script>
+
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black">
@@ -29,7 +56,9 @@
         qs.indexOf("phone=1") !== -1 ||
         qs.indexOf("android=1") !== -1;
       var ua = navigator.userAgent;
-      var androidPhone = /Android/i.test(ua) && /Mobile/i.test(ua);
+      var android = /Android/i.test(ua);
+      var androidPhone = android && /Mobile/i.test(ua);
+      if (android) document.documentElement.classList.add("android");
       if (
         force ||
         /iPhone|iPod/.test(ua) ||
@@ -44,7 +73,7 @@
   <link rel="icon" href="/favicon.ico?v=play1">
   <link rel="manifest" href="/manifest.webmanifest">
   <link rel="apple-touch-icon" sizes="180x180" href="/icon-180.png?v=go1">
-  <link rel="stylesheet" href="/styles.css?v=243">
+  <link rel="stylesheet" href="/styles.css?v=260">
   <link rel="stylesheet" href="/themes.css?v=153">
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Micro+5&display=swap">
 </head>
@@ -90,7 +119,7 @@
       <button id="manage-songs" class="big plain" type="button" hidden>- Remove songs</button>
       <button id="crossfade-toggle" class="crossfade-toggle is-on" type="button" aria-pressed="true">
         <span class="crossfade-toggle-lamp" aria-hidden="true"></span>
-        <span class="crossfade-toggle-label">Crossfade songs</span>
+        <span class="crossfade-toggle-label">Crossfade&nbsp;songs</span>
       </button>
       <div class="theme-picker-wrap home-only">
         <p class="theme-picker-label" id="theme-picker-label">
@@ -213,7 +242,7 @@
         <h1>+ Add music</h1>
         <button id="download-all" class="big prominent" type="button">Download all</button>
         <button id="from-ipad" class="big plain" type="button">Add a song saved on this device</button>
-        <input id="file-input" type="file" accept="audio/*,.mp3,.m4a,.aac,.wav" multiple hidden>
+        <input id="file-input" type="file" accept="audio/*,.mp3,.m4a,.aac,.wav,.flac,.ogg,.opus,.webm,audio/flac,audio/ogg,audio/opus,audio/webm,video/webm" multiple hidden>
         <div id="link-box" class="stack">
           <label for="link-input">YouTube or SoundCloud link</label>
           <form id="link-form" class="link-row" action="#" method="get">
@@ -262,6 +291,13 @@
     <div class="sheet">
       <div class="sheet-body">
         <h1>Artists</h1>
+        <section id="artist-suggestions" class="artist-suggestions" aria-label="Suggested artists for you">
+          <h2 class="artist-suggestions-title">Suggested artists for you</h2>
+          <button type="button" id="artist-suggestions-refresh" class="big plain artist-suggestions-refresh">Refresh</button>
+          <p id="artist-suggestions-status" class="lede">Play and heart songs to get ideas.</p>
+          <div id="artist-suggest-list"></div>
+        </section>
+        <h2 class="artists-on-device-title">Artists on this device</h2>
         <p id="artists-empty" class="empty" hidden>No songs on this device yet.</p>
         <div id="artist-list"></div>
       </div>
@@ -353,6 +389,6 @@
   </div>
   <audio id="audio" playsinline preload="none"></audio>
   <audio id="audio-b" playsinline preload="none"></audio>
-  <script src="/app.js?v=206" defer></script>
+  <script src="/app.js?v=230" defer></script>
 </body>
 </html>

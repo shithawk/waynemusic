@@ -7,10 +7,18 @@
 # Tailscale (second URL on this machine):
 #   tailscale serve --bg --https=8443 http://127.0.0.1:8091
 #   https://<machine>.<tailnet>.ts.net:8443/
-# Start from this folder so music/ is the song library:
-#   caddy run --config Caddyfile
+# Start from this folder so relative roots (web/, music/) resolve correctly:
+#   cd /Users/jacobward/waynesmusic && caddy run --config Caddyfile
 :8091 {
 	bind 127.0.0.1
+	handle /music/*.webm {
+		uri strip_prefix /music
+		root * music
+		header Content-Type audio/webm
+		header Cache-Control "no-cache"
+		file_server
+	}
+
 	handle /music/* {
 		uri strip_prefix /music
 		root * music
@@ -44,6 +52,17 @@
 		reverse_proxy https://soundcloud.com {
 			header_up Host soundcloud.com
 		}
+	}
+
+
+	handle /api/soundcloud-v2/* {
+		uri strip_prefix /api/soundcloud-v2
+		reverse_proxy https://api-v2.soundcloud.com {
+			header_up Host api-v2.soundcloud.com
+		}
+	}
+	handle /api/suggest-artists {
+		reverse_proxy 127.0.0.1:8096
 	}
 
 	handle /sw.js {

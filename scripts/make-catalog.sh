@@ -14,7 +14,7 @@ import sys
 from pathlib import Path
 
 dest = Path(sys.argv[1])
-extensions = {".mp3", ".m4a", ".aac", ".wav"}
+extensions = {".mp3", ".m4a", ".aac", ".wav", ".flac", ".ogg", ".opus", ".webm"}
 
 def collapse_ws(text):
     if not text:

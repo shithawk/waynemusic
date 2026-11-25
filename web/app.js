@@ -137,6 +137,12 @@ let streamingHold = false;
 let streamingLive = false;
 let streamingPauseToken = 0;
 let streamingFailStreak = 0;
+// Tailscale/Wi‑Fi can leave navigator.onLine true while YouTube/SoundCloud are unreachable.
+let streamingNetOk = null;
+let streamingNetCheckedAt = 0;
+let streamingNetProbe = null;
+let lastHiddenAt = 0;
+let mediaPauseToken = 0;
 let noticeTimer = 0;
 let noticeActionURL = "";
 let ignoreAdvance = false;
@@ -336,13 +342,21 @@ function bindLocalAudioElement(player) {
     if (player !== audio()) return;
     if (!isSource("local") || player.ended || xf.active) return;
     const trackId = state.currentId;
+    const pauseToken = mediaPauseToken;
     window.setTimeout(() => {
       if (state.currentId !== trackId) return;
       if (player !== audio() || !player.paused || player.ended || xf.active) return;
-      // Android often pauses briefly on focus loss — keep playing intent while backgrounded.
+      // Headphone / lock-screen pause: honor it. Only auto-resume the brief Android
+      // focus-loss blip that happens in the same moment the app goes to background.
       if (appInBackground()) {
-        resumeLocalIfNeeded();
-        armCrossfadeTimer();
+        const focusLossBlip =
+          state.playing && pauseToken === mediaPauseToken && Date.now() - lastHiddenAt < 500;
+        if (focusLossBlip) {
+          resumeLocalIfNeeded();
+          armCrossfadeTimer();
+          return;
+        }
+        setPlaying(false);
         return;
       }
       setPlaying(false);
@@ -530,7 +544,7 @@ function nextTrackForCrossfade() {
     let index = queue.ids.indexOf(state.currentId);
     if (index < 0) index = Math.max(0, queue.index);
     const next = index + 1;
-    if (next >= queue.ids.length) return null;
+    if (next >= queue.ids.length) return continueIntoAllSongs();
     return state.tracks.find((track) => track.id === queue.ids[next]) || null;
   }
   return trackForStep(1);
@@ -842,6 +856,7 @@ function adoptCrossfadeNowPlaying(nextTrack) {
   publishSession(nextTrack);
   render();
   if (nextTrack.source === "local") showSongList();
+  else if (isVideoTrack(nextTrack)) presentVideosForTrack(nextTrack);
   else if (playerIsOpen() || nextTrack.source !== "local") {
     if (videosInlinePlayback()) syncVideosInlinePlayer();
     else openPlayer();
@@ -851,9 +866,17 @@ function adoptCrossfadeNowPlaying(nextTrack) {
 
 async function startCrossfade(nextTrack, durationMs) {
   if (!nextTrack || xf.active) return false;
-  if (shouldSkipStreamingTrack(nextTrack)) {
+  if (isStreamingTrack(nextTrack)) {
+    const netOk = await probeStreamingNetwork(false);
+    if (!netOk || shouldSkipStreamingTrack(nextTrack)) {
+      // Already jumped to the next playable track — report success so ended/step
+      // handlers do not advance again (that was stopping offline queues).
+      skipPastStreamingTracks(1);
+      return true;
+    }
+  } else if (shouldSkipStreamingTrack(nextTrack)) {
     skipPastStreamingTracks(1);
-    return false;
+    return true;
   }
   clearCrossfadeArmTimer();
   const previousId = state.currentId;
@@ -982,8 +1005,12 @@ async function init() {
   window.addEventListener("pagehide", () => onAppHidden());
   document.addEventListener("freeze", () => onAppHidden());
   window.addEventListener("offline", () => {
+    markStreamingNetwork(false);
     const track = currentTrack();
     if (shouldSkipStreamingTrack(track)) skipPastStreamingTracks(1);
+  });
+  window.addEventListener("online", () => {
+    markStreamingNetwork(null);
   });
   try {
     state.tracks = sortTracks(await allTracks());
@@ -1153,6 +1180,50 @@ function bindEvents() {
     else state.openArtists.add(name);
     renderArtists();
   });
+
+  paintSuggestRefreshButton();
+  const suggestRefresh = document.getElementById("artist-suggestions-refresh");
+  if (suggestRefresh && !suggestRefresh.dataset.bound) {
+    suggestRefresh.dataset.bound = "1";
+    suggestRefresh.addEventListener("click", () => {
+      if (suggestRefresh.disabled || suggestRefresh.hidden) return;
+      suggestRefresh.disabled = true;
+      void refreshArtistSuggestions({ force: true });
+    });
+  }
+
+  const suggestList = document.getElementById("artist-suggest-list");
+  if (suggestList) {
+    suggestList.addEventListener("click", async (event) => {
+      const playBtn = event.target.closest("[data-suggest-play]");
+      if (playBtn) {
+        event.preventDefault();
+        playSuggestedTrack(playBtn.dataset.suggestPlay);
+        return;
+      }
+      const button = event.target.closest("[data-suggest-url]");
+      if (!button || button.disabled) return;
+      const url = button.dataset.suggestUrl;
+      if (!url) return;
+      button.disabled = true;
+      button.replaceChildren();
+      button.textContent = "Adding…";
+      try {
+        const track = await addLink(url, {
+          onStatus: () => {}
+        });
+        markSuggestCacheSaved(url, track);
+        setSuggestPlayButton(button, track);
+        setNotice("Added " + (track.title || "song"));
+        // Stay on Artists — refresh library list under suggestions only.
+        renderArtists();
+      } catch (err) {
+        button.disabled = false;
+        setSuggestAddButton(button, url);
+        setNotice(err && err.message ? err.message : "Could not add that song.");
+      }
+    });
+  }
   bindSeekBar(document.getElementById("seek"));
   document.addEventListener("pointermove", (event) => {
     if (!seekHold || !seekBar) return;
@@ -1246,14 +1317,22 @@ function bindEvents() {
 
 function bindMediaSession() {
   if (!("mediaSession" in navigator)) return;
-  navigator.mediaSession.setActionHandler("play", () => {
-    if (!isAudiblyPlaying()) userPlay(currentTrack() || songToStart(), playerIsOpen());
+  const bind = (action, handler) => {
+    try {
+      navigator.mediaSession.setActionHandler(action, handler);
+    } catch { /* Browser may not support this action. */ }
+  };
+  bind("play", () => {
+    userPlay(currentTrack() || songToStart(), playerIsOpen());
   });
-  navigator.mediaSession.setActionHandler("pause", () => {
-    if (isAudiblyPlaying()) userPause();
+  bind("pause", () => {
+    userPause();
   });
-  navigator.mediaSession.setActionHandler("previoustrack", () => skip(-1));
-  navigator.mediaSession.setActionHandler("nexttrack", () => skip(1));
+  bind("stop", () => {
+    userPause();
+  });
+  bind("previoustrack", () => skip(-1));
+  bind("nexttrack", () => skip(1));
 }
 
 function standalone() {
@@ -1364,11 +1443,48 @@ function renderSongs() {
 
 function updateNowArtwork() {
   const img = document.getElementById("now-art");
+  if (!img) return;
   const track = currentTrack();
   const trackId = track ? track.id : "";
-  if (!track || track.source !== "local") {
+  if (!track) {
     img.hidden = true;
     img.removeAttribute("src");
+    return;
+  }
+  if (track.source === "youtube") {
+    const src = youtubeThumbURL(track.mediaRef);
+    if (!src) {
+      img.hidden = true;
+      img.removeAttribute("src");
+      return;
+    }
+    img.referrerPolicy = "no-referrer";
+    img.decoding = "async";
+    if (img.getAttribute("src") !== src) img.src = src;
+    img.hidden = false;
+    return;
+  }
+  if (track.source === "soundcloud") {
+    const cached = soundCloudArtURL(track.artworkUrl);
+    if (cached) {
+      img.referrerPolicy = "no-referrer";
+      img.decoding = "async";
+      if (img.getAttribute("src") !== cached) img.src = cached;
+      img.hidden = false;
+      return;
+    }
+    void resolveSoundCloudArtURL(track).then((url) => {
+      if (currentTrack()?.id !== trackId) return;
+      if (!url) {
+        img.hidden = true;
+        img.removeAttribute("src");
+        return;
+      }
+      img.referrerPolicy = "no-referrer";
+      img.decoding = "async";
+      if (img.getAttribute("src") !== url) img.src = url;
+      img.hidden = false;
+    });
     return;
   }
   void artURLForTrack(track).then((url) => {
@@ -1381,6 +1497,50 @@ function updateNowArtwork() {
     img.src = url;
     img.hidden = false;
   });
+}
+
+async function resolveSoundCloudArtURL(track) {
+  if (!track || track.source !== "soundcloud") return "";
+  const known = soundCloudArtURL(track.artworkUrl);
+  if (known) return known;
+  const pageURL = soundCloudPageURL(track);
+  if (pageURL) {
+    try {
+      const response = await fetch("/api/soundcloud-oembed?url=" + encodeURIComponent(pageURL));
+      if (response.ok) {
+        const payload = await response.json();
+        const art = soundCloudArtURL(payload.thumbnail_url);
+        if (art) {
+          track.artworkUrl = art;
+          return art;
+        }
+      }
+    } catch {
+      /* try widget next */
+    }
+  }
+  if (scWidget && typeof scWidget.getCurrentSound === "function") {
+    const art = await new Promise((resolve) => {
+      let done = false;
+      const finish = (value) => {
+        if (done) return;
+        done = true;
+        resolve(value || "");
+      };
+      try {
+        scWidget.getCurrentSound((sound) => {
+          const url = soundCloudArtFromWidgetSound(sound);
+          if (url) track.artworkUrl = url;
+          finish(url);
+        });
+      } catch {
+        finish("");
+      }
+      setTimeout(() => finish(""), 2000);
+    });
+    if (art) return art;
+  }
+  return "";
 }
 
 function trackIsFavorite(track) {
@@ -1459,6 +1619,27 @@ function isVideoTrack(track) {
   return Boolean(track && isStreamingTrack(track));
 }
 
+
+function presentVideosForTrack(track) {
+  if (!isVideoTrack(track)) return false;
+  state.videosInline = true;
+  state.videosScrollToTop = true;
+  hideSheet("add-sheet");
+  hideSheet("manage-sheet");
+  hideSheet("artists-sheet");
+  hideConfirm();
+  document.body.classList.remove("search-page");
+  document.body.classList.remove("songs-page");
+  if (!videosSheetIsOpen()) presentVideosSheet();
+  else {
+    renderVideos();
+    scrollSheetBodyToTop("videos-sheet");
+  }
+  if (playerIsOpen()) closePlayer();
+  syncVideosInlinePlayer(track);
+  return true;
+}
+
 function presentVideosSheet() {
   hideSheet("add-sheet");
   hideSheet("manage-sheet");
@@ -1503,15 +1684,21 @@ function syncVideosInlinePlayer(trackOverride) {
 }
 
 let inlineStageBound = false;
+let inlineStageRaf = 0;
+let inlineFitTimer = 0;
 
 function bindInlineStage() {
   if (inlineStageBound) return;
   inlineStageBound = true;
   const follow = () => {
-    const host = document.getElementById("videos-stage-host");
-    const shell = document.getElementById("player");
-    if (!host || !shell || !shell.classList.contains("stage-inline")) return;
-    placeInlineStage(host);
+    if (inlineStageRaf) return;
+    inlineStageRaf = requestAnimationFrame(() => {
+      inlineStageRaf = 0;
+      const host = document.getElementById("videos-stage-host");
+      const shell = document.getElementById("player");
+      if (!host || !shell || !shell.classList.contains("stage-inline")) return;
+      placeInlineStage(host);
+    });
   };
   const body = document.querySelector("#videos-sheet .sheet-body");
   if (body) body.addEventListener("scroll", follow, { passive: true });
@@ -1530,11 +1717,15 @@ function placeInlineStage(host) {
   // Video + Full screen row + breathing room before the next Videos section.
   const extra = fs && !fs.hidden ? 72 : 0;
   const target = block || stage;
+  const width = Math.max(rect.width, 0);
+  const height = Math.max(rect.height + extra, 0);
   target.classList.add("stage-floating");
-  target.style.left = rect.left + "px";
-  target.style.top = rect.top + "px";
-  target.style.width = Math.max(rect.width, 0) + "px";
-  target.style.height = Math.max(rect.height + extra, 0) + "px";
+  // translate3d keeps the YouTube layer on the compositor while the list scrolls.
+  target.style.left = "0px";
+  target.style.top = "0px";
+  target.style.width = width + "px";
+  target.style.height = height + "px";
+  target.style.transform = "translate3d(" + rect.left + "px, " + rect.top + "px, 0)";
   if (bounds && rect.width > 0 && rect.height > 0) {
     const boxBottom = rect.bottom + extra;
     const top = Math.max(0, bounds.top - rect.top);
@@ -1546,12 +1737,15 @@ function placeInlineStage(host) {
   } else {
     target.style.clipPath = "";
   }
-  const width = Math.round(rect.width);
-  if (width > 0 && stage.dataset.fitW !== String(width)) {
-    stage.dataset.fitW = String(width);
-    requestAnimationFrame(() => {
+  const rounded = Math.round(width);
+  // YouTube setSize during scroll is what feels sticky — wait until scrolling settles.
+  if (rounded > 0 && stage.dataset.fitW !== String(rounded) && isSource("youtube")) {
+    stage.dataset.fitW = String(rounded);
+    if (inlineFitTimer) clearTimeout(inlineFitTimer);
+    inlineFitTimer = window.setTimeout(() => {
+      inlineFitTimer = 0;
       if (document.getElementById("player").classList.contains("stage-inline")) fitYouTube();
-    });
+    }, 140);
   }
 }
 
@@ -1560,11 +1754,16 @@ function clearInlineStage() {
   const stage = document.querySelector(".stage");
   const target = block || stage;
   if (!target) return;
+  if (inlineFitTimer) {
+    clearTimeout(inlineFitTimer);
+    inlineFitTimer = 0;
+  }
   target.classList.remove("stage-floating");
   target.style.left = "";
   target.style.top = "";
   target.style.width = "";
   target.style.height = "";
+  target.style.transform = "";
   target.style.clipPath = "";
   if (stage) stage.dataset.fitW = "";
 }
@@ -1572,7 +1771,7 @@ function clearInlineStage() {
 function renderPlayer() {
   const track = currentTrack();
   const stamp = track ? track.id : "none";
-  setMarqueeText(document.getElementById("player-title"), track ? track.title : "", stamp);
+  setMarqueeText(document.getElementById("player-title"), track ? displayTitle(track) : "", stamp);
   setMarqueeText(document.getElementById("player-sub"), track ? subtitle(track) : "", stamp + ":sub");
   document.getElementById("stage-local").hidden = !track || track.source !== "local";
   document.getElementById("stage-yt").hidden = !track || track.source !== "youtube";
@@ -1796,7 +1995,7 @@ function songBox(track) {
   copy.className = "song-copy";
   const title = document.createElement("span");
   title.className = "song-title";
-  title.textContent = track.title;
+  title.textContent = displayTitle(track);
   const sub = document.createElement("span");
   sub.className = "song-sub";
   sub.textContent = (currentSong && state.playing ? "Playing · " : "") + subtitle(track);
@@ -1805,7 +2004,7 @@ function songBox(track) {
   play.type = "button";
   play.className = "song-play";
   play.dataset.play = track.id;
-  play.setAttribute("aria-label", "Play " + track.title);
+  play.setAttribute("aria-label", "Play " + displayTitle(track));
   play.append(playIcon());
   row.append(copy, favoriteHeartButton(track), play);
   return row;
@@ -1860,6 +2059,32 @@ function heartIcons() {
   return wrap;
 }
 
+
+function refreshIcon() {
+  const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+  svg.setAttribute("viewBox", "0 0 24 24");
+  svg.setAttribute("width", "22");
+  svg.setAttribute("height", "22");
+  svg.setAttribute("aria-hidden", "true");
+  const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+  path.setAttribute("fill", "currentColor");
+  path.setAttribute(
+    "d",
+    "M17.65 6.35A7.95 7.95 0 0 0 12 4a8 8 0 1 0 7.75 10h-2.1A6 6 0 1 1 12 6c1.48 0 2.82.54 3.87 1.43L13 11h7V4l-2.35 2.35z"
+  );
+  svg.append(path);
+  return svg;
+}
+
+function paintSuggestRefreshButton() {
+  const btn = document.getElementById("artist-suggestions-refresh");
+  if (!btn) return;
+  btn.replaceChildren();
+  const label = document.createElement("span");
+  label.textContent = "Refresh";
+  btn.append(refreshIcon(), label);
+}
+
 function playIcon() {
   const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
   svg.setAttribute("viewBox", "0 0 36 36");
@@ -1894,7 +2119,7 @@ function playListed(id, options) {
   if (!track) return;
   const keepQueue = Boolean(options && options.keepQueue);
   const stay = Boolean(options && options.stay);
-  const videosInline = isVideoTrack(track) && !keepQueue && !stay;
+  const videosInline = isVideoTrack(track) && !stay;
   if (!keepQueue) state.artistQueue = null;
   if (track.source !== "local") hideSheet("artists-sheet");
   if (videosInline) {
@@ -1940,11 +2165,444 @@ function openArtists(name) {
   if (typeof name === "string" && name) state.openArtists.add(name);
   showSheet("artists-sheet");
   renderArtists();
+  void refreshArtistSuggestions();
   if (typeof name === "string" && name) {
     const match = [...document.querySelectorAll("#artist-list [data-artist]")].find((item) => item.dataset.artist === name);
     if (match) match.scrollIntoView({ block: "nearest" });
   }
 }
+
+const SUGGEST_CACHE_KEY = "wayne-artist-suggestions-v1";
+const SUGGEST_CACHE_MS = 7 * 24 * 60 * 60 * 1000;
+let suggestLoadToken = 0;
+
+function libraryArtistNameSet() {
+  const names = new Set();
+  for (const track of state.tracks) {
+    for (const name of artistNames(track)) names.add(name.toLocaleLowerCase());
+  }
+  return names;
+}
+
+function suggestionAlreadySaved(url) {
+  const parsed = parseLink(url);
+  if (!parsed) return false;
+  return state.tracks.some((track) => linkRefsMatch(track, parsed));
+}
+
+function readSuggestCache() {
+  try {
+    const raw = localStorage.getItem(SUGGEST_CACHE_KEY);
+    if (!raw) return null;
+    const payload = JSON.parse(raw);
+    if (!payload || !Array.isArray(payload.items)) return null;
+    if (Date.now() - Number(payload.at || 0) > SUGGEST_CACHE_MS) return null;
+    return payload.items;
+  } catch {
+    return null;
+  }
+}
+
+function writeSuggestCache(items) {
+  try {
+    localStorage.setItem(SUGGEST_CACHE_KEY, JSON.stringify({ at: Date.now(), items }));
+  } catch {
+    /* ignore quota */
+  }
+}
+
+function markSuggestCacheSaved(url, track) {
+  const items = readSuggestCache() || [];
+  let found = false;
+  for (const item of items) {
+    if (item.url !== url) continue;
+    item.trackId = track && track.id ? track.id : item.trackId;
+    item.saved = true;
+    found = true;
+  }
+  if (!found && track) {
+    items.push({
+      artist: track.artist || "",
+      title: track.title || "",
+      url,
+      because: "",
+      source: "soundcloud",
+      trackId: track.id,
+      saved: true
+    });
+  }
+  writeSuggestCache(items);
+}
+
+function setSuggestAddButton(button, url) {
+  button.disabled = false;
+  button.className = "big plain artist-suggest-add";
+  delete button.dataset.suggestPlay;
+  button.dataset.suggestUrl = url || "";
+  button.setAttribute("aria-label", "Add this song");
+  button.replaceChildren();
+  button.textContent = "+ Add this song";
+}
+
+function setSuggestPlayButton(button, track) {
+  const id = track && track.id ? track.id : "";
+  button.disabled = false;
+  button.className = "big prominent artist-suggest-add artist-suggest-play";
+  delete button.dataset.suggestUrl;
+  button.dataset.suggestPlay = id;
+  button.setAttribute("aria-label", "Play " + ((track && track.title) || "song"));
+  button.replaceChildren();
+  const label = document.createElement("span");
+  label.textContent = "Play";
+  button.append(playIcon(), label);
+}
+
+function playSuggestedTrack(id) {
+  const track = findTrack(id);
+  if (!track) return;
+  state.artistQueue = null;
+  state.videosInline = false;
+  // Keep Artists open — play in the now bar without opening the player sheet.
+  userPlay(track, false);
+}
+
+function setArtistSuggestionsStatus(text, options) {
+  const el = document.getElementById("artist-suggestions-status");
+  const refreshBtn = document.getElementById("artist-suggestions-refresh");
+  const showRefresh = Boolean(options && options.refresh);
+  if (refreshBtn) {
+    refreshBtn.hidden = false;
+    refreshBtn.disabled = Boolean(options && options.busy);
+  }
+  if (!el) return;
+  el.classList.toggle("has-refresh", showRefresh);
+  if (showRefresh) {
+    el.hidden = true;
+    el.textContent = "";
+    return;
+  }
+  el.hidden = false;
+  el.textContent = text || "";
+}
+
+function renderArtistSuggestions(items) {
+  const list = document.getElementById("artist-suggest-list");
+  if (!list) return;
+  list.replaceChildren();
+  const rows = Array.isArray(items) ? items : [];
+  if (!rows.length) return;
+  for (const item of rows) {
+    const row = document.createElement("div");
+    row.className = "artist-suggest-row";
+    const copy = document.createElement("div");
+    copy.className = "artist-suggest-copy";
+    const title = document.createElement("span");
+    title.className = "song-title";
+    title.textContent = item.title || "Song";
+    const sub = document.createElement("span");
+    sub.className = "song-sub";
+    const because = item.because ? " · like " + item.because : "";
+    sub.textContent = (item.artist || "Artist") + " · SoundCloud" + because;
+    copy.append(title, sub);
+    const action = document.createElement("button");
+    action.type = "button";
+    const savedTrack =
+      (item.trackId && findTrack(item.trackId)) ||
+      (() => {
+        const parsed = parseLink(item.url || "");
+        return parsed ? state.tracks.find((track) => linkRefsMatch(track, parsed)) : null;
+      })();
+    if (savedTrack) setSuggestPlayButton(action, savedTrack);
+    else setSuggestAddButton(action, item.url || "");
+    row.append(copy, action);
+    list.append(row);
+  }
+}
+
+async function vetSuggestion(raw) {
+  const url = String((raw && raw.url) || "").trim();
+  if (!url) return null;
+  const parsed = parseLink(url);
+  if (!parsed || parsed.source !== "soundcloud") return null;
+  if (suggestionAlreadySaved(url)) {
+    return {
+      artist: raw.artist || "",
+      title: raw.title || "",
+      url,
+      because: raw.because || "",
+      artwork: raw.artwork || "",
+      source: "soundcloud"
+    };
+  }
+  const meta = await fetchOEmbed(parsed);
+  const title = String(meta.title || "").trim();
+  if (!title || title === "SoundCloud song") return null;
+  if (!meta.streamRef && !parsed.mediaRef) return null;
+  return {
+    artist: String(meta.artist || raw.artist || "").trim() || "Artist",
+    title,
+    url: parsed.pageURL || url,
+    because: raw.because || "",
+    artwork: meta.artworkUrl || raw.artwork || "",
+    source: "soundcloud"
+  };
+}
+
+
+const LASTFM_API_KEY = "";
+const SOUNDCLOUD_CLIENT_ID_DEFAULT = "";
+const SC_CLIENT_ID_STORAGE = "sc-client-id-v1";
+
+function soundCloudClientId() {
+  try {
+    const stored = String(localStorage.getItem(SC_CLIENT_ID_STORAGE) || "").trim();
+    if (/^[a-zA-Z0-9]{32}$/.test(stored)) return stored;
+  } catch { /* ignore */ }
+  return SOUNDCLOUD_CLIENT_ID_DEFAULT;
+}
+
+function rememberSoundCloudClientId(id) {
+  const value = String(id || "").trim();
+  if (!/^[a-zA-Z0-9]{32}$/.test(value)) return;
+  try {
+    localStorage.setItem(SC_CLIENT_ID_STORAGE, value);
+  } catch { /* ignore */ }
+}
+
+async function lastfmSimilarArtists(artist, limit = 20) {
+  const name = String(artist || "").trim();
+  if (!name || !LASTFM_API_KEY) return [];
+  const params = new URLSearchParams({
+    method: "artist.getsimilar",
+    artist: name,
+    api_key: LASTFM_API_KEY,
+    format: "json",
+    limit: String(limit),
+    autocorrect: "1"
+  });
+  const response = await fetch("https://ws.audioscrobbler.com/2.0/?" + params.toString());
+  if (!response.ok) return [];
+  const payload = await response.json().catch(() => null);
+  let similar = (((payload || {}).similarartists || {}).artist) || [];
+  if (!Array.isArray(similar)) similar = similar ? [similar] : [];
+  const out = [];
+  for (const row of similar) {
+    const simName = String((row && row.name) || "").trim();
+    if (!simName) continue;
+    const match = Number((row && row.match) || 0) || 0;
+    out.push({ name: simName, match });
+  }
+  return out;
+}
+
+async function soundcloudSearchTrack(artist) {
+  const q = String(artist || "").trim();
+  if (!q) return null;
+  const clientId = soundCloudClientId();
+  const params = new URLSearchParams({
+    q,
+    client_id: clientId,
+    limit: "12",
+    app_locale: "en"
+  });
+  const scQuery = "/search/tracks?" + params.toString();
+  const direct = "https://api-v2.soundcloud.com" + scQuery;
+  const paths = [
+    "/api/soundcloud-v2" + scQuery,
+    // Phone internet — works when Mac/Caddy proxy is down (PWA shell may still be cached).
+    "https://api.allorigins.win/raw?url=" + encodeURIComponent(direct),
+    direct
+  ];
+  let payload = null;
+  for (const url of paths) {
+    try {
+      const response = await fetch(url);
+      if (!response.ok) continue;
+      payload = await response.json();
+      rememberSoundCloudClientId(clientId);
+      break;
+    } catch {
+      /* try next */
+    }
+  }
+  if (!payload) return null;
+  const collection = Array.isArray(payload.collection) ? payload.collection : [];
+  const artistL = q.toLowerCase();
+  let best = null;
+  for (const row of collection) {
+    if (!row || typeof row !== "object") continue;
+    if (row.policy === "BLOCK") continue;
+    if (row.streamable === false) continue;
+    const user = row.user || {};
+    const userName = String(user.username || user.full_name || "").trim();
+    const title = String(row.title || "").trim();
+    const permalink = String(row.permalink_url || "").split("?")[0].trim();
+    if (!permalink || !title) continue;
+    let artwork = String(row.artwork_url || user.avatar_url || "").trim();
+    if (artwork) artwork = artwork.replace("-large.", "-t500x500.");
+    const candidate = {
+      artist: userName || q,
+      title,
+      url: permalink,
+      artwork,
+      source: "soundcloud"
+    };
+    const hay = (userName + " " + title).toLowerCase();
+    if (hay.includes(artistL) || userName.toLowerCase().includes(artistL)) {
+      best = candidate;
+      break;
+    }
+    if (!best) best = candidate;
+  }
+  return best;
+}
+
+async function buildClientSuggestions(seeds, excludeArtists, limit = 5) {
+  const exclude = new Set(
+    (excludeArtists || []).map((name) => String(name || "").trim().toLowerCase()).filter(Boolean)
+  );
+  for (const seed of seeds || []) {
+    const name = String((seed && seed.name) || "").trim();
+    if (name) exclude.add(name.toLowerCase());
+  }
+  const ranked = new Map();
+  const ordered = [...(seeds || [])].sort(
+    (a, b) => Number((b && b.score) || 0) - Number((a && a.score) || 0)
+  );
+  for (const seed of ordered.slice(0, 8)) {
+    const seedName = String((seed && seed.name) || "").trim();
+    const seedScore = Number((seed && seed.score) || 0);
+    if (!seedName) continue;
+    let similar = [];
+    try {
+      similar = await lastfmSimilarArtists(seedName);
+    } catch {
+      similar = [];
+    }
+    for (const sim of similar) {
+      const key = String(sim.name || "").trim().toLowerCase();
+      if (!key || exclude.has(key)) continue;
+      const score = seedScore * (0.5 + Number(sim.match || 0));
+      const prev = ranked.get(key);
+      if (!prev || score > prev.score) {
+        ranked.set(key, { name: sim.name, score, because: seedName });
+      }
+    }
+  }
+  const candidates = [...ranked.values()].sort((a, b) => b.score - a.score);
+  const suggestions = [];
+  const used = new Set();
+  for (const cand of candidates) {
+    if (suggestions.length >= limit) break;
+    const key = cand.name.toLowerCase();
+    if (used.has(key)) continue;
+    let track = null;
+    try {
+      track = await soundcloudSearchTrack(cand.name);
+    } catch {
+      track = null;
+    }
+    if (!track) continue;
+    const trackArtist = String(track.artist || cand.name).trim();
+    const trackKey = trackArtist.toLowerCase();
+    if (exclude.has(trackKey) && trackKey !== key) continue;
+    if (used.has(trackKey)) continue;
+    used.add(key);
+    used.add(trackKey);
+    suggestions.push({
+      artist: trackArtist || cand.name,
+      title: track.title,
+      url: track.url,
+      artwork: track.artwork || "",
+      source: "soundcloud",
+      because: cand.because || ""
+    });
+  }
+  return suggestions;
+}
+
+async function refreshArtistSuggestions(options) {
+  const force = Boolean(options && options.force);
+  const status = document.getElementById("artist-suggestions-status");
+  const list = document.getElementById("artist-suggest-list");
+  if (!status || !list) return;
+  const token = ++suggestLoadToken;
+  if (!force) {
+    const cached = readSuggestCache();
+    if (cached && cached.length) {
+      renderArtistSuggestions(cached);
+      setArtistSuggestionsStatus("", { refresh: true });
+      return;
+    }
+  }
+  const seeds = await suggestionSeeds();
+  if (token !== suggestLoadToken) return;
+  if (!seeds.length) {
+    renderArtistSuggestions([]);
+    setArtistSuggestionsStatus("Play and heart songs to get ideas.");
+    return;
+  }
+  setArtistSuggestionsStatus("Finding artists…", { busy: true });
+  renderArtistSuggestions([]);
+  const exclude = [...libraryArtistNameSet()];
+  if (force) {
+    try {
+      const prev = JSON.parse(localStorage.getItem(SUGGEST_CACHE_KEY) || "null");
+      for (const item of (prev && prev.items) || []) {
+        const name = String((item && item.artist) || "").trim();
+        if (name) exclude.push(name);
+      }
+    } catch { /* ignore */ }
+  }
+  let rawItems = [];
+  try {
+    rawItems = await buildClientSuggestions(seeds, exclude, 5);
+  } catch {
+    rawItems = [];
+  }
+  if (token !== suggestLoadToken) return;
+  if (!rawItems.length) {
+    const stale = (() => {
+      try {
+        const raw = localStorage.getItem(SUGGEST_CACHE_KEY);
+        if (!raw) return null;
+        const payload = JSON.parse(raw);
+        return payload && Array.isArray(payload.items) ? payload.items : null;
+      } catch {
+        return null;
+      }
+    })();
+    if (stale && stale.length) {
+      renderArtistSuggestions(stale);
+      setArtistSuggestionsStatus("Showing saved suggestions — refresh when online.");
+      return;
+    }
+    renderArtistSuggestions([]);
+    setArtistSuggestionsStatus("No suggestions right now. Try again after more plays.");
+    return;
+  }
+  const vetted = [];
+  for (const raw of rawItems) {
+    if (vetted.length >= 5) break;
+    try {
+      const ok = await vetSuggestion(raw);
+      if (!ok) continue;
+      if (vetted.some((row) => row.artist.toLocaleLowerCase() === ok.artist.toLocaleLowerCase())) continue;
+      vetted.push(ok);
+    } catch {
+      /* skip bad candidate */
+    }
+  }
+  if (token !== suggestLoadToken) return;
+  writeSuggestCache(vetted);
+  renderArtistSuggestions(vetted);
+  if (!vetted.length) {
+    setArtistSuggestionsStatus("No new SoundCloud picks right now. Try again after more plays.");
+  } else {
+    setArtistSuggestionsStatus("", { refresh: true });
+  }
+}
+
 
 
 function updateSearchClearButton() {
@@ -2400,17 +3058,54 @@ function renderArtists() {
   if (scroller) scroller.scrollTop = scrollTop;
 }
 
+function localAudioExt(trackOrFile) {
+  if (!trackOrFile) return "";
+  if (typeof trackOrFile === "string") {
+    const base = trackOrFile.split("?")[0].toLowerCase();
+    const dot = base.lastIndexOf(".");
+    return dot >= 0 ? base.slice(dot + 1) : "";
+  }
+  if (trackOrFile.source && trackOrFile.source !== "local") return "";
+  const name = String(trackOrFile.mediaRef || trackOrFile.file || trackOrFile.id || "");
+  return localAudioExt(name);
+}
+
+function localFormatTag(trackOrFile) {
+  const ext = localAudioExt(trackOrFile);
+  if (ext === "flac") return "FLAC";
+  // .opus is Opus; .ogg is the container (often Opus here) — label OPUS for both.
+  if (ext === "opus" || ext === "ogg") return "OPUS";
+  if (ext === "webm") return "WEBM";
+  return "";
+}
+
+function withFormatTag(tag, text) {
+  const body = String(text || "").trim();
+  if (!tag) return body;
+  return body ? tag + " · " + body : tag;
+}
+
 function nowLabel(track) {
   const title = (track.title || "").trim();
   const artist = (track.artist || "").trim();
-  if (title && artist) return title + " - " + artist;
-  return title || artist;
+  const label = title && artist ? title + " - " + artist : title || artist;
+  return withFormatTag(localFormatTag(track), label);
 }
 
 function subtitle(track) {
   if (track.source === "youtube") return track.artist ? track.artist + " · YouTube" : "YouTube";
   if (track.source === "soundcloud") return track.artist ? track.artist + " · SoundCloud" : "SoundCloud";
-  return (track.artist || "").trim();
+  return withFormatTag(localFormatTag(track), (track.artist || "").trim());
+}
+
+function displayTitle(track) {
+  return withFormatTag(localFormatTag(track), (track.title || "").trim() || "Song");
+}
+
+
+function findTrack(id) {
+  if (!id) return null;
+  return state.tracks.find((track) => track.id === id) || null;
 }
 
 function currentTrack() {
@@ -2587,6 +3282,7 @@ function applySoundCloudStageArt(track, artEl, raw) {
   if (artEl.getAttribute("src") !== art) artEl.src = art;
   const stage = document.getElementById("stage-sc");
   if (stage) stage.classList.add("has-art");
+  if (currentTrack() && currentTrack().id === track.id) updateNowArtwork();
   return true;
 }
 
@@ -2715,8 +3411,51 @@ function clearStreamingWatchdog() {
   }
 }
 
+function markStreamingNetwork(ok) {
+  streamingNetOk = ok;
+  streamingNetCheckedAt = Date.now();
+}
+
 function streamingPlaybackUnavailable() {
-  return typeof navigator !== "undefined" && navigator.onLine === false;
+  if (typeof navigator !== "undefined" && navigator.onLine === false) return true;
+  // Recent failed probe (Tailscale up, public internet down).
+  if (streamingNetOk === false && Date.now() - streamingNetCheckedAt < 90000) return true;
+  return false;
+}
+
+function probeStreamingNetwork(force) {
+  if (!force && streamingNetOk === false && Date.now() - streamingNetCheckedAt < 15000) {
+    return false;
+  }
+  if (!force && streamingNetOk === true && Date.now() - streamingNetCheckedAt < 20000) {
+    return true;
+  }
+  if (typeof navigator !== "undefined" && navigator.onLine === false) {
+    markStreamingNetwork(false);
+    return false;
+  }
+  if (streamingNetProbe) return streamingNetProbe;
+  streamingNetProbe = (async () => {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 1600);
+    try {
+      // no-cors: opaque success still means the phone reached the public net.
+      await fetch("https://www.youtube.com/generate_204", {
+        mode: "no-cors",
+        cache: "no-store",
+        signal: controller.signal
+      });
+      markStreamingNetwork(true);
+      return true;
+    } catch {
+      markStreamingNetwork(false);
+      return false;
+    } finally {
+      clearTimeout(timer);
+      streamingNetProbe = null;
+    }
+  })();
+  return streamingNetProbe;
 }
 
 function appInBackground() {
@@ -2729,8 +3468,20 @@ function isStreamingTrack(track) {
 }
 
 function shouldSkipStreamingTrack(track) {
-  // Offline, or the phone is away: YouTube and SoundCloud cannot keep playing.
+  // Offline / no public internet, or the phone is away: YouTube and SoundCloud cannot keep playing.
   return isStreamingTrack(track) && (streamingPlaybackUnavailable() || appInBackground());
+}
+
+function streamingSkipNotice(track) {
+  const source = track && track.source;
+  if (streamingPlaybackUnavailable()) {
+    if (source === "soundcloud") return "No connection — skipping SoundCloud";
+    if (source === "youtube") return "No connection — skipping video";
+    return "No connection — skipping";
+  }
+  if (source === "soundcloud") return "SoundCloud could not play — skipping";
+  if (source === "youtube") return "Couldn’t play video — skipping";
+  return "Couldn’t play — skipping";
 }
 
 
@@ -2751,6 +3502,7 @@ function embedPaused() {
 }
 
 function onAppHidden() {
+  lastHiddenAt = Date.now();
   // Local→local fades are unreliable off-focus — snap to the incoming clip and keep playing.
   if (xf.active && xf.inn && xf.inn.kind === "local" && xf.out && xf.out.kind === "local") {
     finishCrossfade();
@@ -2827,15 +3579,22 @@ function resumeStreaming() {
 function skipPastStreamingTracks(direction) {
   if (!state.tracks.length) return false;
   const originId = state.currentId;
+  const originTrack = currentTrack();
+  const originWasStreaming = isStreamingTrack(originTrack);
   let guard = state.tracks.length + 1;
   const stepDir = direction < 0 ? -1 : 1;
+  let skippedStreaming = 0;
   while (guard-- > 0) {
     const next = trackForStep(stepDir);
     if (!next) break;
     if (isStreamingTrack(next)) {
       if (originId != null && next.id === originId && state.currentId !== originId) break;
       state.currentId = next.id;
+      skippedStreaming += 1;
       continue;
+    }
+    if (originWasStreaming || skippedStreaming > 0) {
+      setNotice(streamingSkipNotice(originTrack), { duration: 3500 });
     }
     void playTrack(next, { open: playerIsOpen() });
     return true;
@@ -2848,6 +3607,11 @@ function skipPastStreamingTracks(direction) {
   state.currentId = null;
   closePlayer();
   render();
+  setNotice(
+    streamingPlaybackUnavailable()
+      ? "No connection — streaming songs need internet."
+      : "Couldn’t play that song."
+  );
   return true;
 }
 
@@ -2859,7 +3623,6 @@ function advancePastStreamingFailure() {
     clearStreamingWatchdog();
     pendingYtPlay = false;
     finishTrackChange();
-    setPlaying(false);
     pauseYouTube();
     pauseSoundCloud();
     const hasLocal = state.tracks.some((entry) => entry && entry.source === "local");
@@ -2868,48 +3631,68 @@ function advancePastStreamingFailure() {
       state.currentId = null;
       closePlayer();
       render();
-      setNotice("No connection — streaming songs need internet.");
+      setNotice(
+        track.source === "soundcloud"
+          ? "No connection — SoundCloud needs internet."
+          : "No connection — streaming songs need internet."
+      );
       return;
     }
     skipPastStreamingTracks(1);
     return;
   }
-  skipUnplayableStreaming();
+  skipUnplayableStreaming(streamingSkipNotice(track));
 }
 
-function skipUnplayableStreaming() {
+function skipUnplayableStreaming(message) {
   const failed = currentTrack();
   if (!failed || !isStreamingTrack(failed)) return;
   clearStreamingWatchdog();
   pendingYtPlay = false;
+  ytSwapPending = false;
   finishTrackChange();
-  setPlaying(false);
   pauseYouTube();
   pauseSoundCloud();
+  const skipMsg = message || streamingSkipNotice(failed);
   streamingFailStreak += 1;
   const limit = Math.max(1, state.tracks.length);
   if (streamingFailStreak >= limit) {
     streamingFailStreak = 0;
+    // Prefer any local song over stopping the whole session.
+    const local = state.tracks.find((entry) => entry && entry.source === "local");
+    if (local) {
+      setNotice(skipMsg, { duration: 3500 });
+      void playTrack(local, { open: playerIsOpen() });
+      return;
+    }
     stopPlayback();
     state.currentId = null;
     closePlayer();
     render();
-    setNotice("Couldn’t play that song.");
+    setNotice(message || "Couldn’t play that song.");
     return;
   }
   const next = trackForStep(1);
   if (!next || next.id === failed.id) {
     streamingFailStreak = 0;
+    const local = state.tracks.find((entry) => entry && entry.source === "local");
+    if (local && local.id !== failed.id) {
+      setNotice(skipMsg, { duration: 3500 });
+      void playTrack(local, { open: playerIsOpen() });
+      return;
+    }
     stopPlayback();
     render();
-    setNotice("Couldn’t play that song.");
+    setNotice(message || "Couldn’t play that song.");
     return;
   }
-  setNotice("Couldn’t play — skipping", { duration: 3500 });
+  setNotice(skipMsg, { duration: 3500 });
+  // Keep play-intent: do not setPlaying(false) before advancing.
   step(1);
 }
 
 function noteStreamingPlaybackOk() {
+  markStreamingNetwork(true);
   streamingFailStreak = 0;
   clearStreamingWatchdog();
 }
@@ -2962,13 +3745,20 @@ function armStreamingWatchdog(attempt) {
   const trackId = track.id;
   const source = track.source;
   const tries = Number(attempt) || 0;
-  const ms = streamingPlaybackUnavailable() ? 3000 : source === "youtube" ? 8000 : 6000;
+  const offline = streamingPlaybackUnavailable();
+  const ms = offline ? 1200 : source === "youtube" ? 5000 : 4000;
   streamingWatchdog = setTimeout(() => {
     streamingWatchdog = null;
     if (state.currentId !== trackId || !isSource(source)) return;
     if (streamingHold && appInBackground()) return;
     if (streamingPlaybackConfirmed(source)) {
+      markStreamingNetwork(true);
       noteStreamingPlaybackOk();
+      return;
+    }
+    // Offline / no public internet: do not keep retrying embeds.
+    if (offline || appInBackground()) {
+      advancePastStreamingFailure();
       return;
     }
     if (source === "youtube" && pendingYtPlay && pendingYtVideo) {
@@ -2978,29 +3768,43 @@ function armStreamingWatchdog(attempt) {
         if (ytPlayer && ytPlayer.playVideo) ytPlayer.playVideo();
       } catch { /* keep waiting */ }
       tryPlayYouTube();
-      // Give video-to-video switches a long runway before declaring failure.
-      if (age < 20000 || streamingStillLoading(source) || tries < 3) {
+      // Cap retries — the old "still loading OR" branch retried forever offline.
+      if (tries < 2 && age < 12000) {
         armStreamingWatchdog(tries + 1);
         return;
       }
-    } else if (streamingStillLoading(source) && tries < 2) {
+      markStreamingNetwork(false);
+      skipUnplayableStreaming(streamingSkipNotice(currentTrack()));
+      return;
+    }
+    if (streamingStillLoading(source) && tries < 2) {
       tryPlayYouTube();
       armStreamingWatchdog(tries + 1);
       return;
     }
-    skipUnplayableStreaming();
+    markStreamingNetwork(false);
+    skipUnplayableStreaming(streamingSkipNotice(currentTrack()));
   }, ms);
 }
 
 function noticeYouTubePlaybackError(code) {
   const track = currentTrack();
   if (!(track && track.source === "youtube")) {
-    setPlaying(false);
+    return;
+  }
+  // Offline / background: never sit paused on a video — jump to something playable.
+  if (streamingPlaybackUnavailable() || appInBackground()) {
+    advancePastStreamingFailure();
     return;
   }
   // During local→YouTube crossfade, keep the incoming player retrying — do not kill the fade.
   if (xf.active && xf.inn && xf.inn.kind === "youtube" && xf.inn.player) {
     ytErrorRetries += 1;
+    if (ytErrorRetries >= 3) {
+      cancelCrossfade();
+      skipUnplayableStreaming();
+      return;
+    }
     try {
       const player = xf.inn.player;
       const id = pendingYtVideo || (xf.nextTrack && xf.nextTrack.mediaRef) || "";
@@ -3013,9 +3817,13 @@ function noticeYouTubePlaybackError(code) {
     return;
   }
   // Switching while a clip is playing often fires burst onError events (esp. code 5).
-  // Never skip from onError while a pick is still pending — keep loading the requested id.
+  // Retry a couple times, then skip so the queue keeps moving.
   if (pendingYtPlay && pendingYtVideo) {
     ytErrorRetries += 1;
+    if (ytErrorRetries >= 3) {
+      skipUnplayableStreaming();
+      return;
+    }
     try {
       if (ytPlayer && ytPlayer.loadVideoById) ytPlayer.loadVideoById(pendingYtVideo);
       if (ytPlayer && ytPlayer.playVideo) ytPlayer.playVideo();
@@ -3023,9 +3831,8 @@ function noticeYouTubePlaybackError(code) {
     armStreamingWatchdog();
     return;
   }
-  const hardFail = code === 2 || code === 100 || code === 101 || code === 150;
-  if (hardFail) skipUnplayableStreaming();
-  else setPlaying(false);
+  // Any settled YouTube error: skip and keep playing (soft codes used to pause forever).
+  skipUnplayableStreaming();
 }
 function showSongs() {
   hideSheet("add-sheet");
@@ -3194,10 +4001,14 @@ function renderCatalog(options) {
     }
     const title = document.createElement("span");
     title.className = "song-title";
-    title.textContent = entry.title;
+    const formatTag = localFormatTag(entry.file);
+    title.textContent = withFormatTag(formatTag, entry.title || entry.file);
     const sub = document.createElement("span");
     sub.className = "song-sub";
-    sub.textContent = [entry.artist, formatBytes(entry.bytes)].filter(Boolean).join(" · ");
+    const artistBits = formatTag
+      ? [formatTag, entry.artist, formatBytes(entry.bytes)]
+      : [entry.artist, formatBytes(entry.bytes)];
+    sub.textContent = artistBits.filter(Boolean).join(" · ");
     text.append(title, sub);
     const button = document.createElement("button");
     button.type = "button";
@@ -3295,12 +4106,13 @@ async function downloadEntry(entry, announce) {
     const response = await fetch("/music/" + encodeURIComponent(entry.file));
     if (!response.ok) throw new Error("download");
     const type = mimeFor(entry.file, response.headers.get("content-type"));
+    if (!browserCanPlayAudioType(type)) throw new Error("unsupported");
     const total = Number(response.headers.get("content-length")) || Number(entry.bytes) || 0;
     const blob = await readBody(response, type, total, (ratio) => {
       if (button) button.textContent = "Downloading… " + Math.round(ratio * 100) + "%";
     });
     if (!blob.size || (total > 0 && blob.size < total)) throw new Error("download");
-    const tags = await readID3(blob);
+    const tags = await readAudioTags(blob);
     const track = {
       id: "mac:" + entry.file,
       title: tags.title || entry.title || entry.file,
@@ -3349,11 +4161,77 @@ async function readBody(response, type, total, onProgress) {
 }
 
 function mimeFor(name, header) {
-  if (header && header.startsWith("audio/")) return header.split(";")[0].trim();
-  const ext = name.split(".").pop().toLowerCase();
+  const ext = String(name || "").split(".").pop().toLowerCase();
+  // Prefer extension — servers often send audio/x-flac or bare audio/ogg for Opus.
   if (ext === "m4a" || ext === "mp4" || ext === "aac") return "audio/mp4";
   if (ext === "wav") return "audio/wav";
+  if (ext === "flac") return "audio/flac";
+  if (ext === "opus") return "audio/ogg; codecs=opus";
+  if (ext === "ogg") return "audio/ogg";
+  if (ext === "webm") return "audio/webm";
+  if (ext === "mp3" || ext === "mpeg") return "audio/mpeg";
+  let raw = header && header.startsWith("audio/") ? header.split(";")[0].trim().toLowerCase() : "";
+  if (raw === "audio/x-flac" || raw === "audio/flac") return "audio/flac";
+  if (raw === "audio/opus") return "audio/ogg; codecs=opus";
+  if (raw === "audio/ogg" || raw === "application/ogg") return "audio/ogg";
+  if (raw === "audio/webm" || raw === "video/webm") return "audio/webm";
+  if (raw) return raw;
   return "audio/mpeg";
+}
+
+function browserCanPlayAudioType(type) {
+  try {
+    const el = document.createElement("audio");
+    if (!el || !el.canPlayType) return true;
+    const full = String(type || "").trim().toLowerCase();
+    const raw = full.split(";")[0].trim();
+    const aliases = [
+      full,
+      raw,
+      "audio/flac",
+      "audio/x-flac",
+      "audio/ogg",
+      "audio/ogg; codecs=opus",
+      "audio/ogg; codecs=vorbis",
+      "audio/opus",
+      "audio/webm",
+      "audio/webm; codecs=opus",
+      "video/webm"
+    ];
+    for (const candidate of aliases) {
+      if (!candidate) continue;
+      // Only test aliases that match the requested family.
+      const sameFlac =
+        (raw === "audio/flac" || raw === "audio/x-flac") &&
+        (candidate === "audio/flac" || candidate === "audio/x-flac");
+      const sameOgg =
+        (raw === "audio/ogg" || raw === "audio/opus" || full.includes("opus")) &&
+        (candidate.startsWith("audio/ogg") || candidate === "audio/opus");
+      const sameWebm =
+        (raw === "audio/webm" || raw === "video/webm" || full.includes("webm")) &&
+        (candidate.includes("webm"));
+      const sameExact = candidate === full || candidate === raw;
+      if (!(sameExact || sameFlac || sameOgg || sameWebm)) continue;
+      const rank = el.canPlayType(candidate);
+      if (rank === "probably" || rank === "maybe") return true;
+    }
+    // Chrome/Android play these even when some WebViews report "".
+    if (
+      raw === "audio/flac" ||
+      raw === "audio/x-flac" ||
+      raw === "audio/ogg" ||
+      raw === "audio/opus" ||
+      raw === "audio/webm" ||
+      raw === "video/webm" ||
+      full.includes("codecs=opus") ||
+      full.includes("webm")
+    ) {
+      return true;
+    }
+    return false;
+  } catch {
+    return true;
+  }
 }
 
 async function importFiles(fileList) {
@@ -3367,7 +4245,12 @@ async function importFiles(fileList) {
   let failures = 0;
   for (const file of files) {
     try {
-      const tags = await readID3(file);
+      const type = file.type && file.type.startsWith("audio/") ? file.type : mimeFor(file.name, "");
+      if (!browserCanPlayAudioType(type)) {
+        failures += 1;
+        continue;
+      }
+      const tags = await readAudioTags(file);
       const fallback = file.name.replace(/\.[^.]+$/, "") || "Song";
       const track = {
         id: uid(),
@@ -3378,7 +4261,11 @@ async function importFiles(fileList) {
         bytes: file.size,
         createdAt: Date.now()
       };
-      await saveLocal(track, file, tags.artwork);
+      const blob =
+        file.type && file.type.startsWith("audio/")
+          ? file
+          : new Blob([await file.arrayBuffer()], { type });
+      await saveLocal(track, blob, tags.artwork);
       state.readyId = track.id;
       titles.push(track.title);
       state.tracks.push(track);
@@ -3407,7 +4294,7 @@ function showLinkConfirm(status, track) {
   if (track) {
     linkConfirmId = track.id;
     name.hidden = false;
-    name.textContent = track.title;
+    name.textContent = displayTitle(track);
     detail.hidden = false;
     detail.textContent = subtitle(track);
     play.hidden = false;
@@ -3632,22 +4519,31 @@ async function resolveSoundCloudPlayURL(track) {
 
 async function fetchOEmbed(parsed) {
   const fallback = parsed.source === "youtube" ? "YouTube video" : "SoundCloud song";
-  const endpoint = parsed.source === "youtube" ? "/api/youtube-oembed" : "/api/soundcloud-oembed";
-  try {
-    const response = await fetch(endpoint + "?url=" + encodeURIComponent(parsed.pageURL));
-    if (!response.ok) return { title: fallback, artist: "", streamRef: "", artworkUrl: "" };
-    const payload = await response.json();
-    const videoTitle = String(payload.title || "").trim();
-    const channel = String(payload.author_name || "").trim();
-    if (parsed.source === "youtube") {
-      return { ...youtubeNames(videoTitle, channel), streamRef: "", artworkUrl: "" };
-    }
-    const streamRef = soundCloudStreamRefFromOEmbed(payload);
-    const artworkUrl = soundCloudArtURL(payload.thumbnail_url);
-    return { title: videoTitle || fallback, artist: channel, streamRef: streamRef, artworkUrl: artworkUrl };
-  } catch {
-    return { title: fallback, artist: "", streamRef: "", artworkUrl: "" };
+  const urls = [];
+  if (parsed.source === "soundcloud") {
+    urls.push("https://soundcloud.com/oembed?format=json&url=" + encodeURIComponent(parsed.pageURL));
+    urls.push("/api/soundcloud-oembed?url=" + encodeURIComponent(parsed.pageURL));
+  } else {
+    urls.push("/api/youtube-oembed?url=" + encodeURIComponent(parsed.pageURL));
   }
+  for (const endpoint of urls) {
+    try {
+      const response = await fetch(endpoint);
+      if (!response.ok) continue;
+      const payload = await response.json();
+      const videoTitle = String(payload.title || "").trim();
+      const channel = String(payload.author_name || "").trim();
+      if (parsed.source === "youtube") {
+        return { ...youtubeNames(videoTitle, channel), streamRef: "", artworkUrl: "" };
+      }
+      const streamRef = soundCloudStreamRefFromOEmbed(payload);
+      const artworkUrl = soundCloudArtURL(payload.thumbnail_url);
+      return { title: videoTitle || fallback, artist: channel, streamRef: streamRef, artworkUrl: artworkUrl };
+    } catch {
+      /* try next */
+    }
+  }
+  return { title: fallback, artist: "", streamRef: "", artworkUrl: "" };
 }
 
 function youtubeNames(videoTitle, channel) {
@@ -3761,7 +4657,7 @@ function renderManage() {
     text.className = "text";
     const title = document.createElement("span");
     title.className = "song-title";
-    title.textContent = track.title;
+    title.textContent = displayTitle(track);
     const sub = document.createElement("span");
     sub.className = "song-sub";
     sub.textContent = subtitle(track);
@@ -3828,7 +4724,13 @@ function shouldAdvance() {
 }
 
 async function playTrack(track, options) {
-  if (shouldSkipStreamingTrack(track)) {
+  if (isStreamingTrack(track)) {
+    const netOk = await probeStreamingNetwork(false);
+    if (!netOk || shouldSkipStreamingTrack(track)) {
+      skipPastStreamingTracks(1);
+      return;
+    }
+  } else if (shouldSkipStreamingTrack(track)) {
     skipPastStreamingTracks(1);
     return;
   }
@@ -3854,6 +4756,7 @@ async function playTrack(track, options) {
       else await toggle();
     }
     if (track.source === "local") showSongList();
+    else if (isVideoTrack(track) && (open || state.videosInline)) presentVideosForTrack(track);
     else if (open) openPlayer();
     else if (state.videosInline) syncVideosInlinePlayer();
     finishTrackChange();
@@ -3862,11 +4765,13 @@ async function playTrack(track, options) {
     return;
   }
   state.currentId = track.id;
+  void recordPlay(track);
   const player = audio();
   const started = track.source === "local" && player.src === fileURLs.get(track.id) && !player.paused && !player.error;
   state.playing = Boolean(started);
   if (!started) paintSeek(0, 0);
   if (track.source === "local") closePlayer();
+  else if (isVideoTrack(track) && (open || state.videosInline)) presentVideosForTrack(track);
   else if (open) openPlayer();
   else if (state.videosInline) {
     // Keep the inline stage mounted across video-to-video picks.
@@ -3881,26 +4786,29 @@ async function playTrack(track, options) {
     else await playSoundCloud(track);
   } catch {
     finishTrackChange();
-    if (
-      (track.source === "youtube" || track.source === "soundcloud") &&
-      (streamingPlaybackUnavailable() || appInBackground())
-    ) {
-      advancePastStreamingFailure();
+    if (track.source === "youtube" || track.source === "soundcloud") {
+      if (streamingPlaybackUnavailable() || appInBackground()) {
+        advancePastStreamingFailure();
+        return;
+      }
+      // YouTube switches often throw transient API noise — keep trying briefly.
+      if (track.source === "youtube") {
+        pendingYtPlay = true;
+        pendingYtVideo = track.mediaRef;
+        pendingVideo = track.mediaRef;
+        ytPlayStartedAt = Date.now();
+        try {
+          playYouTube(track);
+        } catch { /* watchdog covers real failure */ }
+        armStreamingWatchdog();
+        return;
+      }
+      skipUnplayableStreaming(streamingSkipNotice(track));
       return;
     }
-    // YouTube switches often throw transient API noise — keep trying instead of failing the pick.
-    if (track.source === "youtube") {
-      pendingYtPlay = true;
-      pendingYtVideo = track.mediaRef;
-      pendingVideo = track.mediaRef;
-      ytPlayStartedAt = Date.now();
-      try {
-        playYouTube(track);
-      } catch { /* watchdog covers real failure */ }
-      armStreamingWatchdog();
-      return;
-    }
-    setNotice("That song could not be played.");
+    // Local file missing / decode failure — skip so the queue keeps going.
+    setNotice("Couldn’t play — skipping", { duration: 3500 });
+    step(1);
   }
 }
 
@@ -3912,13 +4820,14 @@ function isAudiblyPlaying() {
 }
 
 function userPause() {
+  mediaPauseToken++;
   streamingHold = false;
   streamingLive = false;
   streamingPauseToken++;
   if (xf.active) cancelCrossfade();
   const track = currentTrack();
+  setPlaying(false);
   if (!track) return;
-  if (isStreamingTrack(track)) setPlaying(false);
   if (track.source === "local") {
     audio().pause();
     otherAudio().pause();
@@ -3967,6 +4876,13 @@ function skip(direction) {
   if (state.artistQueue) {
     const track = moveArtistQueue(direction);
     if (!track) {
+      if (direction > 0) {
+        const next = continueIntoAllSongs();
+        if (next) {
+          userPlay(next, playerIsOpen());
+          return;
+        }
+      }
       stopArtistQueue();
       return;
     }
@@ -4054,7 +4970,7 @@ async function artURLForTrack(track) {
   if (!blob) {
     const audio = await playableBlob(track);
     if (!audio) return null;
-    const tags = await readID3(audio);
+    const tags = await readAudioTags(audio);
     if (!tags.artwork) return null;
     blob = tags.artwork;
     stored = false;
@@ -4257,7 +5173,8 @@ async function playLocal(track) {
     const blob = await playableBlob(track);
     if (!blob) {
       finishTrackChange();
-      setNotice("That song is not " + onThisDevice() + ".");
+      setNotice("That song is not " + onThisDevice() + " — skipping", { duration: 3500 });
+      step(1);
       return;
     }
     url = prepareURL(track.id, blob);
@@ -4527,7 +5444,7 @@ async function playSoundCloud(track) {
   if (!window.SC || !window.SC.Widget) {
     finishTrackChange();
     if (streamingPlaybackUnavailable() || appInBackground()) advancePastStreamingFailure();
-    else setNotice("SoundCloud could not load. Check your connection and try again.");
+    else skipUnplayableStreaming("SoundCloud could not load — skipping");
     return;
   }
   scWidget = window.SC.Widget(frame);
@@ -4571,11 +5488,12 @@ function bindSoundCloudPlaybackEvents(widget) {
   if (window.SC.Widget.Events.ERROR) {
     widget.bind(window.SC.Widget.Events.ERROR, () => {
       if (widget !== scWidget || !isSource("soundcloud")) return;
+      markStreamingNetwork(false);
       if (streamingPlaybackUnavailable() || appInBackground()) {
         advancePastStreamingFailure();
         return;
       }
-      skipUnplayableStreaming();
+      skipUnplayableStreaming("SoundCloud could not play — skipping");
     });
   }
 }
@@ -5005,6 +5923,12 @@ function fitYouTube() {
   const width = stage.clientWidth;
   const height = stage.clientHeight;
   if (width <= 0 || height <= 0) return;
+  const key = width + "x" + height;
+  if (stage.dataset.fitSize === key) {
+    hardenStreamingEmbeds();
+    return;
+  }
+  stage.dataset.fitSize = key;
   if (ytPlayerA && ytPlayerA.setSize) ytPlayerA.setSize(width, height);
   if (ytPlayerB && ytPlayerB.setSize) ytPlayerB.setSize(width, height);
   hardenStreamingEmbeds();
@@ -5089,6 +6013,13 @@ function moveArtistQueue(direction) {
   return state.tracks.find((track) => track.id === queue.ids[next]) || null;
 }
 
+function continueIntoAllSongs() {
+  state.artistQueue = null;
+  if (!state.tracks.length) return null;
+  if (state.shuffle) startShuffle(state.currentId);
+  return trackForStep(1);
+}
+
 function stopArtistQueue() {
   state.artistQueue = null;
   const track = currentTrack();
@@ -5107,6 +6038,13 @@ function step(direction) {
   if (state.artistQueue) {
     const track = moveArtistQueue(direction);
     if (!track) {
+      if (direction > 0) {
+        const next = continueIntoAllSongs();
+        if (next) {
+          playTrack(next, { open: playerIsOpen() || next.source !== "local" });
+          return;
+        }
+      }
       stopArtistQueue();
       return;
     }
@@ -5180,7 +6118,10 @@ let sessionArtToken = 0;
 function publishSession(track) {
   if (!("mediaSession" in navigator) || !("MediaMetadata" in window) || !track) return;
   const token = ++sessionArtToken;
-  const meta = { title: track.title || "Song", artist: track.artist || "" };
+  const meta = {
+    title: displayTitle(track),
+    artist: withFormatTag(localFormatTag(track), track.artist || "")
+  };
   try {
     navigator.mediaSession.metadata = new MediaMetadata(meta);
   } catch { /* Some browsers reject metadata until playback starts. */ }
@@ -5329,9 +6270,98 @@ async function id3HeadBytes(file) {
       const tagSize = syncsafe(probe, 6);
       readLen = Math.min(size, Math.max(readLen, 10 + tagSize));
       readLen = Math.min(readLen, ID3_READ_MAX);
+    } else if (probe[0] === 0x66 && probe[1] === 0x4c && probe[2] === 0x61 && probe[3] === 0x43) {
+      // FLAC metadata (Vorbis comments / picture) often sits in the first megabyte.
+      readLen = Math.min(size, ID3_READ_MAX);
     }
   }
   return new Uint8Array(await file.slice(0, readLen).arrayBuffer());
+}
+
+async function readAudioTags(file) {
+  const empty = { title: "", artist: "", artwork: null };
+  try {
+    const head = await id3HeadBytes(file);
+    if (head[0] === 0x66 && head[1] === 0x4c && head[2] === 0x61 && head[3] === 0x43) {
+      const flac = await readFlacTags(file, head);
+      if (flac.title || flac.artist || flac.artwork) return flac;
+    }
+  } catch { /* fall through to ID3 */ }
+  return readID3(file);
+}
+
+async function readFlacTags(file, headBytes) {
+  const empty = { title: "", artist: "", artwork: null };
+  try {
+    let head = headBytes;
+    if (!head || head.length < 42) head = new Uint8Array(await file.slice(0, Math.min(file.size || 0, 512 * 1024)).arrayBuffer());
+    if (!(head[0] === 0x66 && head[1] === 0x4c && head[2] === 0x61 && head[3] === 0x43)) return empty;
+    let offset = 4;
+    let title = "";
+    let artist = "";
+    let artwork = null;
+    while (offset + 4 <= head.length) {
+      const blockHeader = head[offset];
+      const isLast = (blockHeader & 0x80) !== 0;
+      const blockType = blockHeader & 0x7f;
+      const blockSize = (head[offset + 1] << 16) | (head[offset + 2] << 8) | head[offset + 3];
+      const start = offset + 4;
+      const end = start + blockSize;
+      if (blockSize < 0 || end > head.length) break;
+      if (blockType === 4) {
+        // Vorbis comment
+        const view = head.subarray(start, end);
+        if (view.length >= 8) {
+          const vendorLen = view[0] | (view[1] << 8) | (view[2] << 16) | (view[3] << 24);
+          let at = 4 + vendorLen;
+          if (at + 4 <= view.length) {
+            const count = view[at] | (view[at + 1] << 8) | (view[at + 2] << 16) | (view[at + 3] << 24);
+            at += 4;
+            const decoder = new TextDecoder("utf-8");
+            for (let i = 0; i < count && at + 4 <= view.length; i += 1) {
+              const len = view[at] | (view[at + 1] << 8) | (view[at + 2] << 16) | (view[at + 3] << 24);
+              at += 4;
+              if (len < 0 || at + len > view.length) break;
+              const entry = decoder.decode(view.subarray(at, at + len));
+              at += len;
+              const eq = entry.indexOf("=");
+              if (eq <= 0) continue;
+              const key = entry.slice(0, eq).toUpperCase();
+              const value = entry.slice(eq + 1).trim();
+              if (key === "TITLE" && !title) title = value;
+              else if ((key === "ARTIST" || key === "ALBUMARTIST") && !artist) artist = value;
+            }
+          }
+        }
+      } else if (blockType === 6 && !artwork && blockSize > 32) {
+        // PICTURE
+        const view = head.subarray(start, end);
+        let at = 4; // skip type
+        if (at + 4 <= view.length) {
+          const mimeLen = (view[at] << 24) | (view[at + 1] << 16) | (view[at + 2] << 8) | view[at + 3];
+          at += 4;
+          if (mimeLen >= 0 && at + mimeLen + 4 <= view.length) {
+            const mime = new TextDecoder("ascii").decode(view.subarray(at, at + mimeLen)) || "image/jpeg";
+            at += mimeLen;
+            const descLen = (view[at] << 24) | (view[at + 1] << 16) | (view[at + 2] << 8) | view[at + 3];
+            at += 4 + Math.max(0, descLen) + 16; // skip desc + width/height/depth/colors
+            if (at + 4 <= view.length) {
+              const dataLen = (view[at] << 24) | (view[at + 1] << 16) | (view[at + 2] << 8) | view[at + 3];
+              at += 4;
+              if (dataLen > 0 && at + dataLen <= view.length) {
+                artwork = new Blob([view.subarray(at, at + dataLen)], { type: mime });
+              }
+            }
+          }
+        }
+      }
+      offset = end;
+      if (isLast) break;
+    }
+    return { title: title.trim(), artist: artist.trim(), artwork };
+  } catch {
+    return empty;
+  }
 }
 
 async function readID3(file) {
@@ -5427,17 +6457,109 @@ async function requestPersist() {
 function openDB() {
   if (dbPromise) return dbPromise;
   dbPromise = new Promise((resolve, reject) => {
-    const request = indexedDB.open("waynesmusic", 2);
+    const request = indexedDB.open("waynesmusic", 3);
     request.onupgradeneeded = () => {
       const db = request.result;
       if (!db.objectStoreNames.contains("tracks")) db.createObjectStore("tracks", { keyPath: "id" });
       if (!db.objectStoreNames.contains("files")) db.createObjectStore("files", { keyPath: "id" });
       if (!db.objectStoreNames.contains("artwork")) db.createObjectStore("artwork", { keyPath: "id" });
+      if (!db.objectStoreNames.contains("plays")) db.createObjectStore("plays", { keyPath: "id", autoIncrement: true });
     };
     request.onsuccess = () => resolve(request.result);
     request.onerror = () => reject(request.error);
   });
   return dbPromise;
+}
+
+function transactionDone(tx) {
+  return new Promise((resolve, reject) => {
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error);
+    tx.onabort = () => reject(tx.error || new Error("aborted"));
+  });
+}
+
+const PLAY_HISTORY_CAP = 500;
+
+async function recordPlay(track) {
+  if (!track || !track.id) return;
+  const artist = artistNames(track)[0] || "Unknown";
+  try {
+    const db = await openDB();
+    const tx = db.transaction("plays", "readwrite");
+    const store = tx.objectStore("plays");
+    store.add({ trackId: track.id, artist, at: Date.now() });
+    await transactionDone(tx);
+    await prunePlayHistory();
+  } catch {
+    /* Suggestions still work from favorites alone. */
+  }
+}
+
+async function prunePlayHistory() {
+  const db = await openDB();
+  const all = await new Promise((resolve, reject) => {
+    const tx = db.transaction("plays", "readonly");
+    const request = tx.objectStore("plays").getAll();
+    request.onsuccess = () => resolve(request.result || []);
+    request.onerror = () => reject(request.error);
+  });
+  if (all.length <= PLAY_HISTORY_CAP) return;
+  all.sort((a, b) => (a.at || 0) - (b.at || 0));
+  const drop = all.slice(0, all.length - PLAY_HISTORY_CAP);
+  const tx = db.transaction("plays", "readwrite");
+  const store = tx.objectStore("plays");
+  for (const row of drop) {
+    if (row.id != null) store.delete(row.id);
+  }
+  await transactionDone(tx);
+}
+
+async function allPlays() {
+  const db = await openDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction("plays", "readonly");
+    const request = tx.objectStore("plays").getAll();
+    request.onsuccess = () => resolve(request.result || []);
+    request.onerror = () => reject(request.error);
+  });
+}
+
+async function suggestionSeeds() {
+  const scores = new Map();
+  const bump = (name, weight) => {
+    const raw = String(name || "").trim();
+    if (!raw || raw.toLowerCase() === "unknown") return;
+    const key = raw.toLocaleLowerCase();
+    const prev = scores.get(key);
+    if (prev) prev.score += weight;
+    else scores.set(key, { name: raw, score: weight });
+  };
+  for (const track of favoriteTracks()) {
+    for (const name of artistNames(track)) bump(name, 3);
+  }
+  let plays = [];
+  try {
+    plays = await allPlays();
+  } catch {
+    plays = [];
+  }
+  const cutoff = Date.now() - 90 * 24 * 60 * 60 * 1000;
+  for (const row of plays) {
+    if ((row.at || 0) < cutoff) continue;
+    bump(row.artist, 1);
+  }
+  const ranked = [...scores.values()].sort((a, b) => b.score - a.score || a.name.localeCompare(b.name));
+  // Light shuffle among the top band so refreshes vary.
+  const top = ranked.slice(0, 12);
+  for (let i = top.length - 1; i > 0; i -= 1) {
+    if (Math.random() > 0.35) continue;
+    const j = Math.floor(Math.random() * (i + 1));
+    const tmp = top[i];
+    top[i] = top[j];
+    top[j] = tmp;
+  }
+  return top.slice(0, 8);
 }
 
 function transactionDone(tx) {

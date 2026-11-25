@@ -1,13 +1,13 @@
-const CACHE = "waynes-shell-v225";
+const CACHE = "waynes-shell-v259";
 const SHELL = [
   "/",
   "/index.html",
   "/styles.css",
-  "/styles.css?v=243",
+  "/styles.css?v=260",
   "/themes.css",
   "/themes.css?v=153",
   "/app.js",
-  "/app.js?v=206",
+  "/app.js?v=230",
   "/heroes/jori.jpg",
   "/heroes/joriBW.jpg",
   "/heroes/wayne.jpeg",
@@ -96,7 +96,24 @@ self.addEventListener("fetch", (event) => {
   }
 
   const request = event.request;
+  // Versioned CSS/JS: prefer network so phone PWAs pick up layout fixes.
+  const networkFirst =
+    url.pathname === "/styles.css" ||
+    url.pathname === "/themes.css" ||
+    url.pathname === "/app.js" ||
+    url.pathname === "/index.html" ||
+    url.pathname === "/";
   event.respondWith((async () => {
+    if (networkFirst) {
+      const fresh = await refreshShell(request);
+      if (fresh) return fresh;
+      const cached = await cachedShell(request);
+      if (cached) return cached;
+      if (request.mode === "navigate") {
+        return (await caches.match("/index.html")) || (await caches.match("/")) || offlineResponse();
+      }
+      return offlineResponse();
+    }
     const cached = await cachedShell(request);
     if (cached) return cached;
     const fresh = await refreshShell(request);
@@ -105,8 +122,5 @@ self.addEventListener("fetch", (event) => {
       return (await caches.match("/index.html")) || (await caches.match("/")) || offlineResponse();
     }
     return offlineResponse();
-  })());
-  event.waitUntil((async () => {
-    if (await cachedShell(request)) await refreshShell(request);
   })());
 });
