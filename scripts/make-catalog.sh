@@ -159,10 +159,46 @@ def catalog_hints(music_dir):
         "moody": "moody blues" in names or "the moody blues" in names,
     }
 
+JUNK_TITLES = {
+    "tmp",
+    "temp",
+    "temporary",
+    "untitled",
+    "unknown",
+    "track",
+    "audio",
+    "null",
+    "none",
+    "n/a",
+    "na",
+}
+
+def is_junk_title(text):
+    value = clean_field(text)
+    if not value:
+        return True
+    folded = value.casefold()
+    if folded in JUNK_TITLES:
+        return True
+    if len(value) <= 2 and not value.isdigit():
+        return True
+    return False
+
 def fallback_from_filename(stem, title, artist, hints):
     """Fill missing or junk metadata from filename patterns."""
     title = clean_field(title)
     artist = clean_field(artist)
+    if is_junk_title(title):
+        title = ""
+
+    # Archive.org style: johnmayall-summer1990d1t01_All_Your_Love_I_Miss_Loving
+    m = re.match(r"(?i)^john\s*mayall[-_].*?[dt]\d+_(.+)$", stem)
+    if not m:
+        m = re.match(r"(?i)^johnmayall[-_].*?[dt]\d+_(.+)$", stem)
+    if m:
+        raw = m.group(1).replace("_", " ").strip()
+        raw = re.sub(r"\s+", " ", raw)
+        return raw or title or stem, "John Mayall"
 
     m = re.search(r"(?i)(.+?)_+\s*(the moody blues)\b", stem)
     if m:
@@ -228,9 +264,9 @@ for path in sorted(dest.iterdir()):
     title, artist = id3(path)
     mdls_title = mdls(path, "kMDItemTitle")
     mdls_artist = mdls(path, "kMDItemAuthors")
-    if not title:
-        title = mdls_title
-    elif mdls_title and len(mdls_title.strip()) > len((title or "").strip()):
+    if not title or is_junk_title(title):
+        title = mdls_title if mdls_title and not is_junk_title(mdls_title) else ""
+    elif mdls_title and not is_junk_title(mdls_title) and len(mdls_title.strip()) > len((title or "").strip()):
         title = mdls_title
     if not artist:
         artist = mdls_artist
@@ -245,16 +281,18 @@ for path in sorted(dest.iterdir()):
             artist = spot_artist
         elif len(spot_artist) > len(tag_artist):
             artist = spot_artist
-    if not title and " - " in stem:
+    if (not title or is_junk_title(title)) and " - " in stem:
         artist_part, title_part = stem.split(" - ", 1)
         title = title_part.strip()
         if not artist:
             artist = artist_part.strip()
-    if not title:
+    if not title or is_junk_title(title):
         title = stem.replace("_", " ").strip() or "Song"
     title, artist = refine_title_artist(stem, title, artist)
     title, artist = fallback_from_filename(stem, title, artist, hints)
-    title = clean_field(title) or stem
+    title = clean_field(title) or stem.replace("_", " ").strip() or "Song"
+    if is_junk_title(title):
+        title = stem.replace("_", " ").strip() or "Song"
     artist = clean_field(artist)
     songs.append({
         "id": path.name,

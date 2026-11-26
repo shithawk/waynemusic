@@ -11,4 +11,4 @@ cd "$ROOT"
 # Ensure Tailscale Serve proxies here. Ignore failures if Tailscale is off.
 tailscale serve --bg --https=8443 http://127.0.0.1:8091 >/dev/null 2>&1 || true
 
-exec /opt/homebrew/bin/caddy run --config "$ROOT/Caddyfile"
+exec /usr/bin/caffeinate -is /opt/homebrew/bin/caddy run --config "$ROOT/Caddyfile"

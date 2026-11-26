@@ -1,13 +1,13 @@
-const CACHE = "waynes-shell-v259";
+const CACHE = "waynes-shell-v263-suggest";
 const SHELL = [
   "/",
   "/index.html",
   "/styles.css",
-  "/styles.css?v=260",
+  "/styles.css?v=261",
   "/themes.css",
-  "/themes.css?v=153",
+  "/themes.css?v=154",
   "/app.js",
-  "/app.js?v=230",
+  "/app.js?v=234",
   "/heroes/jori.jpg",
   "/heroes/joriBW.jpg",
   "/heroes/wayne.jpeg",
@@ -47,8 +47,8 @@ function offlineResponse() {
 
 function refreshShell(request) {
   const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), 4000);
-  return fetch(new Request(request, { cache: "no-cache" }), { signal: controller.signal })
+  const timer = setTimeout(() => controller.abort(), 15000);
+  return fetch(new Request(request, { cache: "no-store" }), { signal: controller.signal })
     .then((response) => {
       if (response && response.ok) {
         const copy = response.clone();
