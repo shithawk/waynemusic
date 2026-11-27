@@ -155,7 +155,7 @@ let youtubeHasSearched = false;
 let linkConfirmId = "";
 const downloading = new Set();
 
-const SW_BUILD = "20261126suggest";
+const SW_BUILD = "20261126offban3";
 
 const MARQUEE_PAUSE_S = 3;
 const MARQUEE_HOLD_END_S = 3;
@@ -346,21 +346,42 @@ function bindLocalAudioElement(player) {
     window.setTimeout(() => {
       if (state.currentId !== trackId) return;
       if (player !== audio() || !player.paused || player.ended || xf.active) return;
-      // Headphone / lock-screen pause: honor it. Only auto-resume the brief Android
-      // focus-loss blip that happens in the same moment the app goes to background.
+      // userPause / lock-screen Media Session pause bumps mediaPauseToken first.
+      if (pauseToken !== mediaPauseToken) return;
       if (appInBackground()) {
-        const focusLossBlip =
-          state.playing && pauseToken === mediaPauseToken && Date.now() - lastHiddenAt < 500;
-        if (focusLossBlip) {
+        // Brief system blip right after hide — resume. Headphones/BT that stay paused
+        // are honored below so keep-alive does not fight the user.
+        if (state.playing && Date.now() - lastHiddenAt < 800) {
           resumeLocalIfNeeded();
           armCrossfadeTimer();
           return;
         }
-        setPlaying(false);
+        if (state.playing) {
+          resumeLocalIfNeeded();
+          window.setTimeout(() => {
+            if (state.currentId !== trackId) return;
+            if (pauseToken !== mediaPauseToken) return;
+            if (!appInBackground()) return;
+            const el = audio();
+            if (!el || !el.paused || el.ended) return;
+            // Still paused after retry → treat as intentional headphone/BT pause.
+            setPlaying(false);
+          }, 1200);
+        }
         return;
       }
       setPlaying(false);
     }, 250);
+  });
+  player.addEventListener("stalled", () => {
+    if (player !== audio()) return;
+    if (!appInBackground() || !state.playing || !isSource("local")) return;
+    resumeLocalIfNeeded();
+  });
+  player.addEventListener("suspend", () => {
+    if (player !== audio()) return;
+    if (!appInBackground() || !state.playing || !isSource("local")) return;
+    resumeLocalIfNeeded();
   });
   player.addEventListener("ended", () => {
     if (xf.active) {
@@ -1011,6 +1032,7 @@ async function init() {
   });
   window.addEventListener("online", () => {
     markStreamingNetwork(null);
+    offlineStreamNoticeShown = false;
   });
   try {
     state.tracks = sortTracks(await allTracks());
@@ -1647,6 +1669,7 @@ function presentVideosSheet() {
   document.body.classList.remove("search-page");
   document.body.classList.remove("songs-page");
   showSheet("videos-sheet");
+  state.videosScrollToTop = true;
   renderVideos();
   scrollSheetBodyToTop("videos-sheet");
 }
@@ -2168,6 +2191,8 @@ function openArtists(name) {
   if (typeof name === "string" && name) {
     const match = [...document.querySelectorAll("#artist-list [data-artist]")].find((item) => item.dataset.artist === name);
     if (match) match.scrollIntoView({ block: "nearest" });
+  } else {
+    scrollSheetBodyToTop("artists-sheet");
   }
 }
 
@@ -2269,19 +2294,21 @@ function setArtistSuggestionsStatus(text, options) {
   const el = document.getElementById("artist-suggestions-status");
   const refreshBtn = document.getElementById("artist-suggestions-refresh");
   const showRefresh = Boolean(options && options.refresh);
+  const message = String(text || "").trim();
   if (refreshBtn) {
     refreshBtn.hidden = false;
     refreshBtn.disabled = Boolean(options && options.busy);
   }
   if (!el) return;
   el.classList.toggle("has-refresh", showRefresh);
-  if (showRefresh) {
+  // Keep Refresh visible, but still show status text (Finding… / no new picks).
+  if (showRefresh && !message && !(options && options.busy)) {
     el.hidden = true;
     el.textContent = "";
     return;
   }
   el.hidden = false;
-  el.textContent = text || "";
+  el.textContent = message;
 }
 
 function renderArtistSuggestions(items) {
@@ -2323,26 +2350,40 @@ async function vetSuggestion(raw) {
   if (!url) return null;
   const parsed = parseLink(url);
   if (!parsed || parsed.source !== "soundcloud") return null;
+  const rawTitle = String((raw && raw.title) || "").trim();
+  const rawArtist = String((raw && raw.artist) || "").trim();
+  const rawArt = String((raw && raw.artwork) || "").trim();
   if (suggestionAlreadySaved(url)) {
     return {
-      artist: raw.artist || "",
-      title: raw.title || "",
-      url,
-      because: raw.because || "",
-      artwork: raw.artwork || "",
+      artist: rawArtist || "Artist",
+      title: rawTitle || "Song",
+      url: parsed.pageURL || url,
+      because: (raw && raw.because) || "",
+      artwork: rawArt,
+      source: "soundcloud"
+    };
+  }
+  // SoundCloud search already gave title/url — accept without waiting on oEmbed.
+  // streamRef is resolved at play time via the widget/oEmbed path.
+  if (rawTitle && rawTitle !== "SoundCloud song") {
+    return {
+      artist: rawArtist || "Artist",
+      title: rawTitle,
+      url: parsed.pageURL || url,
+      because: (raw && raw.because) || "",
+      artwork: rawArt,
       source: "soundcloud"
     };
   }
   const meta = await fetchOEmbed(parsed);
   const title = String(meta.title || "").trim();
   if (!title || title === "SoundCloud song") return null;
-  if (!meta.streamRef && !parsed.mediaRef) return null;
   return {
-    artist: String(meta.artist || raw.artist || "").trim() || "Artist",
+    artist: String(meta.artist || rawArtist || "").trim() || "Artist",
     title,
     url: parsed.pageURL || url,
-    because: raw.because || "",
-    artwork: meta.artworkUrl || raw.artwork || "",
+    because: (raw && raw.because) || "",
+    artwork: meta.artworkUrl || rawArt,
     source: "soundcloud"
   };
 }
@@ -2394,34 +2435,82 @@ async function lastfmSimilarArtists(artist, limit = 20) {
   return out;
 }
 
+async function fetchWithTimeout(url, ms) {
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), ms);
+  try {
+    return await fetch(url, { signal: ctrl.signal });
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+async function fetchJsonWithTimeout(url, ms) {
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), ms);
+  try {
+    const response = await fetch(url, { signal: ctrl.signal });
+    if (!response.ok) return { ok: false, status: response.status, json: null };
+    // Keep abort armed through body parse — stalled JSON used to hang Refresh forever.
+    const json = await response.json();
+    return { ok: true, status: response.status, json };
+  } catch {
+    return { ok: false, status: 0, json: null };
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+let scApiCooldownUntil = 0;
+
 async function soundcloudSearchTrack(artist) {
   const q = String(artist || "").trim();
   if (!q) return null;
-  const clientId = soundCloudClientId();
-  const params = new URLSearchParams({
-    q,
-    client_id: clientId,
-    limit: "12",
-    app_locale: "en"
-  });
-  const scQuery = "/search/tracks?" + params.toString();
-  const direct = "https://api-v2.soundcloud.com" + scQuery;
-  const paths = [
-    // Phone internet first — works with Mac/Caddy off.
-    allOriginsProxy(direct),
-    direct,
-    "/api/soundcloud-v2" + scQuery
-  ];
+  let clientId = soundCloudClientId();
+  const buildPaths = (id) => {
+    const params = new URLSearchParams({
+      q,
+      client_id: id,
+      limit: "8",
+      app_locale: "en"
+    });
+    const scQuery = "/search/tracks?" + params.toString();
+    const direct = "https://api-v2.soundcloud.com" + scQuery;
+    // Mac /api first (fast). Skip long allorigins hangs — 1.5s last resort only.
+    return [
+      { url: "/api/soundcloud-v2" + scQuery, ms: 1200, via: "api" },
+      { url: direct, ms: 2000, via: "direct" },
+      { url: allOriginsProxy(direct), ms: 1500, via: "proxy" }
+    ];
+  };
   let payload = null;
-  for (const url of paths) {
+  let paths = buildPaths(clientId);
+  // Skip Mac /api briefly after it fails — Tailscale-off was burning 4s per candidate.
+  if (Date.now() < scApiCooldownUntil) {
+    paths = paths.filter((path) => path.via !== "api");
+  }
+  for (let i = 0; i < paths.length; i += 1) {
+    const path = paths[i];
     try {
-      const response = await fetch(url);
-      if (!response.ok) continue;
-      payload = await response.json();
+      const got = await fetchJsonWithTimeout(path.url, path.ms);
+      if (path.via === "api" && got.status === 401 && clientId !== SOUNDCLOUD_CLIENT_ID_DEFAULT) {
+        try { localStorage.removeItem(SC_CLIENT_ID_STORAGE); } catch { /* ignore */ }
+        clientId = SOUNDCLOUD_CLIENT_ID_DEFAULT;
+        paths = buildPaths(clientId);
+        i = -1;
+        continue;
+      }
+      if (path.via === "api" && !got.ok) {
+        scApiCooldownUntil = Date.now() + 60000;
+        continue;
+      }
+      if (!got.ok || !got.json) continue;
+      payload = got.json;
+      if (path.via === "api") scApiCooldownUntil = 0;
       rememberSoundCloudClientId(clientId);
       break;
     } catch {
-      /* try next */
+      if (path.via === "api") scApiCooldownUntil = Date.now() + 60000;
     }
   }
   if (!payload) return null;
@@ -2468,55 +2557,73 @@ async function buildClientSuggestions(seeds, excludeArtists, limit = 5) {
   const ordered = [...(seeds || [])].sort(
     (a, b) => Number((b && b.score) || 0) - Number((a && a.score) || 0)
   );
-  for (const seed of ordered.slice(0, 8)) {
-    const seedName = String((seed && seed.name) || "").trim();
-    const seedScore = Number((seed && seed.score) || 0);
-    if (!seedName) continue;
-    let similar = [];
-    try {
-      similar = await lastfmSimilarArtists(seedName);
-    } catch {
-      similar = [];
-    }
-    for (const sim of similar) {
+  // Keep this tight — Refresh must feel snappy on phone internet.
+  const seedSlice = ordered.slice(0, 3);
+  const similarLists = await Promise.all(
+    seedSlice.map(async (seed) => {
+      const seedName = String((seed && seed.name) || "").trim();
+      const seedScore = Number((seed && seed.score) || 0);
+      if (!seedName) return { seedName: "", seedScore: 0, similar: [] };
+      let similar = [];
+      try {
+        similar = await lastfmSimilarArtists(seedName, 8);
+      } catch {
+        similar = [];
+      }
+      return { seedName, seedScore, similar };
+    })
+  );
+  for (const row of similarLists) {
+    for (const sim of row.similar) {
       const key = String(sim.name || "").trim().toLowerCase();
       if (!key || exclude.has(key)) continue;
-      const score = seedScore * (0.5 + Number(sim.match || 0));
+      const score = row.seedScore * (0.5 + Number(sim.match || 0));
       const prev = ranked.get(key);
       if (!prev || score > prev.score) {
-        ranked.set(key, { name: sim.name, score, because: seedName });
+        ranked.set(key, { name: sim.name, score, because: row.seedName });
       }
     }
   }
-  const candidates = [...ranked.values()].sort((a, b) => b.score - a.score);
+  const candidates = [...ranked.values()].sort((a, b) => b.score - a.score).slice(0, 8);
   const suggestions = [];
   const used = new Set();
-  for (const cand of candidates) {
-    if (suggestions.length >= limit) break;
+  let cursor = 0;
+  async function tryOne(cand) {
     const key = cand.name.toLowerCase();
-    if (used.has(key)) continue;
+    if (used.has(key)) return null;
     let track = null;
     try {
       track = await soundcloudSearchTrack(cand.name);
     } catch {
       track = null;
     }
-    if (!track) continue;
+    if (!track) return null;
     const trackArtist = String(track.artist || cand.name).trim();
     const trackKey = trackArtist.toLowerCase();
-    if (exclude.has(trackKey) && trackKey !== key) continue;
-    if (used.has(trackKey)) continue;
+    if (exclude.has(trackKey) && trackKey !== key) return null;
+    if (used.has(trackKey)) return null;
     used.add(key);
     used.add(trackKey);
-    suggestions.push({
+    return {
       artist: trackArtist || cand.name,
       title: track.title,
       url: track.url,
       artwork: track.artwork || "",
       source: "soundcloud",
       because: cand.because || ""
-    });
+    };
   }
+  const workers = 4;
+  await Promise.all(
+    Array.from({ length: workers }, async () => {
+      while (suggestions.length < limit && cursor < candidates.length) {
+        const idx = cursor;
+        cursor += 1;
+        const hit = await tryOne(candidates[idx]);
+        if (hit && suggestions.length < limit) suggestions.push(hit);
+      }
+    })
+  );
   return suggestions;
 }
 
@@ -2589,13 +2696,39 @@ async function refreshArtistSuggestions(options) {
     }
     if (token !== suggestLoadToken) {
       // Persist successful fetch even if a newer load superseded this one.
-      if (vetted.length) writeSuggestCache(vetted);
+      if (vetted.length) {
+        let next = vetted.slice();
+        if (force && next.length < 5) {
+          for (const item of previous) {
+            if (next.length >= 5) break;
+            const name = String((item && item.artist) || "").trim().toLowerCase();
+            if (!name) continue;
+            if (next.some((row) => String(row.artist || "").trim().toLowerCase() === name)) continue;
+            next.push(item);
+          }
+        }
+        writeSuggestCache(next);
+      }
       return;
     }
     if (vetted.length) {
-      writeSuggestCache(vetted);
-      renderArtistSuggestions(vetted);
-      setArtistSuggestionsStatus("", { refresh: true });
+      let next = vetted.slice();
+      // Force refresh may only find a couple new names quickly — fill the rest from previous.
+      if (force && next.length < 5) {
+        for (const item of previous) {
+          if (next.length >= 5) break;
+          const name = String((item && item.artist) || "").trim().toLowerCase();
+          if (!name) continue;
+          if (next.some((row) => String(row.artist || "").trim().toLowerCase() === name)) continue;
+          next.push(item);
+        }
+      }
+      writeSuggestCache(next);
+      renderArtistSuggestions(next);
+      setArtistSuggestionsStatus(
+        force && vetted.length < 5 ? "Updated — mixed in a few new picks." : "",
+        { refresh: true }
+      );
       return;
     }
     // Never write an empty cache over good suggestions — that made Refresh look broken
@@ -2750,6 +2883,7 @@ function openVideos() {
   state.videosInline = isVideoTrack(track);
   if (!state.videosInline) closePlayer();
   syncVideosInlinePlayer();
+  scrollSheetBodyToTop("videos-sheet");
 }
 
 async function mergeYouTubeCatalogFromMac() {
@@ -3100,14 +3234,15 @@ function withFormatTag(tag, text) {
 function nowLabel(track) {
   const title = (track.title || "").trim();
   const artist = (track.artist || "").trim();
-  const label = title && artist ? title + " - " + artist : title || artist;
-  return withFormatTag(localFormatTag(track), label);
+  if (!title) return artist;
+  const tagged = withFormatTag(localFormatTag(track), title);
+  return artist ? tagged + " - " + artist : tagged;
 }
 
 function subtitle(track) {
   if (track.source === "youtube") return track.artist ? track.artist + " · YouTube" : "YouTube";
   if (track.source === "soundcloud") return track.artist ? track.artist + " · SoundCloud" : "SoundCloud";
-  return withFormatTag(localFormatTag(track), (track.artist || "").trim());
+  return (track.artist || "").trim();
 }
 
 function displayTitle(track) {
@@ -3257,7 +3392,17 @@ function soundCloudArtURL(raw) {
     .replace("-small.", "-t500x500.")
     .replace("-tiny.", "-t500x500.")
     .replace("-original.", "-t500x500.");
-  return art;
+  try {
+    const u = new URL(art, location.href);
+    if (u.protocol !== "https:") return "";
+    // Only SoundCloud CDN artwork — blocks tracking/random hosts from search metadata.
+    if (!/(^|\.)sndcdn\.com$/i.test(u.hostname) && !/(^|\.)soundcloud\.com$/i.test(u.hostname)) {
+      return "";
+    }
+    return u.href;
+  } catch {
+    return "";
+  }
 }
 
 function soundCloudArtFromWidgetSound(sound) {
@@ -3481,8 +3626,34 @@ function shouldSkipStreamingTrack(track) {
   return isStreamingTrack(track) && (streamingPlaybackUnavailable() || appInBackground());
 }
 
+let offlineStreamNoticeShown = false;
+
+function deviceIsOffline() {
+  return typeof navigator !== "undefined" && navigator.onLine === false;
+}
+
+function maybeNotifyOfflinePlayingLocal() {
+  // navigator.onLine is often still true on Android with bad/no usable net — also
+  // treat a failed streaming probe as offline for this one-shot banner.
+  const offline = deviceIsOffline() || streamingPlaybackUnavailable();
+  if (!offline || offlineStreamNoticeShown) return;
+  offlineStreamNoticeShown = true;
+  setNotice("Offline — playing local songs.", { duration: 6000 });
+}
+
+function notifyStreamingSkip(track) {
+  // Offline / no usable net + YT/SC: one short banner, then local play continues.
+  if (deviceIsOffline() || streamingPlaybackUnavailable()) {
+    maybeNotifyOfflinePlayingLocal();
+    return;
+  }
+  setNotice(streamingSkipNotice(track), { duration: 3500 });
+}
+
 function streamingSkipNotice(track) {
   const source = track && track.source;
+  // Offline / no usable net uses maybeNotifyOfflinePlayingLocal() once instead.
+  if (deviceIsOffline() || streamingPlaybackUnavailable()) return "";
   if (streamingPlaybackUnavailable()) {
     if (source === "soundcloud") return "No connection — skipping SoundCloud";
     if (source === "youtube") return "No connection — skipping video";
@@ -3525,39 +3696,51 @@ function onAppHidden() {
     xf.raf = window.setTimeout(runCrossfadeTick, 50);
   } else {
     resumeLocalIfNeeded();
+    // Do not start a new crossfade on hide — keep the current local element playing.
     armCrossfadeTimer();
-    maybeStartCrossfade();
   }
   scheduleBackgroundPlaybackCheck();
 }
 
 function onAppVisible() {
   streamingPauseToken++;
+  clearBackgroundKeepAlive();
   if (streamingHold) resumeStreaming();
   resumeLocalIfNeeded();
   armCrossfadeTimer();
 }
 
-function scheduleBackgroundPlaybackCheck() {
-  const trackId = state.currentId;
-  const token = ++streamingPauseToken;
-  window.setTimeout(() => {
-    if (token !== streamingPauseToken) return;
-    if (!appInBackground()) return;
-    if (state.currentId !== trackId) return;
-    const track = currentTrack();
-    if (!track) return;
-    if (track.source === "local") {
-      resumeLocalIfNeeded();
-      return;
-    }
-    // Only leave streaming after it has actually stopped — do not skip on focus alone.
-    if (isStreamingTrack(track) && (state.playing || streamingHold || streamingLive) && !isAudiblyPlaying()) {
-      skipStreamingWhenBackgrounded();
-    }
-  }, 900);
+let backgroundKeepAliveTimers = [];
+
+function clearBackgroundKeepAlive() {
+  for (const id of backgroundKeepAliveTimers) window.clearTimeout(id);
+  backgroundKeepAliveTimers = [];
 }
 
+function scheduleBackgroundPlaybackCheck() {
+  clearBackgroundKeepAlive();
+  const trackId = state.currentId;
+  const token = ++streamingPauseToken;
+  // iOS/Android often pause briefly after screen-off at unpredictable delays.
+  for (const delay of [300, 900, 2000, 5000, 12000]) {
+    const id = window.setTimeout(() => {
+      if (token !== streamingPauseToken) return;
+      if (!appInBackground()) return;
+      if (state.currentId !== trackId) return;
+      const track = currentTrack();
+      if (!track) return;
+      if (track.source === "local") {
+        if (state.playing) resumeLocalIfNeeded();
+        return;
+      }
+      // Only leave streaming after it has actually stopped — do not skip on focus alone.
+      if (isStreamingTrack(track) && (state.playing || streamingHold || streamingLive) && !isAudiblyPlaying()) {
+        skipStreamingWhenBackgrounded();
+      }
+    }, delay);
+    backgroundKeepAliveTimers.push(id);
+  }
+}
 function resumeLocalIfNeeded() {
   if (!state.playing || !isSource("local")) return;
   const el = audio();
@@ -3603,7 +3786,7 @@ function skipPastStreamingTracks(direction) {
       continue;
     }
     if (originWasStreaming || skippedStreaming > 0) {
-      setNotice(streamingSkipNotice(originTrack), { duration: 3500 });
+      notifyStreamingSkip(originTrack);
     }
     void playTrack(next, { open: playerIsOpen() });
     return true;
@@ -3640,11 +3823,7 @@ function advancePastStreamingFailure() {
       state.currentId = null;
       closePlayer();
       render();
-      setNotice(
-        track.source === "soundcloud"
-          ? "No connection — SoundCloud needs internet."
-          : "No connection — streaming songs need internet."
-      );
+      setNotice(deviceIsOffline() ? "Offline — no local songs to play." : (track.source === "soundcloud" ? "No connection — SoundCloud needs internet." : "No connection — streaming songs need internet."), { duration: 6000 });
       return;
     }
     skipPastStreamingTracks(1);
@@ -3662,6 +3841,9 @@ function skipUnplayableStreaming(message) {
   finishTrackChange();
   pauseYouTube();
   pauseSoundCloud();
+  if ((deviceIsOffline() || streamingPlaybackUnavailable()) && !message) {
+    maybeNotifyOfflinePlayingLocal();
+  }
   const skipMsg = message || streamingSkipNotice(failed);
   streamingFailStreak += 1;
   const limit = Math.max(1, state.tracks.length);
@@ -3670,7 +3852,7 @@ function skipUnplayableStreaming(message) {
     // Prefer any local song over stopping the whole session.
     const local = state.tracks.find((entry) => entry && entry.source === "local");
     if (local) {
-      setNotice(skipMsg, { duration: 3500 });
+      if (skipMsg) setNotice(skipMsg, { duration: 3500 });
       void playTrack(local, { open: playerIsOpen() });
       return;
     }
@@ -3686,7 +3868,7 @@ function skipUnplayableStreaming(message) {
     streamingFailStreak = 0;
     const local = state.tracks.find((entry) => entry && entry.source === "local");
     if (local && local.id !== failed.id) {
-      setNotice(skipMsg, { duration: 3500 });
+      if (skipMsg) setNotice(skipMsg, { duration: 3500 });
       void playTrack(local, { open: playerIsOpen() });
       return;
     }
@@ -3695,7 +3877,7 @@ function skipUnplayableStreaming(message) {
     setNotice(message || "Couldn’t play that song.");
     return;
   }
-  setNotice(skipMsg, { duration: 3500 });
+  if (skipMsg) setNotice(skipMsg, { duration: 3500 });
   // Keep play-intent: do not setPlaying(false) before advancing.
   step(1);
 }
@@ -3852,9 +4034,10 @@ function showSongs() {
   closePlayer();
   document.body.classList.remove("search-page");
   document.body.classList.add("songs-page");
-  document.getElementById("songs").scrollTop = 0;
+  scrollSongsScreenToTop();
   syncNavCurrent();
   renderSongs();
+  scrollSongsScreenToTop();
 }
 
 function goHome() {
@@ -3866,9 +4049,10 @@ function goHome() {
   closePlayer();
   document.body.classList.remove("songs-page");
   document.body.classList.remove("search-page");
-  document.getElementById("songs").scrollTop = 0;
+  scrollSongsScreenToTop();
   syncNavCurrent();
   renderSongs();
+  scrollSongsScreenToTop();
 }
 
 function syncNavCurrent() {
@@ -3913,6 +4097,20 @@ function hideSheet(id) {
     syncVideosInlinePlayer();
   }
   syncNavCurrent();
+}
+
+
+function scrollSongsScreenToTop() {
+  const songs = document.getElementById("songs");
+  if (!songs) return;
+  const pin = () => {
+    songs.scrollTop = 0;
+  };
+  pin();
+  requestAnimationFrame(() => {
+    pin();
+    requestAnimationFrame(pin);
+  });
 }
 
 function scrollSheetBodyToTop(sheetId) {
@@ -4014,10 +4212,7 @@ function renderCatalog(options) {
     title.textContent = withFormatTag(formatTag, entry.title || entry.file);
     const sub = document.createElement("span");
     sub.className = "song-sub";
-    const artistBits = formatTag
-      ? [formatTag, entry.artist, formatBytes(entry.bytes)]
-      : [entry.artist, formatBytes(entry.bytes)];
-    sub.textContent = artistBits.filter(Boolean).join(" · ");
+    sub.textContent = [entry.artist, formatBytes(entry.bytes)].filter(Boolean).join(" · ");
     text.append(title, sub);
     const button = document.createElement("button");
     button.type = "button";
@@ -4535,22 +4730,26 @@ function oembedEndpoints(source, pageURL) {
   const encoded = encodeURIComponent(pageURL);
   if (source === "soundcloud") {
     const direct = "https://soundcloud.com/oembed?format=json&url=" + encoded;
-    return [direct, allOriginsProxy(direct), "/api/soundcloud-oembed?url=" + encoded];
+    // Direct SC oEmbed allows CORS; Mac /api next; flaky allorigins last.
+    return [
+      { url: direct, ms: 5000 },
+      { url: "/api/soundcloud-oembed?url=" + encoded, ms: 2500 },
+      { url: allOriginsProxy(direct), ms: 1500 }
+    ];
   }
   const direct = "https://www.youtube.com/oembed?format=json&url=" + encoded;
-  return [direct, allOriginsProxy(direct), "/api/youtube-oembed?url=" + encoded];
+  return [
+    { url: direct, ms: 5000 },
+    { url: "/api/youtube-oembed?url=" + encoded, ms: 2500 },
+    { url: allOriginsProxy(direct), ms: 1500 }
+  ];
 }
 
 async function fetchOEmbedJson(source, pageURL) {
   if (!pageURL) return null;
   for (const endpoint of oembedEndpoints(source, pageURL)) {
-    try {
-      const response = await fetch(endpoint);
-      if (!response.ok) continue;
-      return await response.json();
-    } catch {
-      /* try next */
-    }
+    const got = await fetchJsonWithTimeout(endpoint.url, endpoint.ms);
+    if (got.ok && got.json) return got.json;
   }
   return null;
 }
@@ -4748,12 +4947,21 @@ function shouldAdvance() {
 
 async function playTrack(track, options) {
   if (isStreamingTrack(track)) {
+    // Already offline / known-dead net: skip probe so local play starts immediately.
+    if (deviceIsOffline() || streamingPlaybackUnavailable() || shouldSkipStreamingTrack(track)) {
+      state.currentId = track.id;
+      skipPastStreamingTracks(1);
+      return;
+    }
     const netOk = await probeStreamingNetwork(false);
     if (!netOk || shouldSkipStreamingTrack(track)) {
+      // Point current at the picked stream so offline/skip notice sees a YT/SC origin.
+      state.currentId = track.id;
       skipPastStreamingTracks(1);
       return;
     }
   } else if (shouldSkipStreamingTrack(track)) {
+    state.currentId = track.id;
     skipPastStreamingTracks(1);
     return;
   }
@@ -6143,7 +6351,7 @@ function publishSession(track) {
   const token = ++sessionArtToken;
   const meta = {
     title: displayTitle(track),
-    artist: withFormatTag(localFormatTag(track), track.artist || "")
+    artist: track.artist || ""
   };
   try {
     navigator.mediaSession.metadata = new MediaMetadata(meta);
